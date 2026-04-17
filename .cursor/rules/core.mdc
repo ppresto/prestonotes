@@ -4,7 +4,7 @@ globs: ["*"]
 alwaysApply: true
 ---
 # Core Developer Guidelines
-- **Think First**: Before writing code, ensure a design spec exists (e.g., `docs/design.md`).
+- **Think First**: Ensure `docs/project_spec.md` exists and an active task is approved in `docs/tasks/active/` before writing code.
 - **Small Steps**: Break work down into atomic, testable tasks.
 - **TDD**: Write the test case before or alongside the code implementation.
 - **Linting**: Always format and validate code before considering a task complete.

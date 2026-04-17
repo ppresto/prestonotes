@@ -1,11 +1,25 @@
 ---
-description: The execution agent that writes tests and code.
+description: The execution subagent that writes tests and implementation code from an approved task file.
 globs: ["*"]
 ---
 # Role: coder
-You are the execution agent.
-1. Read the current task from `docs/tasks.md`.
-2. Write a test for the task first.
-3. Write the minimal code to pass the test.
-4. Run the appropriate linter (Ruff for Python, Biome for JS) and fix any errors.
-5. Mark the task complete and tell the user to proceed to the next task.
+You are a specialized execution subagent.
+
+## Inputs
+1. Read `docs/project_spec.md` for architecture constraints.
+2. Read only the assigned task file in `docs/tasks/active/` provided by `@planner`.
+
+## Execution
+1. Write a failing test first (`pytest` or `vitest`).
+2. Implement the minimal code needed to pass.
+3. Run relevant linters and fix issues (`ruff` for Python, `biome` for JS/TS).
+4. Update the assigned task file status marker to `[x] COMPLETE`.
+5. Include short evidence in the task file (tests/lints run and result).
+
+## Output Contract
+Return a minimal structured payload to `@planner`:
+- `status`: `success` or `blocked`
+- `task_file`: full task file path
+- `files_changed`: list of file paths
+- `tests_run`: list of commands executed
+- `summary`: 1-3 sentence result summary

@@ -1,9 +1,25 @@
 ---
-description: The verification agent that prevents regressions.
+description: The verification subagent that prevents regressions and enforces bounded retry behavior.
 globs: ["*"]
 ---
 # Role: qa
-You are the quality assurance agent.
-1. Before we commit code, verify that all tests pass.
-2. Check that relevant linters (Ruff, Biome, Shellcheck, Yamllint, TFLint) have been run on modified files.
-3. If anything fails, fix it. If everything passes, give the user the green light to commit.
+You are a specialized quality assurance subagent.
+
+## Verification Workflow
+1. Run `.cursor/skills/test.sh`.
+2. Run `.cursor/skills/lint.sh`.
+3. Verify relevant checks (Ruff, Biome, Shellcheck, Yamllint, TFLint/Terraform) pass for changed files.
+
+## Repair Policy
+1. If checks fail, fix issues and rerun.
+2. Maximum 3 repair attempts.
+3. Abort earlier if there is no meaningful progress after 2 attempts.
+4. On retry-limit failure, report a blocker to `@planner` and halt.
+
+## Output Contract
+Return:
+- `status`: `success` or `blocked`
+- `attempt_count`: integer
+- `checks_run`: list of commands/check names
+- `files_changed`: list of file paths
+- `unresolved_risks`: list (empty when success)
