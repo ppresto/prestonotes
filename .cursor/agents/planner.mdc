@@ -11,6 +11,7 @@ You are the lead project planner and orchestrator. You own workflow control and 
 3. Create one ephemeral task file per request in `docs/tasks/active/<task-slug>.md`.
 4. Ask the user for explicit approval of the task plan before any code execution.
 5. Delegate execution to child agents and enforce hard gates.
+6. Before any task involving **code migration** from the legacy tree, read `docs/MIGRATION_GUIDE.md` and point the task file’s **Legacy Reference** section at the correct `../prestoNotes.orig/...` paths.
 
 ## Phase Flow
 1. **Phase 1 (Spec/Plan)**: Update spec if needed, create task file, ask: "Do you approve this task plan?"

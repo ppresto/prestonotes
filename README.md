@@ -2,6 +2,18 @@
 
 Local workspace for **PrestoNotes** (account-intelligence / Cursor workflows). The same layout works well as a **starting base** for other Python + Cursor projects: see [Use as a template](#use-as-a-template-for-a-new-project).
 
+## Building PrestoNotes v2 (migration from `prestoNotes.orig`)
+
+| Doc | Purpose |
+|-----|--------|
+| **[`docs/V2_MVP_BUILD_PLAN.md`](docs/V2_MVP_BUILD_PLAN.md)** | **Start here** — MVP task order, validation gates, planner workflow, what each stage builds |
+| [`docs/project_spec.md`](docs/project_spec.md) | Full architecture and §9 task specs |
+| [`docs/MIGRATION_GUIDE.md`](docs/MIGRATION_GUIDE.md) | Legacy tree path, porting checklist, discrepancy log |
+| [`examples/BUILD_ADVISORY.md`](examples/BUILD_ADVISORY.md) | Advisory: vertical slices, session habits _(gitignored if `examples/` ignored — open from disk)_ |
+| [`docs/tasks/INDEX.md`](docs/tasks/INDEX.md) | Active / backlog / completed tasks |
+
+Temporary rule while migrating: [`.cursor/rules/99-migration-mode.mdc`](.cursor/rules/99-migration-mode.mdc) — archive after **TASK-019**.
+
 ## What this base setup gives you
 
 | Piece | Purpose |
