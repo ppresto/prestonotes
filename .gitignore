@@ -14,3 +14,6 @@ node_modules/
 .vector_db/
 .env
 MyNotes/
+
+# Local examples (not tracked; replace in your own clone if needed)
+examples/

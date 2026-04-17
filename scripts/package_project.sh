@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_NAME="$(basename "${ROOT_DIR}")"
 STAMP="$(date +%Y%m%d-%H%M%S)"
-OUT_DIR="${ROOT_DIR}/dist"
+OUT_DIR="${ROOT_DIR}/logs"
 ARCHIVE_PATH="${OUT_DIR}/${PROJECT_NAME}-share-${STAMP}.tar.gz"
 
 mkdir -p "${OUT_DIR}"
@@ -41,7 +41,7 @@ printf "  - %s\n" "${INCLUDE_PATHS[@]}"
   tar -czf "${ARCHIVE_PATH}" \
     --exclude-vcs \
     --exclude-from=".gitignore" \
-    --exclude="dist" \
+    --exclude="logs" \
     "${INCLUDE_PATHS[@]}"
 )
 
