@@ -1,0 +1,33 @@
+---
+description: Enforces strict planner-led workflow phases and gates.
+globs: ["*"]
+alwaysApply: true
+---
+# Operational Process Enforcement
+You must follow this workflow exactly and may not skip or reorder phases.
+
+## Phase 1: Spec and Plan
+1. `@planner` must read `docs/project_spec.md`.
+2. If `docs/project_spec.md` does not exist, draft a baseline and ask user approval.
+3. `@planner` must create one ephemeral task file in `docs/tasks/active/`.
+4. `@planner` must explicitly ask the user for plan approval before code changes.
+
+## Phase 2: Code
+1. Only after user approval, `@planner` delegates to `@coder`.
+2. `@coder` must implement from the approved task file only.
+3. `@coder` must follow TDD and run relevant lint/test commands.
+
+## Phase 3: Verify Then Document
+1. After coder reports success, `@planner` delegates to `@qa`.
+2. If QA succeeds, `@planner` then delegates to `@doc`.
+3. `@doc` must run after QA to avoid documenting stale code state.
+
+## Phase 4: Commit Readiness
+1. A task is commit-ready only if both QA and Doc report success.
+2. If QA fails, planner reopens Code/Verify flow.
+3. If QA fails after 3 repair attempts, or no meaningful progress after 2 attempts, QA must report a blocker and planner must halt and request user intervention.
+
+## Required Artifacts
+- Persistent spec: `docs/project_spec.md`
+- Ephemeral tasks: `docs/tasks/active/<task-slug>.md`
+- Archived tasks: `docs/tasks/archive/YYYY-MM/<task-slug>.md`

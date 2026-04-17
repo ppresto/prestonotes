@@ -1,7 +1,11 @@
-# Tasks: Pre-commit configuration
+# Tasks Overview
 
-1. **Done** — Added `.pre-commit-config.yaml` at the repository root with hooks for **ruff**, **Biome**, **ShellCheck** (via `shellcheck-py`), **yamllint**, and **Terraform / tflint** (`antonbabenko/pre-commit-terraform`). Adjusted `.cursor/skills/lint.sh` for ShellCheck SC2035 and `node_modules/` in `.gitignore`.
+This file is the high-level pointer for ephemeral task tracking.
 
-2. **Done** — Updated **`README.md`** with prerequisites, `pre-commit install` / `pre-commit run --all-files`, Homebrew installs, and ShellCheck Docker vs `shellcheck-py` notes.
+## Where Tasks Live
+- Active task plans: `docs/tasks/active/`
+- Archived/completed tasks: `docs/tasks/archive/YYYY-MM/`
+- Index: `docs/tasks/INDEX.md`
 
-3. **Done** — Ran `pre-commit run --all-files` successfully (with tracked files). Added **`tests/test_pre_commit_config.py`** to assert expected hook repositories are listed.
+## Legacy Note
+Historical one-off task notes may still exist in this file, but new work should be tracked as one file per request under `docs/tasks/active/`.

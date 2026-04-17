@@ -76,15 +76,19 @@ Rule 1: NEVER copy monolithic .md playbooks into the new repository. We are migr
 Rule 2: Reference legacy Python scripts strictly to extract API auth and FastMCP logic, but strip out any LLM prompts or complex reasoning before porting.
 
 ## 8. Development Workflow & Agentic SDLC
-To build and extend PrestoNotes v2.0, all development must strictly follow our 4-phase parent/child Agentic workflow:
+To build and extend PrestoNotes v2.0, all development must strictly follow our planner-led workflow:
 
-Phase 1 (Spec): The @planner reads this spec, creates an ephemeral task file in docs/tasks/<task>.md, and explicitly requests user approval.
+Phase 1 (Spec): The @planner reads this spec, creates an ephemeral task file in docs/tasks/active/<task>.md, and explicitly requests user approval.
 
 Phase 2 (Code): Once approved, @planner delegates to @coder. Coder MUST follow Test-Driven Development (TDD), writing tests before implementation.
 
-Phase 3 (Verify & Doc): Once code is complete, @planner launches @qa and @doc in parallel to run test scripts and update README.md.
+Phase 3 (Verify): Once code is complete, @planner launches @qa to run test and lint workflows and apply fixes if needed.
 
-Phase 4 (Commit): Pipeline halts if QA fails after 3 attempts. Only when both QA and Doc report success is the feature ready for commit.
+Phase 4 (Doc): Only after QA is green, @planner launches @doc so documentation reflects the final post-QA code state.
+
+Phase 5 (Commit Ready): Pipeline halts if QA fails after 3 attempts or no meaningful progress after 2 attempts. Only when both QA and Doc report success is the task ready for commit.
+
+Task lifecycle: Active tasks live in docs/tasks/active/. Completed tasks are moved to docs/tasks/archive/YYYY-MM/, with docs/tasks/INDEX.md as the pointer/index.
 
 ## 9. Tech Stack & Quality Standards
 Python: Managed exclusively via uv. No pip or conda.
