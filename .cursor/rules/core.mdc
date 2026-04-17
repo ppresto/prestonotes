@@ -1,0 +1,10 @@
+---
+description: Core behavior for all coding tasks.
+globs: ["*"]
+alwaysApply: true
+---
+# Core Developer Guidelines
+- **Think First**: Before writing code, ensure a design spec exists (e.g., `docs/design.md`).
+- **Small Steps**: Break work down into atomic, testable tasks.
+- **TDD**: Write the test case before or alongside the code implementation.
+- **Linting**: Always format and validate code before considering a task complete.

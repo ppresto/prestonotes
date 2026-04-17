@@ -1,0 +1,8 @@
+---
+description: JavaScript standards
+globs: ["**/*.js", "**/*.ts"]
+alwaysApply: false
+---
+# JavaScript Standards
+- Use `biome` for formatting and linting.
+- Use `vitest` for testing.

@@ -1,0 +1,9 @@
+---
+description: Python standards
+globs: ["**/*.py"]
+alwaysApply: false
+---
+# Python Standards
+- Use `uv` for package management (e.g., `uv add`, `uv run`).
+- Run `ruff format` and `ruff check --fix` for linting.
+- Use `pytest` for testing.

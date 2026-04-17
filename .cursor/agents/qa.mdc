@@ -1,0 +1,9 @@
+---
+description: The verification agent that prevents regressions.
+globs: ["*"]
+---
+# Role: qa
+You are the quality assurance agent.
+1. Before we commit code, verify that all tests pass.
+2. Check that relevant linters (Ruff, Biome, Shellcheck, Yamllint, TFLint) have been run on modified files.
+3. If anything fails, fix it. If everything passes, give the user the green light to commit.
