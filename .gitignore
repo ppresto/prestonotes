@@ -11,3 +11,6 @@ wheels/
 
 # JavaScript
 node_modules/
+.vector_db/
+.env
+MyNotes/
