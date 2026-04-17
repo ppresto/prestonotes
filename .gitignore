@@ -17,3 +17,6 @@ MyNotes/
 
 # Local examples (not tracked; replace in your own clone if needed)
 examples/
+
+# Local logs and share artifacts
+logs/
