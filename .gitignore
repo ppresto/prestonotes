@@ -20,3 +20,6 @@ examples/
 
 # Local logs and share artifacts
 logs/
+
+# macOS
+.DS_Store
