@@ -190,3 +190,9 @@ If you add **`.cursor/rules/99-migration-mode.mdc`**, use it only until **TASK-0
 | This file | **How** to execute MVP in order with validation |
 
 When in doubt: **§9 task Test section is law**; this plan is navigation.
+
+---
+
+## 11. Phase 3 close-out — Python vs Node housekeeping
+
+After **TASK-019**, revisit **[`docs/tasks/INDEX.md` — Phase 3 close-out cleanup](tasks/INDEX.md#phase-3-close-out-cleanup-after-task-019)**. Today **npm** exists almost entirely for **Biome**; the only **`.js`** in-tree is **Apps Script** and does not need Node at runtime. Optional follow-up: remove Node from bootstrap/CI if Biome is dropped or replaced.

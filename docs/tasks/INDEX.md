@@ -37,6 +37,21 @@ Master backlog status for PrestoNotes v2. **Canonical task definitions:** [`proj
 - [ ] **TASK-018** — Exec briefing playbook
 - [ ] **TASK-019** — Stage 3 integration test
 
+## Phase 3 close-out cleanup (after TASK-019)
+
+**Node / npm today:** The repo is **Python-first**. The only tracked **`.js`** file is **`scripts/syncNotesToMarkdown.js`** (Google **Apps Script**, not executed with Node in this tree) and it is **excluded** from Biome in **`biome.json`**. **`package.json`** / **`package-lock.json`** / **`node_modules`** exist **only** to install **[@biomejs/biome](https://biomejs.dev/)** for:
+
+- **`.pre-commit-config.yaml`** → `biomejs/pre-commit` → **`biome-check`**
+- **`.cursor/skills/lint.sh`** (runs `node_modules/.bin/biome` when `*.js` exists — currently only the excluded file, but Biome may still touch other file types per config)
+
+**`setEnv.sh --bootstrap`** runs **`npm install`** at the repo root when **`package.json`** is present. **CI** (`.github/workflows/ci.yml`) runs **`npm ci`** for the same reason.
+
+**Phase 3 close-out candidates** (pick up after **TASK-019** or when adding real front-end work):
+
+- [ ] **Drop or replace Biome** so **Node is not a hard prerequisite**: e.g. remove the Biome hook and rely on **Ruff + yamllint + ShellCheck** only; or switch to a **pre-commit hook** that installs Biome without a committed **`package-lock.json`** (if a supported pattern exists); or reintroduce Node only when there is **real** JS/TS in-repo.
+- [ ] **Clarify docs**: README “Install Node” becomes optional once Biome is optional; **`Dependencies`** section should match reality.
+- [ ] Optionally **rename** `syncNotesToMarkdown.js` → e.g. **`syncNotesToMarkdown.gs.txt`** and adjust references, if that reduces confusion (still not run by Node).
+
 ## Backlog — Stage 4 (post-MVP)
 
 - [ ] **TASK-020** — Vector DB ingestion
