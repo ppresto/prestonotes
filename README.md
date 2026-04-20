@@ -110,6 +110,7 @@ To fork the **pattern** (not this PrestoNotes product): copy the tree, then in t
 | **Ruff / pre-commit reformats Python** | Stage the changes and commit again. |
 | **Terraform hooks complain** | You have **`.tf`** files; install Terraform / tflint or narrow the hook in **`.pre-commit-config.yaml`**. |
 | **`pre-commit` not found** | Run **`uv sync`** and use **`uv run pre-commit …`**. |
+| **Stale `node_modules/` after pulling** | Older clones may still have **`node_modules/`** from when the repo used npm. It is **gitignored** and unused — delete with **`rm -rf node_modules`**. |
 
 ---
 
