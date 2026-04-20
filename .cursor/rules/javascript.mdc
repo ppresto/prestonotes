@@ -4,5 +4,5 @@ globs: ["**/*.js", "**/*.ts"]
 alwaysApply: false
 ---
 # JavaScript Standards
-- Use `biome` for formatting and linting.
-- Use `vitest` for testing.
+
+There is no committed JS toolchain in this repo yet (Apps Script in **`scripts/syncNotesToMarkdown.js`** is not Node-run here). When you add real **`.js`/`.ts`**, pick a formatter/linter (e.g. Biome or ESLint) and wire it in **`pre-commit`**; use **Vitest** or **Node test runner** for tests as appropriate.
