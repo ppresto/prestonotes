@@ -1,0 +1,95 @@
+version: 1
+
+managed_by: "planner"
+section_key: "contacts"
+
+runtime:
+  enabled: true
+  llm_first: true
+  llm_required: true
+
+mutation_contract:
+  section_type: "free_text"
+  allowed_actions:
+    - "append_with_history"
+    - "no_evidence"
+  required_fields_by_action:
+    append_with_history:
+      - new_value
+
+dedupe_policy:
+  canonical_per_theme: true
+  require_theme_key: true
+  compare_against_existing_doc: true
+  on_duplicate: "skip_wording_only_variant"
+  guidance: "Keep one canonical contact line per person/theme; enrich context instead of re-adding."
+
+quality_gates:
+  intent: "people_records_only"
+  cross_section_leakage_block: true
+
+section_extensions:
+  guardrails_ref: "update_from_evidence.section_guardrails"
+  planner_hints:
+    extraction_scope:
+      - "meeting attendees and speaker attributions"
+      - "dated-heading lines that include person names"
+      - "name lists inside parenthetical notes"
+      - "email/signature lines in notes"
+      - "stakeholder references in transcript dialogue"
+      - "org/team ownership mentions"
+      - "location or timezone mentions"
+      - "personal context relevant to account motion"
+      - "relationship context (manager/peer/reports/influencer/champion alignment)"
+    normalization_contract:
+      canonical_person_record_per_theme: true
+      normalize_name_variants: true
+      alias_examples:
+        - "Robert vs Bob"
+        - "Patrick Presto vs Patrick"
+        - "Chris Wallace vs Chris (when context confirms same person)"
+      alias_resolution_rules:
+        - "prefer full-name canonical record when both full-name and first-name-only mentions appear"
+        - "allow first-name alias merge only when there is a single unambiguous canonical person in scope"
+      role_team_location_optional_slots:
+        - role
+        - team
+        - location
+        - personal_context
+        - relationship_context
+      dedupe_preference: "update existing person line with net-new context instead of adding alias duplicates"
+    output_expectation:
+      include_all_evidence_backed_contacts: true
+      avoid_single_contact_when_multiple_people_are_evident: true
+      prefer_multiple_person_rows_when_evidence_supports_it: true
+      include_minimum_context_fields_when_available:
+        - role
+        - team
+        - location
+        - relationship_context
+
+update_from_evidence:
+  enabled: true
+  llm_first: true
+  llm_required: true
+  allowed_actions:
+    - "append_with_history"
+    - "no_evidence"
+  dedupe_policy:
+    canonical_per_theme: true
+    require_theme_key: true
+    compare_against_existing_doc: true
+    on_duplicate: "skip_wording_only_variant"
+    guidance: "Keep one canonical contact line per person/theme; enrich context instead of re-adding."
+  section_guardrails:
+    person_only_entries: true
+    no_cross_section_content: true
+    expected_format_hint: "Name — optional role/team/context (name-only OK when the source only names the person)"
+    disallow_tokens:
+      - "goal"
+      - "risk"
+      - "challenge"
+      - "workflow"
+      - "requirement"
+      - "must have"
+      - "next step"

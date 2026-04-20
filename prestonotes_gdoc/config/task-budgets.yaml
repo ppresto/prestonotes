@@ -1,0 +1,275 @@
+# task-budgets.yaml
+# ---------------------------------------------------------------
+# Token and context budgets per task type.
+#
+# Each task gets a total token budget and a priority-ordered list
+# of context sources. The system loads sources top-to-bottom and
+# stops when the budget is hit. This prevents context overflow,
+# reduces cost, and improves quality (less noise, more signal).
+#
+# Token estimates: 1 char ≈ 0.3 tokens (conservative).
+# A 50KB transcript file ≈ 15K tokens.
+# ---------------------------------------------------------------
+
+version: 1
+
+defaults:
+  max_context_tokens: 80000
+  max_output_tokens: 8000
+  max_turns: 12
+  warn_at_pct: 85
+
+tasks:
+
+  update_customer_notes:
+    description: "Full customer notes update — reads all sources, proposes changes to Google Doc"
+    max_context_tokens: 100000
+    max_output_tokens: 12000
+    max_turns: 15
+    context_priority:
+      - source: "google_doc_state"
+        description: "Current Google Doc section map (from read subcommand)"
+        priority: 1
+        required: true
+        estimated_tokens: 8000
+
+      - source: "account_summary"
+        description: "AI_Insights/*-AI-AcctSummary.md"
+        priority: 2
+        required: false
+        estimated_tokens: 6000
+
+      - source: "history_ledger"
+        description: "AI_Insights/*-History-Ledger.md — last 5 rows minimum"
+        priority: 3
+        required: false
+        estimated_tokens: 3000
+        max_rows: 10
+
+      - source: "audit_log"
+        description: "pnotes_agent_log.md — active rejection watermarks only"
+        priority: 4
+        required: true
+        estimated_tokens: 2000
+        strategy: "watermarks_only"
+
+      - source: "latest_transcript"
+        description: "Most recent _MASTER_TRANSCRIPT file"
+        priority: 5
+        required: true
+        estimated_tokens: 15000
+
+      - source: "previous_transcripts"
+        description: "Older transcript files — summarized, not raw"
+        priority: 6
+        required: false
+        estimated_tokens: 10000
+        strategy: "summarize_if_over_budget"
+
+      - source: "customer_notes_md"
+        description: "[CustomerName] Notes.md"
+        priority: 7
+        required: false
+        estimated_tokens: 5000
+
+      - source: "product_intelligence"
+        description: "Internal/AI_Insights/Product-Intelligence.md — relevant sections only"
+        priority: 8
+        required: false
+        estimated_tokens: 4000
+        strategy: "relevant_sections_only"
+
+      - source: "wiz_solution_lens"
+        description: "config/prompts/010-wiz-solution-lens.md"
+        priority: 9
+        required: true
+        estimated_tokens: 2000
+
+      - source: "se_persona_prompt"
+        description: "config/prompts/015-customer-notes-se-persona-prompt.md"
+        priority: 10
+        required: true
+        estimated_tokens: 1000
+
+  run_account_summary:
+    description: "Full account summary — reads everything, writes local markdown"
+    max_context_tokens: 120000
+    max_output_tokens: 15000
+    max_turns: 10
+    context_priority:
+      - source: "all_transcripts"
+        priority: 1
+        required: true
+        estimated_tokens: 40000
+      - source: "customer_notes_md"
+        priority: 2
+        required: true
+        estimated_tokens: 5000
+      - source: "google_doc_state"
+        priority: 3
+        required: true
+        estimated_tokens: 8000
+      - source: "history_ledger"
+        priority: 4
+        required: false
+        estimated_tokens: 5000
+      - source: "product_intelligence"
+        priority: 5
+        required: false
+        estimated_tokens: 8000
+      - source: "wiz_doc_cache"
+        priority: 6
+        required: false
+        estimated_tokens: 5000
+
+  run_bva_report:
+    description: "Business Value Assessment — reader-first template v4 (six merged pillars, per-pillar Summary or Questions); workflow analysis read if available; 30d default up to 90d when activity triggers (run-bva-report.md Step 2)"
+    max_context_tokens: 160000
+    max_output_tokens: 14000
+    max_turns: 12
+    context_priority:
+      - source: "all_transcripts"
+        priority: 1
+        required: true
+        estimated_tokens: 55000
+      - source: "customer_notes_md"
+        priority: 2
+        required: true
+        estimated_tokens: 12000
+      - source: "google_doc_state"
+        priority: 3
+        required: false
+        estimated_tokens: 8000
+      - source: "account_summary"
+        priority: 4
+        required: true
+        estimated_tokens: 6000
+      - source: "history_ledger"
+        priority: 5
+        required: true
+        estimated_tokens: 5000
+      - source: "workflow_analysis"
+        priority: 6
+        required: false
+        estimated_tokens: 12000
+      - source: "product_intelligence"
+        priority: 7
+        required: false
+        estimated_tokens: 6000
+      - source: "wiz_doc_cache"
+        priority: 8
+        required: false
+        estimated_tokens: 4000
+
+  load_customer_context:
+    description: "Quick snapshot — fast read, no writes"
+    max_context_tokens: 60000
+    max_output_tokens: 4000
+    max_turns: 5
+    context_priority:
+      - source: "account_summary"
+        priority: 1
+        required: false
+        estimated_tokens: 6000
+      - source: "google_doc_state"
+        priority: 2
+        required: true
+        estimated_tokens: 8000
+      - source: "history_ledger"
+        priority: 3
+        required: false
+        estimated_tokens: 3000
+        max_rows: 5
+      - source: "latest_transcript"
+        priority: 4
+        required: false
+        estimated_tokens: 15000
+
+  run_logic_audit:
+    description: "Read-only quality check — no writes"
+    max_context_tokens: 80000
+    max_output_tokens: 6000
+    max_turns: 8
+    context_priority:
+      - source: "account_summary"
+        priority: 1
+        required: true
+        estimated_tokens: 6000
+      - source: "google_doc_state"
+        priority: 2
+        required: true
+        estimated_tokens: 8000
+      - source: "history_ledger"
+        priority: 3
+        required: true
+        estimated_tokens: 5000
+      - source: "latest_transcript"
+        priority: 4
+        required: false
+        estimated_tokens: 15000
+
+  run_tech_acct_plan:
+    description: "Domain-specific technical account plan"
+    max_context_tokens: 80000
+    max_output_tokens: 10000
+    max_turns: 10
+    context_priority:
+      - source: "google_doc_state"
+        priority: 1
+        required: true
+        estimated_tokens: 8000
+      - source: "architecture_diagrams"
+        priority: 2
+        required: false
+        estimated_tokens: 3000
+      - source: "latest_transcript"
+        priority: 3
+        required: true
+        estimated_tokens: 15000
+      - source: "product_intelligence"
+        priority: 4
+        required: true
+        estimated_tokens: 8000
+      - source: "wiz_doc_cache"
+        priority: 5
+        required: false
+        estimated_tokens: 5000
+
+  run_license_evidence_check:
+    description: "Evidence-scored license posture check"
+    max_context_tokens: 50000
+    max_output_tokens: 4000
+    max_turns: 6
+    context_priority:
+      - source: "google_doc_state"
+        priority: 1
+        required: true
+        estimated_tokens: 8000
+        strategy: "deal_stage_tracker_only"
+      - source: "all_transcripts"
+        priority: 2
+        required: true
+        estimated_tokens: 20000
+      - source: "product_intelligence"
+        priority: 3
+        required: true
+        estimated_tokens: 5000
+
+  run_seeded_notes_replay:
+    description: "Seed migration and day-by-day replay"
+    max_context_tokens: 60000
+    max_output_tokens: 8000
+    max_turns: 20
+    context_priority:
+      - source: "seed_bundle"
+        priority: 1
+        required: true
+        estimated_tokens: 15000
+      - source: "google_doc_state"
+        priority: 2
+        required: true
+        estimated_tokens: 8000
+      - source: "history_ledger"
+        priority: 3
+        required: false
+        estimated_tokens: 3000

@@ -1,0 +1,94 @@
+version: 1
+
+managed_by: "planner"
+section_key: "use_cases_requirements"
+
+runtime:
+  enabled: true
+  llm_first: true
+  llm_required: true
+
+mutation_contract:
+  section_type: "free_text"
+  allowed_actions:
+    - "append_with_history"
+    - "no_evidence"
+  required_fields_by_action:
+    append_with_history:
+      - new_value
+
+dedupe_policy:
+  canonical_per_theme: true
+  require_theme_key: true
+  compare_against_existing_doc: true
+  on_duplicate: "skip_wording_only_variant"
+  guidance: "Keep one canonical requirement line per theme. New wording without net-new requirement detail is duplicate."
+
+quality_gates:
+  intent: "explicit_customer_requirements_only"
+  cross_section_leakage_block: true
+
+section_extensions:
+  guardrails_ref: "update_from_evidence.section_guardrails"
+  planner_hints:
+    extract_from_headings:
+      - "Requirements"
+      - "POV Requirements"
+      - "POV pass criteria"
+      - "Use Cases / Requirements"
+      - "Reqs"
+      - "POV"
+      - "Reporting & POV Exit Criteria"
+    explicit_signal_phrases:
+      - "must"
+      - "require"
+      - "need to"
+      - "pass criteria"
+      - "success criteria"
+      - "scope:"
+      - "SLA"
+      - "go/no-go"
+      - "owner"
+      - "expiry"
+    output_expectation:
+      min_items_when_evidence_rich: 3
+      preserve_specific_acceptance_criteria: true
+      avoid_single_generic_rollup_when_multiple_explicit_requirements_exist: true
+      preserve_numeric_acceptance_targets: true
+      retain_scope_and_time_window_details: true
+
+update_from_evidence:
+  enabled: true
+  llm_first: true
+  llm_required: true
+  seed_fallback_extract: true
+  allowed_actions:
+    - "append_with_history"
+    - "no_evidence"
+  dedupe_policy:
+    canonical_per_theme: true
+    require_theme_key: true
+    compare_against_existing_doc: true
+    on_duplicate: "skip_wording_only_variant"
+    guidance: "Keep one canonical requirement line per theme. New wording without net-new requirement detail is duplicate."
+  section_guardrails:
+    concise_requirements_only: true
+    disallow_workflow_narratives: true
+    min_requirement_chars: 24
+    require_requirement_signal: true
+    enforce_requirement_lead_verbs:
+      - "require"
+      - "must"
+      - "need to"
+      - "pass criteria"
+      - "success criteria"
+    disallow_tokens:
+      - "workflow:"
+      - "->"
+      - "handoff"
+      - "step 1"
+      - "step 2"
+      - "trigger:"
+      - "output:"
+      - "map out"
+      - "build plan"

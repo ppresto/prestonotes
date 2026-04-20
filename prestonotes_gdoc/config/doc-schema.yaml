@@ -1,0 +1,201 @@
+# gdoc-customer-notes-schema.yaml
+# ---------------------------------------------------------------
+# Single source of truth for the customer notes Google Doc schema.
+# All parsing, mutation, and write-back logic derives from this file.
+#
+# Editing guide:
+#   Add new H1 section:   add entry under sections[]
+#   Add new field:        add entry under that section's fields[]
+#   Rename a header:      change `header:` value AND update the GDoc template
+#   Change update_strategy: change the value; takes effect on next run
+#   Remove a section:     delete from config; existing doc content untouched
+# ---------------------------------------------------------------
+
+sections:
+
+  # Exec Account Summary: H1 "Exec Account Summary", then H3 headings in order:
+  # Goals → Risk → Upsell Path. Parser matches by these labels; writes append list items (bullets) under each H3.
+  - key: exec_account_summary
+    header: "Exec Account Summary"
+    level: 1
+    fields:
+      - key: top_goal
+        label: "Goals"
+        update_strategy: append_with_history
+      - key: risk
+        label: "Risk"
+        update_strategy: append_with_history
+      - key: upsell_path
+        label: "Upsell Path"
+        update_strategy: append_with_history
+
+  - key: challenge_tracker
+    header: "Challenge Tracker"
+    level: 1
+    type: table
+    columns:
+      - key: challenge
+        label: "Challenge"
+      - key: date
+        label: "Date"
+      - key: category
+        label: "Category"
+      - key: status
+        label: "Status"
+      - key: notes_references
+        label: "Notes & References"
+
+  - key: company_overview
+    header: "Company Overview"
+    level: 1
+    fields:
+      - key: free_text
+        label: null
+        update_strategy: free_text
+
+  - key: contacts
+    header: "Contacts"
+    level: 1
+    fields:
+      - key: free_text
+        label: null
+        update_strategy: free_text
+
+  - key: org_structure
+    header: "Org Structure"
+    level: 1
+    fields:
+      - key: free_text
+        label: null
+        update_strategy: free_text
+
+  - key: cloud_environment
+    header: "Cloud Environment"
+    level: 1
+    type: tools_section
+    fields:
+      - key: csp_regions
+        label: "CSP/Regions:"
+        update_strategy: update_in_place
+      - key: platforms
+        label: "Platforms(vm/containers/serverless)"
+        update_strategy: tools_list
+      - key: idp_sso
+        label: "IDP used for SSO:"
+        update_strategy: update_in_place
+      - key: devops_vcs
+        label: "DevOps/VCS Tools:"
+        update_strategy: tools_list
+      - key: security_tools
+        label: "Security Tools:"
+        update_strategy: tools_list
+      - key: aspm_tools
+        label: "ASPM Tools:"
+        update_strategy: tools_list
+      - key: ticketing
+        label: "Ticketing Tools:"
+        update_strategy: tools_list
+      - key: languages
+        label: "Languages:"
+        update_strategy: tools_list
+      - key: sizing
+        label: "Sizing:"
+        update_strategy: update_in_place
+      - key: archive
+        label: "Archive:"
+        update_strategy: free_text
+
+  - key: use_cases
+    header: "Use Cases / Requirements"
+    level: 1
+    fields:
+      - key: free_text
+        label: null
+        update_strategy: free_text
+
+  - key: workflows
+    header: "Workflows / Processes"
+    level: 1
+    fields:
+      - key: free_text
+        label: null
+        update_strategy: free_text
+
+  - key: accomplishments
+    header: "Accomplishments"
+    level: 1
+    fields:
+      - key: free_text
+        label: null
+        update_strategy: free_text
+
+  - key: discovery
+    header: "Discovery"
+    level: 1
+    fields:
+      - key: free_text
+        label: null
+        update_strategy: free_text
+
+  # Daily Activity Logs: team collaboration + optional AI meeting recap prepends.
+  # H1 title must match the customer Doc. Writes use action prepend_daily_activity_ai_summary only.
+  - key: daily_activity_logs
+    header: "Daily Activity Logs"
+    level: 1
+    fields:
+      - key: free_text
+        label: null
+        update_strategy: free_text
+
+  - key: account_motion_metadata
+    header: "Account Metadata"
+    level: 1
+    fields:
+      - key: exec_buyer
+        label: "Exec Buyer:"
+        update_strategy: update_in_place
+      - key: champion
+        label: "Champion:"
+        update_strategy: update_in_place
+      - key: technical_owner
+        label: "Technical Owner:"
+        update_strategy: update_in_place
+      - key: sensor_coverage_pct
+        label: "Sensor Coverage %:"
+        update_strategy: update_in_place
+      - key: critical_issues_open
+        label: "Critical Issues Open:"
+        update_strategy: update_in_place
+      - key: mttr_days
+        label: "MTTR Days:"
+        update_strategy: update_in_place
+      - key: monthly_reporting_hours
+        label: "Monthly Reporting Hours:"
+        update_strategy: update_in_place
+
+  - key: deal_stage_tracker
+    header: "Deal Stage Tracker"
+    level: 2
+    type: table
+    columns:
+      - key: challenge
+        label: "SKU"
+      - key: date
+        label: "Status"
+      - key: category
+        label: "Verification Activity"
+      - key: status
+        label: "Reason"
+      - key: notes_references
+        label: "Notes & References"
+
+  - key: appendix
+    header: "Appendix"
+    level: 1
+    fields:
+      - key: free_text
+        label: null
+        update_strategy: free_text
+      - key: agent_run_log
+        label: "Agent Run Log:"
+        update_strategy: append_with_history

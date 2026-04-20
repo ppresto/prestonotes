@@ -4,7 +4,71 @@ globs: ["*"]
 alwaysApply: true
 ---
 # Core Developer Guidelines
+- **Planner-led pipeline**: You are the **planner/orchestrator** (main Agent). After approval, default is **`/coder` → `/tester` → `/doc`** (subagents) unless the user said **`same session, inline`** for that task (see `.cursor/rules/workflow.mdc`). Do not skip verification or document before tests pass — in subagent mode via **`/tester`** then **`/doc`**; in inline mode run the same checks yourself in order.
 - **Think First**: Ensure `docs/project_spec.md` exists and an active task is approved in `docs/tasks/active/` before writing code.
 - **Small Steps**: Break work down into atomic, testable tasks.
 - **TDD**: Write the test case before or alongside the code implementation.
 - **Linting**: Always format and validate code before considering a task complete.
+- **Google / gcloud failures:** When an MCP tool returns JSON containing **`run_in_terminal_to_fix`**, paste that **exact** command for the user first (it comes from **`.cursor/mcp.json`** `env`: `GCLOUD_AUTH_LOGIN_COMMAND` or built from `GCLOUD_ACCOUNT`). Ask them to run it in Terminal, complete browser auth, then continue the workflow.
+
+## Customer notes & MyNotes (TASK-007)
+
+These rules apply when working on **customer folders**, **Google Docs customer notes**, **History Ledger**, or **Daily Activity** content. They align with **`docs/ai/references/`** and the Stage 1 MVP playbooks under **`docs/ai/playbooks/`**.
+
+### Path resolution
+
+- **Repo mirror:** `./MyNotes/Customers/[CustomerName]/` (synced from Drive via **`sync_notes` MCP** or **`scripts/rsync-gdrive-notes.sh`**; see **`docs/MIGRATION_GUIDE.md`**).
+- **Mounted Drive root:** Use **`GDRIVE_BASE_PATH`** from **`.cursor/mcp.json`** for paths that must refer to the live Google Drive for Desktop tree (never hardcode user-specific mount points in committed files).
+
+### Tool registry
+
+Authoritative list of **Python CLIs and scripts** the stack may invoke: **`prestonotes_gdoc/config/tools.json`**. Prefer **`uv run …`** from the repo root as shown in playbooks.
+
+### Product intelligence (read-only)
+
+**`./Product-Intel/`** at the repo root is **curated reference** (Wiz docs cache, research snippets). Treat as **read-only** unless the user explicitly asks for edits. Do not fold Product-Intel prose into customer notes as if it were customer-sourced fact without evidence.
+
+### Canonical Google Docs stack
+
+Structured discover/read/write for Customer Notes uses **`prestonotes_gdoc/`** (especially **`update-gdoc-customer-notes.py`**) and MCP tools **`discover_doc`**, **`read_doc`**, **`write_doc`**. Deprecated: v1 **`run_pipeline`** / `run-main-task.py` — not part of v2.
+
+### Data ingestion priority
+
+When loading context for a customer, follow weighting and folder roles in **`docs/ai/references/customer-data-ingestion-weights.md`**. Prefer **per-call** files under **`Transcripts/*.txt`** and MCP **`read_transcripts`**; use **`_MASTER_*`** transcripts only when bounded and intentional (see that reference).
+
+### Canonical field ownership (Customer Notes)
+
+Only **AI-owned** fields may be written from automation unless the user explicitly overrides:
+
+| Section (conceptual) | AI may write |
+|----------------------|--------------|
+| Daily Activity Logs | **Prepends only** — new dated entries at top; never delete or rewrite prior days (see **`docs/ai/references/daily-activity-ai-prepend.md`**) |
+| AI Acct Summary | Yes (including license/commercial blocks when the playbook says so) |
+| Challenge tracker | Yes |
+| Deal stage tracker | Yes |
+| Contacts | Yes (additive/corrections with evidence) |
+| Use cases / requirements | Yes |
+| Cloud / workflows | Yes where schema allows |
+
+**Human-owned (do not overwrite without explicit user instruction):** Exec account summary narrative blocks defined as human in **`docs/ai/references/customer-notes-mutation-rules.md`**, customer verbatim quotes marked human-only, and any section the playbook marks read-only.
+
+### Mutations and diffs
+
+Proposed doc edits must follow **`docs/ai/references/customer-notes-mutation-rules.md`**: structured mutation JSON, section keys from **`prestonotes_gdoc/config/doc-schema.yaml`**, show a clear diff/plan, **stop for approval** before **`write_doc`** (use **`dry_run`** first when available).
+
+### History Ledger (`*-History-Ledger.md`)
+
+Append **one row per successful write run**; never rewrite prior rows. Table columns (19) must match:
+
+`Date`, `Account Health`, `Wiz Score`, `Sentiment`, `Coverage`, `Open Challenges`, `Aging Blockers`, `Resolved Issues`, `New Blockers`, `Goals Changed`, `Tools Changed`, `Stakeholder Shifts`, `Value Realized`, `Next Critical Event`, `Key Drivers`, `Wiz Licensed Products`, `Wiz License Purchase Dates`, `Wiz License Expiration/Renewal`, `Wiz License Evidence Quality`
+
+(Aligned with **`LEDGER_REQUIRED_COLUMNS`** in **`prestonotes_gdoc/update-gdoc-customer-notes.py`**.)
+
+### Audit log
+
+Customer-notes runs should append a line to **`./MyNotes/pnotes_agent_log.md`** when the playbook requires it (scope/timestamp/summary of actions).
+
+### Ledger / Daily Activity integrity
+
+- **Ledger** rows: evidence-backed; leave cells empty rather than inventing.
+- **Daily Activity:** only **prepend**; respect staleness and duplicate-detection rules in **`daily-activity-ai-prepend.md`**.

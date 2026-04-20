@@ -1,0 +1,76 @@
+version: 1
+
+managed_by: "planner"
+section_key: "workflows_processes"
+
+runtime:
+  enabled: true
+  llm_first: true
+  llm_required: true
+
+mutation_contract:
+  section_type: "free_text"
+  allowed_actions:
+    - "append_with_history"
+    - "no_evidence"
+  required_fields_by_action:
+    append_with_history:
+      # Preferred: title_line + detail (Python joins with " — " into one paragraph for GDoc bullets).
+      # Legacy: new_value only, or new_value with embedded newline.
+      - new_value
+  doc_value_shape: |
+    Single list item in Workflows / Processes = one Google Doc paragraph (one bullet): short process
+    title (customer language) and full narrative from detail are composed as "Title — narrative" by
+    Python; the writer bolds the title segment before the first " — ". No newlines between title and
+    body (newlines would become separate bullets). Do not split one
+    workflow into many LLM items so each sentence becomes its own GDoc bullet. One named process =
+    one JSON object (title_line + detail) per append. Dedupe theme = theme_key (not repeated as
+    filler in the title). Multiple sentences stay inside detail as one string.
+
+dedupe_policy:
+  canonical_per_theme: true
+  require_theme_key: true
+  compare_against_existing_doc: true
+  on_duplicate: "skip_wording_only_variant"
+  guidance: "One canonical workflow narrative per theme. Rephrasing without net-new process detail is duplicate."
+
+quality_gates:
+  intent: "named_process_narratives_only"
+  cross_section_leakage_block: true
+
+section_extensions:
+  guardrails_ref: "update_from_evidence.section_guardrails"
+
+update_from_evidence:
+  enabled: true
+  llm_first: true
+  llm_required: true
+  allowed_actions:
+    - "append_with_history"
+    - "no_evidence"
+  dedupe_policy:
+    canonical_per_theme: true
+    require_theme_key: true
+    compare_against_existing_doc: true
+    on_duplicate: "skip_wording_only_variant"
+    guidance: "One canonical workflow narrative per theme. Rephrasing without net-new process detail is duplicate."
+  section_guardrails:
+    intent: "named_process_narratives_only"
+    require_named_process: true
+    disallow_low_signal_bullets: true
+    # Apply to detail (split format) or full new_value (legacy).
+    min_word_count: 16
+    llm_item_cardinality: "Exactly one workflows_processes object per named process per add; never multiple objects that are sentence-splits of the same process."
+    title_line_rule: "Single short process name only — no narrative body on the title line."
+    detail_rule: "All narrative lives here — one string, multiple sentences allowed."
+    workflow_lines:
+      line_1: "Short title only — named process from customer language."
+      line_2_plus: "Full narrative: triggers, tools, handoffs, outputs, bottlenecks, impact."
+    disallow_shorthand_arrows: true
+    disallow_tokens:
+      - "->"
+      - "=>"
+      - "step 1"
+      - "step 2"
+      - "tbd"
+      - "n/a"

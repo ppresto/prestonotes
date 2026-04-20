@@ -1,133 +1,117 @@
-# PrestoNotes
+# PrestoNotes v2
 
-Local workspace for **PrestoNotes** (account-intelligence / Cursor workflows). The same layout works well as a **starting base** for other Python + Cursor projects: see [Use as a template](#use-as-a-template-for-a-new-project).
+**PrestoNotes** is a **Cursor-first** workspace for Solutions Engineers: **meeting transcripts**, a **local `MyNotes/` mirror** of Google Drive, **playbooks** (step-by-step markdown), and a **local MCP server** that talks to **Google Docs**, **customer files**, and **sync scripts** — so you can load context, update customer notes, extract structured call records, and (as migration progresses) build journey and account views **without** pasting secrets into chat.
 
-## Building PrestoNotes v2 (migration from `prestoNotes.orig`)
+**Migration status:** **Stages 1–2** through **[`docs/tasks/INDEX.md`](docs/tasks/INDEX.md)** (through **TASK-014**) are implemented in this repo. **Stage 3** (domain advisors + orchestrator) and beyond are **not** shipped here yet — see **[`docs/V2_MVP_BUILD_PLAN.md`](docs/V2_MVP_BUILD_PLAN.md)** for the full roadmap. Legacy **v1** lived under `../prestoNotes.orig/` (read-only reference).
 
-| Doc | Purpose |
-|-----|--------|
-| **[`docs/V2_MVP_BUILD_PLAN.md`](docs/V2_MVP_BUILD_PLAN.md)** | **Start here** — MVP task order, validation gates, planner workflow, what each stage builds |
-| [`docs/project_spec.md`](docs/project_spec.md) | Full architecture and §9 task specs |
-| [`docs/MIGRATION_GUIDE.md`](docs/MIGRATION_GUIDE.md) | Legacy tree path, porting checklist, discrepancy log |
-| [`examples/BUILD_ADVISORY.md`](examples/BUILD_ADVISORY.md) | Advisory: vertical slices, session habits _(gitignored if `examples/` ignored — open from disk)_ |
-| [`docs/tasks/INDEX.md`](docs/tasks/INDEX.md) | Active / backlog / completed tasks |
+---
 
-Temporary rule while migrating: [`.cursor/rules/99-migration-mode.mdc`](.cursor/rules/99-migration-mode.mdc) — archive after **TASK-019**.
+## How it works (short)
 
-## What this base setup gives you
+1. **Granola** (or your source) produces **per-call** transcripts under Drive → **`scripts/granola-sync.py`** can mirror them into **`MyNotes/Customers/<Customer>/Transcripts/`**.
+2. **`sync_notes`** (MCP) or **`scripts/rsync-gdrive-notes.sh`** pulls **MyNotes** from the **Google Drive for Desktop** mount into the repo’s **`MyNotes/`** folder.
+3. In **Cursor**, you type a **trigger phrase** (below). The model follows a **playbook** under **`docs/ai/playbooks/`** and uses **MCP tools** where appropriate.
+4. **Writes** (Google Doc mutations, ledger rows, call records, journey files, etc.) go through **MCP + your approval** — not free-form paste into live Docs.
 
-| Piece | Purpose |
-|--------|--------|
-| **[uv](https://docs.astral.sh/uv/)** + `pyproject.toml` / `uv.lock` | Python version and dependencies, reproducible installs |
-| **pytest** + `tests/` | Small test harness (e.g. pre-commit config smoke test) |
-| **Ruff** | Lint + format for Python |
-| **[pre-commit](https://pre-commit.com/)** | Runs Ruff, Biome, ShellCheck, yamllint, and optional Terraform checks **before** each commit |
-| **Biome** + `package.json` | Lint/format for JS/TS/JSON when you add front-end or tooling |
-| **`.cursor/agents/`** | Planner, coder, QA, doc agent definitions |
-| **`.cursor/rules/`** | Always-on and language-specific Cursor rules |
-| **`.cursor/skills/`** | `lint.sh` / `test.sh` helpers agents can run |
-| **`docs/project_spec.md`** | Living product/architecture spec (replace with yours when you fork) |
-| **`docs/tasks/`** | Lightweight task index + active/archive folders |
-| **`scripts/setup_env.sh`** | One-shot dev environment bootstrap |
+There is **no** v1 **`run_pipeline`** / `run-main-task.py` in v2; structured work uses **mutation JSON**, **`write_doc`**, and the other tools listed in **[`docs/project_spec.md`](docs/project_spec.md)**.
 
-You do **not** need every tool on your machine on day one—see [Pre-commit (simple explanation)](#pre-commit-simple-explanation).
+---
 
-## Getting started
+## Quick setup
 
-1. Install **Python 3.12+**, **[uv](https://docs.astral.sh/uv/)**, **Node.js**, and **npm** (Biome hooks need Node).
-2. From the repo root, run **`bash scripts/setup_env.sh`** — creates `.venv`, runs `uv sync`, installs npm dev dependencies.
-3. Install Git hooks (once per clone): **`uv run pre-commit install`**
-4. Run all checks manually anytime: **`uv run pre-commit run --all-files`**
+| Step | Action |
+|------|--------|
+| 1 | **Install:** Python **3.12+**, **[uv](https://docs.astral.sh/uv/)**, **Node + npm** (for Biome in pre-commit), **Google Drive for Desktop**, **`gcloud`**, **[Cursor](https://cursor.com)**. |
+| 2 | **Bootstrap repo:** from the repo root, run **`./setEnv.sh --bootstrap`** (creates **`.venv`**, **`uv sync`**, npm dev deps). Optional: **`uv run pre-commit install`**. |
+| 3 | **Configure MCP:** edit **[`.cursor/mcp.json`](.cursor/mcp.json)** → **`mcpServers.prestonotes.env`**: set **`GDRIVE_BASE_PATH`**, **`MYNOTES_ROOT_FOLDER_ID`**, **`GCLOUD_ACCOUNT`**, **`GCLOUD_AUTH_LOGIN_COMMAND`**, etc. Use **`${workspaceFolder}`** for **`PRESTONOTES_REPO_ROOT`**. |
+| 4 | **Optional YAML:** copy **`prestonotes_mcp/prestonotes-mcp.yaml.example`** → **`prestonotes_mcp/prestonotes-mcp.yaml`** if you want a writable local config. The MCP process **does not** read **`prestonotes_mcp/.env`**. |
+| 5 | **Cursor:** enable the **prestonotes** MCP server. Cursor runs **`uv run python -m prestonotes_mcp`** with the **`env`** you set. |
+| 6 | **Google auth:** if tools return **`run_in_terminal_to_fix`**, run that command in Terminal (from **`mcp.json`**), then retry. |
 
-## Pre-commit (simple explanation)
+**First customer folder:** use MCP **`bootstrap_customer`** (default **`dry_run=true`**) or create **`MyNotes/Customers/<Customer>/`** and sync — see **[`docs/MIGRATION_GUIDE.md`](docs/MIGRATION_GUIDE.md)**.
 
-**What it does:** When you `git commit`, pre-commit can run small programs that check (or fix) your files. If a check fails, the commit is blocked until you fix the issue (or fix auto-applied changes and stage them again).
+---
 
-**Do I need Terraform for a Python-only project?**  
-**No.** Hooks are wired for **certain file types**. For example, Terraform hooks in `.pre-commit-config.yaml` only run on **Terraform files** (e.g. `*.tf`). If your repo has **no** `.tf` files, those hooks typically **skip**—there is nothing for them to look at. You are not forced to install `terraform` or `tflint` until you actually add Terraform and want those checks.
+## MVP playbooks — what to type in Cursor
 
-**When would I install Terraform / tflint?**  
-Only if you add `.tf` files and want those hooks to run. If a hook ever complains because a tool is missing, install it (see below) or remove that hook block from `.pre-commit-config.yaml`.
+Use these **exact trigger phrases** (replace `[Customer]` / `[CustomerName]` with the folder name under **`MyNotes/Customers/`**). Each playbook file has numbered steps and MCP names.
 
-### Hooks in this repo (see `.pre-commit-config.yaml` for versions)
+### Stage 1 — Customer notes + transcripts + validation
 
-| Hook | What it touches |
-|------|------------------|
-| **ruff-check** / **ruff-format** | Python |
-| **biome-check** | JS/TS/CSS/JSON (etc.) |
-| **shellcheck** | Shell scripts (via shellcheck-py, no separate ShellCheck binary) |
-| **yamllint** | YAML files |
-| **terraform_fmt** / **terraform_validate** / **terraform_tflint** | Only Terraform (`.tf`, etc.) |
+| Trigger (example) | Purpose | Playbook |
+|-------------------|---------|----------|
+| **`Load Customer Context for [Customer]`** | Read-only snapshot (ingestion weights, transcripts, exports). | [`load-customer-context.md`](docs/ai/playbooks/load-customer-context.md) |
+| **`Update Customer Notes for [Customer]`** | Daily Activity + structured Google Doc updates (**approval** before **`write_doc`**), ledger, audit. | [`update-customer-notes.md`](docs/ai/playbooks/update-customer-notes.md) |
+| **`Run License Evidence Check for [Customer]`** | License / SKU evidence matrix; may update local summary + ledger columns. | [`run-license-evidence-check.md`](docs/ai/playbooks/run-license-evidence-check.md) |
+| **`Extract Call Records for [Customer]`** | Per-call **`Transcripts/*.txt`** → **`call-records/*.json`** + index. | [`extract-call-records.md`](docs/ai/playbooks/extract-call-records.md) |
+| **`Test Call Record Extraction for [Customer]`** | Coverage report **`X of Y meetings indexed…`** (gate before leaning on extraction). | [`test-call-record-extraction.md`](docs/ai/playbooks/test-call-record-extraction.md) |
 
-### Optional: macOS (Homebrew) if you use Terraform here
+### Stage 2 — Journey, account summary, challenge review
 
-```bash
-brew install terraform tflint
-```
+| Trigger (example) | Purpose | Playbook / rule |
+|-------------------|---------|-----------------|
+| **`Run Journey Timeline for [CustomerName]`** | Narrative + **`write_journey_timeline`** (approval). | [`run-journey-timeline.md`](docs/ai/playbooks/run-journey-timeline.md) · [`.cursor/rules/22-journey-synthesizer.mdc`](.cursor/rules/22-journey-synthesizer.mdc) |
+| **`Run Account Summary for [CustomerName]`** | Exec-oriented account summary using the template. | [`run-account-summary.md`](docs/ai/playbooks/run-account-summary.md) · [`exec-summary-template.md`](docs/ai/references/exec-summary-template.md) |
+| **`Run Challenge Review for [CustomerName]`** | Challenge table, stall signals, optional **`update_challenge_state`** (approval per change). | [`run-challenge-review.md`](docs/ai/playbooks/run-challenge-review.md) |
 
-**ShellCheck and Docker:** This repo uses **shellcheck-py** so ShellCheck does not require Docker. The README used to mention a Docker-based alternative; you can still swap to [`koalaman/shellcheck-precommit`](https://github.com/koalaman/shellcheck-precommit) in `.pre-commit-config.yaml` if you prefer Docker.
+**Full trigger table** (MVP + future): **[`docs/project_spec.md` §11](docs/project_spec.md#11-trigger-phrase-reference-mvp)**.
 
-## How to test
+---
 
-```bash
-uv run pytest
-uv run pre-commit run --all-files
-```
+## MCP tools (cheat sheet)
 
-With an activated venv: `source .venv/bin/activate` then the same commands work.
+- **Reads (examples):** **`check_google_auth`**, **`list_customers`**, **`discover_doc`**, **`read_doc`**, **`read_transcripts`**, **`read_call_records`**, **`read_transcript_index`**, **`read_ledger`**, **`sync_notes`**, **`sync_transcripts`**, …
+- **Writes (always show a plan + get approval in chat):** **`write_doc`**, **`append_ledger`** (v1 row via subprocess), **`append_ledger_v2`** (24-column JSON row — migrate ledger first: **`uv run python -m prestonotes_mcp.tools.migrate_ledger --customer "<Name>"`**), **`write_call_record`**, **`update_transcript_index`**, **`write_journey_timeline`**, **`update_challenge_state`**, **`bootstrap_customer`** (`dry_run=false` only after approval), **`log_run`**, …
 
-## Project spec and examples (overwrite when you fork)
+Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (especially **Rule 3** / customer-local writes). **Auth failures** often include **`run_in_terminal_to_fix`** — paste that command from **`mcp.json`**.
 
-- **`docs/project_spec.md`** — Full **PrestoNotes** specification: architecture, backlog, triggers. Treat it as an **example of how** to keep a single source of truth for a serious project. When you start a **new** product from this template, **replace** this file with your own spec (or trim it to a short stub and grow it).
-- **`docs/tasks/INDEX.md`** — Explains how to name and archive task files; safe to keep as-is.
-- **`examples/`** — Sample artifacts / patterns; **not** required for tooling. The directory is **gitignored** so you can keep local drafts without committing them; remove the `examples/` line from `.gitignore` if you want examples tracked in a fork.
+---
 
-The **README** you are reading is the right place for **how to use the repo**; keep **`docs/project_spec.md`** for **what the product is** (once you rename it for your product).
+## Dig deeper (when you need more than the README)
+
+| Doc | Use it for |
+|-----|------------|
+| **[`docs/V2_MVP_BUILD_PLAN.md`](docs/V2_MVP_BUILD_PLAN.md)** | Task order, gates, what each stage builds |
+| **[`docs/project_spec.md`](docs/project_spec.md)** | Architecture, schemas (e.g. §7), full backlog §9 |
+| **[`docs/MIGRATION_GUIDE.md`](docs/MIGRATION_GUIDE.md)** | `prestonotes_gdoc/` vs v1, Granola, rsync, ledger v2, journey tools |
+| **[`docs/tasks/INDEX.md`](docs/tasks/INDEX.md)** | What shipped / what’s next |
+| **[`scripts/README.md`](scripts/README.md)** | **`granola-sync`**, **`rsync-gdrive-notes`**, flags, Drive helpers |
+| **[`docs/ai/references/`](docs/ai/references/)** | Ingestion weights, mutation rules, taxonomies, templates |
+
+**Cursor:** subagents **`coder` / `tester` / `doc`** live under **[`.cursor/agents/`](.cursor/agents/)**; orchestration rules in **[`.cursor/rules/workflow.mdc`](.cursor/rules/workflow.mdc)** (default **`/coder` → `/tester` → `/doc`**, or **`same session, inline`** when you want one chat). While migrating, **[`.cursor/rules/99-migration-mode.mdc`](.cursor/rules/99-migration-mode.mdc)** stays on until **TASK-019**.
+
+---
+
+## Developer quality (optional)
+
+- **Tests:** `uv run pytest` · **`bash .cursor/skills/test.sh`**
+- **Lint / format:** **`bash .cursor/skills/lint.sh`** · **`uv run pre-commit run --all-files`**
+- **Repo file manifest:** **`bash scripts/ci/check-repo-integrity.sh`**
+
+**Pre-commit** runs Ruff, Biome, ShellCheck (via shellcheck-py), yamllint, and **Terraform hooks only if you have `.tf` files`** — you do not need Terraform for a Python-only tree. See **`.pre-commit-config.yaml`** for versions.
+
+---
 
 ## Use as a template for a new project
 
-To **clone the idea** without breaking this PrestoNotes repo, copy the tree to a new folder or new GitHub repo, then update names in **that copy** only.
+To fork the **pattern** (not this PrestoNotes product): copy the tree, then in the **copy** rename **`pyproject.toml`** `[project].name`, run **`uv lock`**, update **`package.json` `name`**, replace **`docs/project_spec.md`**, and fix **`.cursor/`** paths that still say “PrestoNotes”. **Do not** change those in **this** repo unless you intend to rebrand here.
 
-### 1. Rename the Python package (in the **new** repo only)
-
-In **`pyproject.toml`**, change:
-
-- **`[project].name`** — e.g. from `prestonotes` to `myproject` (use letters, numbers, hyphens; PEP 503 style).
-
-Then refresh the lockfile and env:
-
-```bash
-uv lock
-uv sync
-```
-
-If you add a real Python **package directory** later (e.g. `src/myproject/`), align its name with `pyproject.toml` and any `tool.ruff` / pytest paths you configure.
-
-### 2. Rename the npm package (optional)
-
-In **`package.json`**, change the **`name`** field to match your project (lowercase, no spaces). Keeps Biome/npm metadata consistent.
-
-### 3. Replace product docs
-
-- Rewrite **`docs/project_spec.md`** (or replace with a short stub + link to external docs).
-- Clear or replace **`examples/`** as needed.
-
-### 4. Cursor and branding
-
-- Update **`.cursor/agents/*.mdc`** if prompts reference “PrestoNotes” or paths that no longer exist.
-- Adjust **`.cursor/rules/`** so links and `docs/` paths match your layout.
-
-### 5. Do not change the above in this repo
-
-If this checkout stays **PrestoNotes**, leave **`pyproject.toml`** `name = "prestonotes"` and **`package.json`** as-is unless you intentionally rebrand this project. The steps above are for **new** repos created from a copy of the template.
+---
 
 ## Troubleshooting
 
-- **Biome hook fails or changes files:** Stage the reformatted files and commit again.
-- **Terraform hooks fail:** You added `.tf` files; install `terraform` / `tflint` and run `terraform init` where needed, or remove the Terraform hook block from `.pre-commit-config.yaml` in that project.
-- **pre-commit not found:** Run `uv sync` and use `uv run pre-commit …`.
+| Symptom | What to try |
+|---------|----------------|
+| **Google / Docs tools fail** | Run **`check_google_auth`**. If the response includes **`run_in_terminal_to_fix`**, paste that **exact** command (from **`.cursor/mcp.json`** / `GCLOUD_*`) in Terminal, finish browser login, retry. |
+| **`append_ledger_v2` raises migrate error** | Standard ledger table is still **19** columns. Run **`uv run python -m prestonotes_mcp.tools.migrate_ledger --customer "<Customer>"`** (or **`--fixture`** / **`--dry-run`**). See **`docs/MIGRATION_GUIDE.md`** (History Ledger v2). |
+| **Drive path not found** | Confirm **Google Drive for Desktop** is running; **`GDRIVE_BASE_PATH`** matches your mount; optional **`./scripts/restart-google-drive.sh`**. |
+| **Biome / pre-commit reformats files** | Stage the changes and commit again. |
+| **Terraform hooks complain** | You have **`.tf`** files; install Terraform / tflint or narrow the hook in **`.pre-commit-config.yaml`**. |
+| **`pre-commit` not found** | Run **`uv sync`** and use **`uv run pre-commit …`**. |
+
+---
 
 ## Dependencies
 
-- Python: **`pyproject.toml`** / **`uv.lock`**
-- JavaScript tooling: **`package.json`** / **`package-lock.json`**
+- **Python:** **`pyproject.toml`** / **`uv.lock`**
+- **JS tooling:** **`package.json`** / **`package-lock.json`**

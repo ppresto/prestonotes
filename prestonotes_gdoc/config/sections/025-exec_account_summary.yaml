@@ -1,0 +1,110 @@
+version: 1
+
+managed_by: "planner"
+section_key: "exec_account_summary"
+
+runtime:
+  enabled: true
+  llm_first: true
+  llm_required: true
+
+mutation_contract:
+  section_type: "fields"
+  allowed_actions:
+    - "append_with_history"
+    - "no_evidence"
+  required_fields_by_action:
+    append_with_history:
+      - field_key
+      - new_value
+  allowed_enums:
+    field_key:
+      - "top_goal"
+      - "risk"
+      - "upsell_path"
+
+dedupe_policy:
+  canonical_per_theme: true
+  require_theme_key: true
+  compare_against_existing_doc: true
+  on_duplicate: "keep_strongest_statement_update_evidence_only"
+  guidance: "For goals/risks/upsell paths, keep one canonical statement per theme and avoid wording-only variants."
+
+quality_gates:
+  intent: "executive_summary_goals_risks_upsell"
+  cross_section_leakage_block: true
+
+section_extensions:
+  max_items_ref: "update_from_evidence.max_items"
+  stakeholder_weights_ref: "update_from_evidence.weights"
+  signal_hints_ref: "update_from_evidence.goal_signals,update_from_evidence.risk_signals"
+  upsell_mapping_ref: "update_from_evidence.upsell_mapping"
+
+update_from_evidence:
+  enabled: true
+  llm_first: true
+  llm_required: true
+  dedupe_policy:
+    canonical_per_theme: true
+    require_theme_key: true
+    compare_against_existing_doc: true
+    on_duplicate: "keep_strongest_statement_update_evidence_only"
+    guidance: "For goals/risks/upsell paths, keep one canonical statement per theme and avoid wording-only variants."
+
+  # Keep top-of-doc concise and executive-readable.
+  max_items:
+    goals: 3
+    risks: 3
+    upsell_paths: 3
+
+  # Weight themes raised by champion / budget owner higher.
+  weights:
+    stakeholder_priority_bonus: 1.5
+    durability_bonus: 0.5
+
+  goal_signals:
+    - "goal"
+    - "success criteria"
+    - "must have"
+    - "need to"
+    - "outcome"
+    - "priority"
+    - "reporting"
+    - "fedramp"
+    - "visibility"
+    - "reduce"
+    - "improve"
+
+  risk_signals:
+    - "risk"
+    - "blocked"
+    - "blocker"
+    - "delay"
+    - "budget"
+    - "procurement"
+    - "timeline"
+    - "confidence"
+    - "unknown"
+    - "lack"
+    - "manual"
+    - "ownership"
+    - "false positive"
+
+  # Pain-to-solution map for Upsell Path generation.
+  upsell_mapping:
+    "sensitive data": "DSPM"
+    "external exposure": "ASM"
+    "cloud posture": "CSPM"
+    "runtime": "Wiz Defend"
+    "kubernetes": "Wiz Defend"
+    "vulnerability": "UVM"
+    "identity": "CIEM"
+    "code": "Wiz Code"
+    "log": "Wiz Defend log ingestion"
+
+  # Exec-ready reason phrases (used when trigger matches).
+  upsell_reason_templates:
+    "log": "Enable runtime/security log ingestion to improve detection fidelity, investigation speed, and SOC escalation confidence."
+    "runtime": "Improve runtime detection confidence and incident-response speed by correlating workload signals with cloud context."
+    "external exposure": "Prioritize internet-exposed assets and risky access paths to reduce external attack surface and remediation latency."
+    "sensitive data": "Improve sensitive-data visibility and ownership context to reduce data exposure risk and accelerate response."

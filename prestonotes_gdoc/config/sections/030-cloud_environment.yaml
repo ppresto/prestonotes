@@ -1,0 +1,287 @@
+version: 1
+
+managed_by: "planner"
+section_key: "cloud_environment"
+
+runtime:
+  enabled: true
+  llm_first: true
+  llm_required: true
+
+mutation_contract:
+  section_type: "tools_and_fields"
+  allowed_actions:
+    - "update_in_place"
+    - "add_tool"
+    - "update_tool_detail"
+    - "remove_tool_suggestion"
+  required_fields_by_action:
+    update_in_place:
+      - field_key
+      - new_value
+    add_tool:
+      - field_key
+      - tool_key
+      - display_name
+    update_tool_detail:
+      - field_key
+      - tool_key
+    remove_tool_suggestion:
+      - field_key
+      - tool_key
+  allowed_enums:
+    field_key:
+      - "csp_regions"
+      - "platforms"
+      - "idp_sso"
+      - "devops_vcs"
+      - "security_tools"
+      - "aspm_tools"
+      - "ticketing"
+      - "languages"
+      - "sizing"
+
+dedupe_policy:
+  canonical_per_theme: true
+  require_theme_key: true
+  compare_against_existing_doc: true
+  on_duplicate: "prefer_detail_update_over_duplicate_add"
+  guidance: "Use one canonical tool mutation per theme. When context evolves for an existing tool, prefer update_tool_detail instead of a second add_tool."
+
+quality_gates:
+  intent: "active_tooling_environment_context_only"
+  cross_section_leakage_block: true
+
+section_extensions:
+  tool_field_map_ref: "update_from_evidence.allowed_tool_fields"
+  update_field_map_ref: "update_from_evidence.allowed_update_fields"
+  guardrails_ref: "update_from_evidence.guardrails"
+  planner_hints:
+    tool_key_aliases:
+      wiz:
+        - "wiz"
+      prisma_cloud:
+        - "prisma cloud"
+        - "prismacloud"
+        - "panw prisma cloud"
+      orca_security:
+        - "orca"
+        - "orca security"
+      lacework:
+        - "lacework"
+      tenable_cloud_security:
+        - "tenable cloud security"
+        - "tenable cnapp"
+        - "tenable cs"
+      snyk:
+        - "snyk"
+      checkmarx:
+        - "checkmarx"
+        - "checkmarx one"
+      semgrep:
+        - "semgrep"
+      sonarqube:
+        - "sonarqube"
+        - "sonar qube"
+        - "sonarcloud"
+      github_advanced_security:
+        - "ghas"
+        - "github advanced security"
+        - "codeql"
+        - "secret scanning github"
+      gitlab_security:
+        - "gitlab security"
+        - "gitlab sast"
+        - "gitlab sca"
+      jfrog_xray:
+        - "jfrog xray"
+        - "xray"
+      veracode:
+        - "veracode"
+      crowdstrike:
+        - "crowdstrike"
+        - "crowd strike"
+        - "crwd"
+        - "falcon"
+        - "crowdstrike_falcon"
+      sentinelone:
+        - "sentinelone"
+        - "sentinel one"
+        - "singularity"
+      microsoft_defender:
+        - "microsoft defender"
+        - "defender for endpoint"
+        - "defender xdr"
+      carbon_black:
+        - "carbon black"
+        - "carbonblack"
+        - "carbon_black"
+        - "vmware carbon black"
+        - "vmware_carbon_black"
+      qualys:
+        - "qualys"
+        - "qualys vmdr"
+        - "qualys totalcloud"
+      rapid7_insightvm:
+        - "rapid7"
+        - "insightvm"
+        - "nexpose"
+      tenable_nessus:
+        - "nessus"
+        - "tenable vulnerability management"
+      brinqa:
+        - "brinqa"
+      vulcan_security:
+        - "vulcan"
+        - "vulcan security"
+      splunk:
+        - "splunk"
+        - "splunk enterprise security"
+      microsoft_sentinel:
+        - "microsoft sentinel"
+        - "azure sentinel"
+        - "sentinel siem"
+      google_chronicle:
+        - "chronicle"
+        - "google chronicle"
+        - "chronicle siem"
+      qradar:
+        - "qradar"
+        - "ibm qradar"
+      sumo_logic:
+        - "sumo logic"
+        - "sumologic"
+      elastic_security:
+        - "elastic security"
+        - "elk siem"
+      tines:
+        - "tines"
+      cortex_xsoar:
+        - "xsoar"
+        - "cortex xsoar"
+      stackstorm:
+        - "stackstorm"
+      aptio_cloudability:
+        - "aptio_cloudability"
+        - "cloudability"
+        - "cloud_ability"
+        - "aptio_cloud_ability"
+      anchore:
+        - "anchore"
+        - "anchor"
+      stacklet:
+        - "stacklet"
+      veza:
+        - "veza"
+      datadog:
+        - "datadog"
+        - "datadog cloud security"
+      armo:
+        - "armo"
+        - "kubescape"
+      aqua_security:
+        - "aqua"
+        - "aqua security"
+      sysdig:
+        - "sysdig"
+      trivy:
+        - "trivy"
+      grype:
+        - "grype"
+      harbor:
+        - "harbor"
+        - "goharbor"
+      custom_internal_tool:
+        - "internal tool"
+        - "homegrown"
+        - "in-house tool"
+        - "custom script"
+        - "custom scanner"
+        - "built our own"
+    display_name_by_tool_key:
+      wiz: "Wiz"
+      prisma_cloud: "Prisma Cloud"
+      orca_security: "Orca Security"
+      lacework: "Lacework"
+      tenable_cloud_security: "Tenable Cloud Security"
+      snyk: "Snyk"
+      checkmarx: "Checkmarx"
+      semgrep: "Semgrep"
+      sonarqube: "SonarQube"
+      github_advanced_security: "GitHub Advanced Security"
+      gitlab_security: "GitLab Security"
+      jfrog_xray: "JFrog Xray"
+      veracode: "Veracode"
+      crowdstrike: "CrowdStrike"
+      sentinelone: "SentinelOne"
+      microsoft_defender: "Microsoft Defender"
+      carbon_black: "Carbon Black"
+      aptio_cloudability: "Aptio Cloudability"
+      anchore: "Anchore"
+      stacklet: "Stacklet"
+      qualys: "Qualys"
+      rapid7_insightvm: "Rapid7 InsightVM"
+      tenable_nessus: "Tenable Nessus"
+      brinqa: "Brinqa"
+      vulcan_security: "Vulcan Security"
+      splunk: "Splunk"
+      microsoft_sentinel: "Microsoft Sentinel"
+      google_chronicle: "Google Chronicle"
+      qradar: "IBM QRadar"
+      sumo_logic: "Sumo Logic"
+      elastic_security: "Elastic Security"
+      tines: "Tines"
+      cortex_xsoar: "Cortex XSOAR"
+      stackstorm: "StackStorm"
+      veza: "Veza"
+      datadog: "Datadog"
+      armo: "ARMO / Kubescape"
+      aqua_security: "Aqua Security"
+      sysdig: "Sysdig"
+      trivy: "Trivy"
+      grype: "Grype"
+      harbor: "Harbor"
+      custom_internal_tool: "Custom Internal Tooling"
+    custom_tool_inference:
+      enabled: true
+      guidance:
+        - "When notes mention internal or homegrown scanners/platforms, map to custom_internal_tool."
+        - "Capture explicit function in detail (for example vuln aggregation, policy automation, reporting)."
+        - "Do not invent vendor names; keep custom tooling clearly labeled as internal."
+
+update_from_evidence:
+  enabled: true
+  llm_first: true
+  llm_required: true
+  dedupe_policy:
+    canonical_per_theme: true
+    require_theme_key: true
+    compare_against_existing_doc: true
+    on_duplicate: "prefer_detail_update_over_duplicate_add"
+    guidance: "Use one canonical tool mutation per theme. When context evolves for an existing tool, prefer update_tool_detail instead of a second add_tool."
+
+  allowed_actions:
+    - "update_in_place"
+    - "add_tool"
+    - "update_tool_detail"
+    - "remove_tool_suggestion"
+
+  allowed_tool_fields:
+    - "platforms"
+    - "devops_vcs"
+    - "security_tools"
+    - "aspm_tools"
+    - "ticketing"
+    - "languages"
+  allowed_update_fields:
+    - "csp_regions"
+    - "idp_sso"
+    - "sizing"
+
+  guardrails:
+    section_intent: "active_tooling_environment_only"
+    concise_detail_required: false
+    stable_tool_key_required: true
+    avoid_duplicate_tools: true
+    remove_is_optional: true
+    detail_cap_control: "llm_prompt_controlled"

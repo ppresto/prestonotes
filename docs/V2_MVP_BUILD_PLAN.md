@@ -4,7 +4,7 @@ This document is the **operational guide** for migrating and rebuilding from `..
 
 - **[`examples/BUILD_ADVISORY.md`](../examples/BUILD_ADVISORY.md)** — vertical slices, task order, session habits _(if `examples/` is gitignored locally, open the file from your working tree or history)_  
 - **[`docs/project_spec.md`](project_spec.md)** — full architecture, §9 task definitions, §11 MVP triggers  
-- **[`.cursor/agents/planner.mdc`](../.cursor/agents/planner.mdc)** — planner phase flow and approval gates  
+- **[`.cursor/rules/workflow.mdc`](../.cursor/rules/workflow.mdc)** — main Agent as planner/orchestrator; phase flow, approval gates, delegation to `/coder`, `/tester`, `/doc`  
 
 **Rule of thumb:** Do **not** skip ahead of §9 ordering. Do **not** start Stage 2 work until **TASK-009** (Stage 1 validation) is done — see **Part 5** in [`examples/BUILD_ADVISORY.md`](../examples/BUILD_ADVISORY.md).
 
@@ -53,17 +53,17 @@ flowchart TB
 
 ## 3. Planner workflow (every task)
 
-Per **planner.mdc**:
+Per **workflow.mdc** (orchestrator):
 
 | Phase | Who | What |
 |-------|-----|------|
 | **1 — Spec/Plan** | Planner | Read `project_spec.md` §9 for this task; read [`MIGRATION_GUIDE.md`](MIGRATION_GUIDE.md) if porting; create **`docs/tasks/active/<slug>.md`**; get your **approval** before code. |
-| **2 — Code** | @coder | Implements from the task file + spec (TDD where specified). |
-| **3 — Verify** | @qa | `pytest`, `ruff`, hooks per §10. |
-| **4 — Doc** | @doc | README / docs match what shipped. |
+| **2 — Code** | `/coder` subagent | Implements from the task file + spec (TDD where specified). |
+| **3 — Verify** | `/tester` subagent | `pytest`, `ruff`, hooks per §10. |
+| **4 — Doc** | `/doc` subagent | README / docs match what shipped. |
 | **5 — Ready** | Planner | Archive task file to `docs/tasks/archive/YYYY-MM/`; update [`docs/tasks/INDEX.md`](tasks/INDEX.md). |
 
-**QA escalation:** If verify fails 3 times, stop and ask you for manual intervention (planner.mdc).
+**Escalation:** If verify fails 3 times, stop and ask you for manual intervention (workflow.mdc).
 
 ---
 
@@ -73,7 +73,7 @@ Per **planner.mdc**:
 2. **Start sessions** with:
 
    ```text
-   @planner Read docs/tasks/INDEX.md and tell me: (1) active task (2) phase (3) next action
+   Read `docs/tasks/INDEX.md` as the orchestrator and report: (1) active task (2) phase (3) next action
    ```
 
 3. **Prefer one TASK per Cursor session** for migration work (BUILD_ADVISORY Part 3).  
@@ -122,7 +122,7 @@ Below: **TASK** → **what you’re building** → **you know it’s done when�
 | **004** | **New** tools: `write_call_record`, `read_call_records`, `update_transcript_index`, `read_transcript_index` | pytest round-trip record + index |
 | **005** | `granola-sync.py` + per-call `Transcripts/*.txt` story | pytest idempotency + routing; doc split path in MIGRATION_GUIDE if needed |
 | **006** | rsync / Drive / markdown export scripts | `rsync-gdrive-notes.sh --dry-run` works |
-| **007** | Core `.mdc` rules + MVP playbooks (load context, audits, BVA, license) | Manual: Load Customer Context on a test folder |
+| **007** | Core `.mdc` rules + **MVP playbooks:** `load-customer-context` + **`update-customer-notes`** + **`run-license-evidence-check`**; **not** BVA / logic-audit (deferred) | Manual: Load Customer Context + **Update Customer Notes** (plan/approval gate) + **Run License Evidence Check** on **`TestCo`** (or document wiz/cache blockers) |
 | **008** | `21-extractor.mdc` + **Extract Call Records** playbook | Manual: structured JSON + MCP writes for a real-ish transcript |
 | **009** | Runbook **test-call-record-extraction**; real customer dry run | **Gate:** accuracy + coverage report — **do not start Stage 2 until this passes** |
 
