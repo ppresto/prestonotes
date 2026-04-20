@@ -321,7 +321,7 @@ def main(argv: list[str] | None = None) -> int:
                 json.dumps(
                     {
                         "error": "GDRIVE_BASE_PATH is not set",
-                        "hint": "Set to your local MyNotes root (see .cursor/mcp.json env GDRIVE_BASE_PATH).",
+                        "hint": "Set to your local MyNotes root (see .cursor/mcp.env GDRIVE_BASE_PATH).",
                     }
                 ),
                 file=sys.stderr,

@@ -25,6 +25,13 @@ logs/
 # MCP temp mutation files (write_doc)
 tmp/
 
+# Cursor MCP local secrets (copy from `.cursor/mcp.env.example`)
+.cursor/mcp.env
+
+# pytest-cov
+.coverage
+htmlcov/
+
 # GDoc stack scratch (never commit artifacts under the port tree)
 prestonotes_gdoc/tmp/
 

@@ -4,7 +4,7 @@ Master backlog status for PrestoNotes v2. **Canonical task definitions:** [`proj
 
 ## Current active task
 
-- **None** — next backlog item: **TASK-015** (SOC domain advisor), see [`project_spec.md` §9](../project_spec.md#9-master-task-backlog).
+- **None** — next backlog item: **TASK-015** (SOC domain advisor), see [`project_spec.md` §9](../project_spec.md#9-master-task-backlog). **phase2-cleanup** done — [`archive/2026-04/phase2-cleanup.md`](archive/2026-04/phase2-cleanup.md).
 
 ## Backlog (not started) — Stage 1
 
@@ -23,6 +23,7 @@ Master backlog status for PrestoNotes v2. **Canonical task definitions:** [`proj
 
 ## Backlog — Stage 2
 
+- [x] **TASK-010** — Journey + challenge MCP tools — [archive](archive/2026-04/TASK-010-journey-challenge-mcp-tools.md)
 - [x] **TASK-011** — `append_ledger_v2` + migration — [archive](archive/2026-04/TASK-011-append-ledger-v2.md)
 - [x] **TASK-012** — Journey synthesizer — [archive](archive/2026-04/TASK-012-journey-synthesizer.md)
 - [x] **TASK-013** — Exec summary template + account summary — [archive](archive/2026-04/TASK-013-exec-summary-account-summary.md)
@@ -59,6 +60,7 @@ Master backlog status for PrestoNotes v2. **Canonical task definitions:** [`proj
 - **TASK-013** — Exec summary + account summary — [`archive/2026-04/TASK-013-exec-summary-account-summary.md`](archive/2026-04/TASK-013-exec-summary-account-summary.md) (2026-04-19)
 - **TASK-014** — Challenge review playbook — [`archive/2026-04/TASK-014-challenge-review-playbook.md`](archive/2026-04/TASK-014-challenge-review-playbook.md) (2026-04-19)
 - **Stage 2 batch plan** — [`archive/2026-04/STAGE2-PLAN-TASK-011-014.md`](archive/2026-04/STAGE2-PLAN-TASK-011-014.md) (2026-04-19)
+- **phase2-cleanup** — Repo hygiene + MCP secrets pattern + CI — [`archive/2026-04/phase2-cleanup.md`](archive/2026-04/phase2-cleanup.md) (2026-04-19)
 
 ## Conventions
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PrestoNotes — export repo root for local shells; optional dev bootstrap.
 #
-# MCP + Google env vars live in .cursor/mcp.json (Cursor injects them when it starts the server).
+# MCP + Google env vars live in .cursor/mcp.env (Cursor loads via mcp.json envFile when it starts the server).
 # For terminal-only commands (e.g. uv run scripts/granola-sync.py), export the same names yourself
 # or paste values once into your shell profile.
 #
@@ -37,7 +37,7 @@ fi
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   echo "Usage:"
-  echo "  source ./setEnv.sh       Export PRESTONOTES_REPO_ROOT (matches .cursor/mcp.json pattern)"
+  echo "  source ./setEnv.sh       Export PRESTONOTES_REPO_ROOT (same idea as Cursor mcp.json workspaceFolder)"
   echo "  ./setEnv.sh --bootstrap  Create/use .venv, uv sync, npm install"
   exit 0
 fi

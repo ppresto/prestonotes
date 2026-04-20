@@ -28,6 +28,7 @@ dev = [
 
 [tool.ruff]
 line-length = 100
+# Large v1 port; linting it is deferred (see docs/MIGRATION_GUIDE.md — Ruff / prestonotes_gdoc).
 exclude = [".venv", "node_modules", "prestonotes_gdoc"]
 
 [tool.ruff.lint]

@@ -23,10 +23,10 @@ There is **no** v1 **`run_pipeline`** / `run-main-task.py` in v2; structured wor
 |------|--------|
 | 1 | **Install:** Python **3.12+**, **[uv](https://docs.astral.sh/uv/)**, **Node + npm** (for Biome in pre-commit), **Google Drive for Desktop**, **`gcloud`**, **[Cursor](https://cursor.com)**. |
 | 2 | **Bootstrap repo:** from the repo root, run **`./setEnv.sh --bootstrap`** (creates **`.venv`**, **`uv sync`**, npm dev deps). Optional: **`uv run pre-commit install`**. |
-| 3 | **Configure MCP:** edit **[`.cursor/mcp.json`](.cursor/mcp.json)** → **`mcpServers.prestonotes.env`**: set **`GDRIVE_BASE_PATH`**, **`MYNOTES_ROOT_FOLDER_ID`**, **`GCLOUD_ACCOUNT`**, **`GCLOUD_AUTH_LOGIN_COMMAND`**, etc. Use **`${workspaceFolder}`** for **`PRESTONOTES_REPO_ROOT`**. |
-| 4 | **Optional YAML:** copy **`prestonotes_mcp/prestonotes-mcp.yaml.example`** → **`prestonotes_mcp/prestonotes-mcp.yaml`** if you want a writable local config. The MCP process **does not** read **`prestonotes_mcp/.env`**. |
-| 5 | **Cursor:** enable the **prestonotes** MCP server. Cursor runs **`uv run python -m prestonotes_mcp`** with the **`env`** you set. |
-| 6 | **Google auth:** if tools return **`run_in_terminal_to_fix`**, run that command in Terminal (from **`mcp.json`**), then retry. |
+| 3 | **Configure MCP (secrets off-repo):** copy **[`.cursor/mcp.env.example`](.cursor/mcp.env.example)** → **`.cursor/mcp.env`** (gitignored) and replace placeholders with your Drive path, folder ID, and `gcloud` account. **[`.cursor/mcp.json`](.cursor/mcp.json)** only sets **`PRESTONOTES_REPO_ROOT`** and points **`envFile`** at **`mcp.env`**. See [Cursor MCP — STDIO](https://cursor.com/docs/mcp). |
+| 4 | **Optional YAML:** copy **`prestonotes_mcp/prestonotes-mcp.yaml.example`** → **`prestonotes_mcp/prestonotes-mcp.yaml`** if you want a writable local config. The MCP process **does not** read **`prestonotes_mcp/.env`** (see **`prestonotes_mcp/.env.example`** for optional shell exports only). |
+| 5 | **Cursor:** enable the **prestonotes** MCP server. Cursor runs **`uv run python -m prestonotes_mcp`** with **`mcp.json`** + **`mcp.env`**. |
+| 6 | **Google auth:** if tools return **`run_in_terminal_to_fix`**, run that command in Terminal (from **`mcp.env`** / your login command), then retry. |
 
 **First customer folder:** use MCP **`bootstrap_customer`** (default **`dry_run=true`**) or create **`MyNotes/Customers/<Customer>/`** and sync — see **[`docs/MIGRATION_GUIDE.md`](docs/MIGRATION_GUIDE.md)**.
 
@@ -63,7 +63,7 @@ Use these **exact trigger phrases** (replace `[Customer]` / `[CustomerName]` wit
 - **Reads (examples):** **`check_google_auth`**, **`list_customers`**, **`discover_doc`**, **`read_doc`**, **`read_transcripts`**, **`read_call_records`**, **`read_transcript_index`**, **`read_ledger`**, **`sync_notes`**, **`sync_transcripts`**, …
 - **Writes (always show a plan + get approval in chat):** **`write_doc`**, **`append_ledger`** (v1 row via subprocess), **`append_ledger_v2`** (24-column JSON row — migrate ledger first: **`uv run python -m prestonotes_mcp.tools.migrate_ledger --customer "<Name>"`**), **`write_call_record`**, **`update_transcript_index`**, **`write_journey_timeline`**, **`update_challenge_state`**, **`bootstrap_customer`** (`dry_run=false` only after approval), **`log_run`**, …
 
-Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (especially **Rule 3** / customer-local writes). **Auth failures** often include **`run_in_terminal_to_fix`** — paste that command from **`mcp.json`**.
+Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (especially **Rule 3** / customer-local writes). **Auth failures** often include **`run_in_terminal_to_fix`** — paste that command from **`.cursor/mcp.env`** (or **`GCLOUD_AUTH_LOGIN_COMMAND`** there).
 
 ---
 
@@ -87,6 +87,7 @@ Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (espe
 - **Tests:** `uv run pytest` · **`bash .cursor/skills/test.sh`**
 - **Lint / format:** **`bash .cursor/skills/lint.sh`** · **`uv run pre-commit run --all-files`**
 - **Repo file manifest:** **`bash scripts/ci/check-repo-integrity.sh`**
+- **CI:** GitHub Actions **`.github/workflows/ci.yml`** runs integrity + pytest + pre-commit on pushes and PRs to **main** and **phase3**.
 
 **Pre-commit** runs Ruff, Biome, ShellCheck (via shellcheck-py), yamllint, and **Terraform hooks only if you have `.tf` files`** — you do not need Terraform for a Python-only tree. See **`.pre-commit-config.yaml`** for versions.
 
@@ -102,7 +103,8 @@ To fork the **pattern** (not this PrestoNotes product): copy the tree, then in t
 
 | Symptom | What to try |
 |---------|----------------|
-| **Google / Docs tools fail** | Run **`check_google_auth`**. If the response includes **`run_in_terminal_to_fix`**, paste that **exact** command (from **`.cursor/mcp.json`** / `GCLOUD_*`) in Terminal, finish browser login, retry. |
+| **Google / Docs tools fail** | Ensure **`.cursor/mcp.env`** exists (copy from **`mcp.env.example`**). Run **`check_google_auth`**. If the response includes **`run_in_terminal_to_fix`**, paste that **exact** command from **`mcp.env`** in Terminal, finish browser login, retry. |
+| **MCP server fails to start (missing env)** | Create **`.cursor/mcp.env`** from the example; **`mcp.json`** no longer embeds Drive / account variables. |
 | **`append_ledger_v2` raises migrate error** | Standard ledger table is still **19** columns. Run **`uv run python -m prestonotes_mcp.tools.migrate_ledger --customer "<Customer>"`** (or **`--fixture`** / **`--dry-run`**). See **`docs/MIGRATION_GUIDE.md`** (History Ledger v2). |
 | **Drive path not found** | Confirm **Google Drive for Desktop** is running; **`GDRIVE_BASE_PATH`** matches your mount; optional **`./scripts/restart-google-drive.sh`**. |
 | **Biome / pre-commit reformats files** | Stage the changes and commit again. |

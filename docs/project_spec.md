@@ -167,7 +167,7 @@ prestonotes/                          ← new v2 repo root
 │   ├── __main__.py
 │   ├── prestonotes-mcp.yaml          ← Local config (git-ignored, use .yaml.example as template)
 │   ├── prestonotes-mcp.yaml.example  ← Template with all config keys documented
-│   └── (optional) .env               ← Gitignored; not read by MCP — use `.cursor/mcp.json` `env`
+│   └── (optional) .env               ← Gitignored; not read by MCP — use `.cursor/mcp.env` (via `mcp.json` `envFile`)
 │
 ├── scripts/
 │   ├── granola-sync.py               ← Granola → per-call Transcripts/*.txt (v2); legacy master optional
@@ -455,7 +455,7 @@ Tasks are organized into four stages. Build them in order — each stage depends
 - **`read_transcripts` behavior (v2):** Implement as “latest **N transcript files**” (newest mtime first) from `Transcripts/*.txt`, **excluding** or deprioritizing `_MASTER_*.txt` once per-call files exist; optional per-file byte cap for safety. Document default `N` and cap in `prestonotes-mcp.yaml.example`.
 - **Reference from old project:** `../prestoNotes.orig/prestonotes_mcp/server.py` (read tools + resource block). Port `config.py`, `exec_helper.py`, `runtime.py`, `security.py`. Strip hardcoded personal paths. **Do not** register `run_pipeline`.
 - **Test:** Run `uv run python -m prestonotes_mcp` — server should start. Run `pytest prestonotes_mcp/tests/test_server_read_tools.py` — at least `check_google_auth` returns valid JSON; **`read_doc`** with a fixture or mocked subprocess if needed.
-- **Files created:** `prestonotes_mcp/server.py`, `prestonotes_mcp/config.py`, `prestonotes_mcp/exec_helper.py`, `prestonotes_mcp/runtime.py`, `prestonotes_mcp/security.py`, `prestonotes_mcp/__init__.py`, `prestonotes_mcp/__main__.py`, `prestonotes_mcp/prestonotes-mcp.yaml.example`, `.cursor/mcp.json` (MCP env template), `prestonotes_mcp/tests/test_server_read_tools.py`.
+- **Files created:** `prestonotes_mcp/server.py`, `prestonotes_mcp/config.py`, `prestonotes_mcp/exec_helper.py`, `prestonotes_mcp/runtime.py`, `prestonotes_mcp/security.py`, `prestonotes_mcp/__init__.py`, `prestonotes_mcp/__main__.py`, `prestonotes_mcp/prestonotes-mcp.yaml.example`, `.cursor/mcp.json` + `.cursor/mcp.env.example` (MCP wiring; secrets in gitignored `mcp.env`), `prestonotes_mcp/tests/test_server_read_tools.py`.
 
 ---
 

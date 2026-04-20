@@ -56,7 +56,7 @@ mcp = FastMCP(
         "run_pipeline is not available in v2. "
         "Before discover_doc or read_doc, call check_google_auth if unsure whether gcloud is logged in. "
         "If any Google tool returns run_in_terminal_to_fix, show that exact command to the user first "
-        "(from their .cursor/mcp.json env: GCLOUD_AUTH_LOGIN_COMMAND or GCLOUD_ACCOUNT) so they can "
+        "(from their .cursor/mcp.env: GCLOUD_AUTH_LOGIN_COMMAND or GCLOUD_ACCOUNT) so they can "
         "authenticate in Terminal, then retry. "
         "Use one customer per chat session."
     ),
@@ -94,7 +94,7 @@ def _rel_path(p: str) -> Path:
 
 @mcp.tool
 def check_google_auth() -> str:
-    """Verify gcloud can get an access token for Google Docs/Drive API. On failure, the response includes run_in_terminal_to_fix — the full command to paste in Terminal (from Cursor .cursor/mcp.json env + prestonotes-mcp.yaml). MCP cannot open a browser; you must run that command locally."""
+    """Verify gcloud can get an access token for Google Docs/Drive API. On failure, the response includes run_in_terminal_to_fix — the full command to paste in Terminal (from Cursor .cursor/mcp.env + prestonotes-mcp.yaml). MCP cannot open a browser; you must run that command locally."""
     with tool_scope("check_google_auth"):
         from prestonotes_mcp.runtime import get_ctx
 
@@ -113,7 +113,7 @@ def check_google_auth() -> str:
                     "ok": True,
                     "message": "Google access token obtained successfully.",
                     "gcloud_account_used": acct
-                    or "(gcloud default account — set GCLOUD_ACCOUNT in .cursor/mcp.json env to pin an account)",
+                    or "(gcloud default account — set GCLOUD_ACCOUNT in .cursor/mcp.env to pin an account)",
                     "run_in_terminal_if_token_expires": fix_cmd,
                 }
             )
@@ -196,7 +196,7 @@ def discover_doc(customer_name: str) -> str:
         if not rid:
             return json.dumps(
                 {
-                    "error": "Set MYNOTES_ROOT_FOLDER_ID in .cursor/mcp.json env (Google Drive folder ID for MyNotes root).",
+                    "error": "Set MYNOTES_ROOT_FOLDER_ID in .cursor/mcp.env (Google Drive folder ID for MyNotes root).",
                 }
             )
         proc = run_uv_script(

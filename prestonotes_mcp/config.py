@@ -87,7 +87,7 @@ def auth_login_command_for_user(cfg: dict[str, Any]) -> str:
     Full command the user should run in Terminal when Google API auth fails.
 
     Central config:
-    - If GCLOUD_AUTH_LOGIN_COMMAND is set in the environment (e.g. Cursor .cursor/mcp.json), use it verbatim.
+    - If GCLOUD_AUTH_LOGIN_COMMAND is set in the environment (e.g. Cursor .cursor/mcp.env), use it verbatim.
     - Else build: gcloud auth login --account=<GCLOUD_ACCOUNT> --enable-gdrive-access --force
       (omit --account if GCLOUD_ACCOUNT / yaml auth_account is empty).
     """

@@ -6,12 +6,9 @@
 			"args": ["run", "python", "-m", "prestonotes_mcp"],
 			"cwd": "${workspaceFolder}",
 			"env": {
-				"PRESTONOTES_REPO_ROOT": "${workspaceFolder}",
-				"GDRIVE_BASE_PATH": "/Users/patrick.presto/Google Drive/My Drive/MyNotes",
-				"MYNOTES_ROOT_FOLDER_ID": "1bVAiFR9J1AizNHj43Rs2ZUDqxpvjZkO9",
-				"GCLOUD_ACCOUNT": "patrick.presto@wiz.io",
-				"GCLOUD_AUTH_LOGIN_COMMAND": "gcloud auth login --account=patrick.presto@wiz.io --enable-gdrive-access --force"
-			}
+				"PRESTONOTES_REPO_ROOT": "${workspaceFolder}"
+			},
+			"envFile": "${workspaceFolder}/.cursor/mcp.env"
 		}
 	}
 }

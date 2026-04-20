@@ -21,13 +21,15 @@ When porting: **copy** into `prestonotes_gdoc/` or `prestonotes_mcp/`, then stri
 
 ## MCP / Cursor environment (v2)
 
-The committed **[`.cursor/mcp.json`](../.cursor/mcp.json)** defines the **stdio** PrestoNotes server and its **`env`** map (`GDRIVE_BASE_PATH`, `MYNOTES_ROOT_FOLDER_ID`, `GCLOUD_ACCOUNT`, `GCLOUD_AUTH_LOGIN_COMMAND`, …). Cursor injects those variables when it spawns **`uv run python -m prestonotes_mcp`**. The Python server **does not** read **`prestonotes_mcp/.env`**. To migrate from v1, copy values out of your old **`prestonotes_mcp/.env`** into **`mcp.json`**, or point **`envFile`** at a gitignored file if you want secrets off-repo.
+The committed **[`.cursor/mcp.json`](../.cursor/mcp.json)** defines the **stdio** PrestoNotes server and uses **`envFile`** → **`.cursor/mcp.env`** (gitignored) for **`GDRIVE_BASE_PATH`**, **`MYNOTES_ROOT_FOLDER_ID`**, **`GCLOUD_ACCOUNT`**, **`GCLOUD_AUTH_LOGIN_COMMAND`**, … Copy **[`.cursor/mcp.env.example`](../.cursor/mcp.env.example)** to **`mcp.env`** and edit. Cursor merges **`mcp.json`** `env` (e.g. **`PRESTONOTES_REPO_ROOT`**) with variables from **`mcp.env`** when it spawns **`uv run python -m prestonotes_mcp`**. The Python server **does not** read **`prestonotes_mcp/.env`**; see **`prestonotes_mcp/.env.example`** for optional **shell-only** exports.
+
+If this repo was ever shared with real values in **`mcp.json`**, rotate or restrict any exposed Drive folder IDs and use **`mcp.env`** going forward.
 
 ## Porting checklist (every file)
 
 Before merging a port:
 
-1. No hardcoded personal paths — use **`.cursor/mcp.json`** `env`, `prestonotes_mcp/config.py`, and `prestonotes-mcp.yaml` patterns.
+1. No hardcoded personal paths — use **`.cursor/mcp.env`**, **`prestonotes_mcp/config.py`**, and **`prestonotes-mcp.yaml`** patterns (not committed Python literals).
 2. No secrets in code — no API keys, no pinned `gcloud` account strings in committed files.
 3. No long LLM prompt strings in Python — those belong in `.cursor/rules/` or `docs/ai/playbooks/`.
 4. New or changed Python has a test under `prestonotes_mcp/tests/` or `scripts/tests/` as appropriate.
@@ -68,7 +70,7 @@ v2 expects **one raw `.txt` per meeting** under `MyNotes/Customers/<Customer>/Tr
 | **`scripts/rsync-gdrive-notes.sh`** | **Pull** from the **Google Drive for Desktop** path **`GDRIVE_BASE_PATH`** (your mounted **MyNotes** root) into **`$PRESTONOTES_REPO_ROOT/MyNotes/`**. MCP tools such as **`list_customers`** read the **repo** copy. Optional PDF → `*_OCR.md` via MarkItDown when installed. |
 | **`sync_notes` MCP tool** | Runs that shell script from the repo root (optional customer argument → only **`Customers/<name>/`**). |
 | **`scripts/restart-google-drive.sh`** | macOS helper to restart the Drive app so the mount catches up after API-side changes. |
-| **`scripts/syncNotesToMarkdown.js`** | **Google Apps Script** (not Node): exports eligible Google Docs to **`.md`** on Drive under MyNotes; pair with rsync if you want those files in the repo. Configure **`MYNOTES_ROOT_FOLDER_ID`** as a Script property — same ID as **`.cursor/mcp.json`**. |
+| **`scripts/syncNotesToMarkdown.js`** | **Google Apps Script** (not Node): exports eligible Google Docs to **`.md`** on Drive under MyNotes; pair with rsync if you want those files in the repo. Configure **`MYNOTES_ROOT_FOLDER_ID`** as a Script property — same ID as **`.cursor/mcp.env`**. |
 
 **Not covered by rsync:** Google Docs API read/write (**`discover_doc`**, **`read_doc`**, **`write_doc`**) and **`granola-sync.py`** — those use **`gcloud`** / Granola cache respectively, not the rsync mirror.
 
@@ -153,9 +155,13 @@ Or migrate a specific file:
 uv run python -m prestonotes_mcp.tools.migrate_ledger --fixture ./path/to/Acme-History-Ledger.md
 ```
 
-**`--dry-run`** prints the full migrated markdown to **stdout** and does not write the file. For **`--customer`**, the CLI resolves **`PRESTONOTES_REPO_ROOT`** (from the environment, e.g. **`setEnv.sh`** / **`.cursor/mcp.json`**) or falls back to the **current working directory** as the repo root.
+**`--dry-run`** prints the full migrated markdown to **stdout** and does not write the file. For **`--customer`**, the CLI resolves **`PRESTONOTES_REPO_ROOT`** (from the environment, e.g. **`setEnv.sh`** / Cursor **`mcp.env`**) or falls back to the **current working directory** as the repo root.
 
 **`append_ledger`** (v1 / GDoc subprocess path) remains for backward compatibility until each customer’s ledger is migrated; prefer **`append_ledger_v2`** for new rows once the table is v2. Optional: when **`GDRIVE_BASE_PATH`** is set and the mirrored **`Customers/<Customer>/AI_Insights/`** parent exists, **`append_ledger_v2`** also copies the updated ledger there (same pattern as **`append_ledger`**).
+
+## Ruff and `prestonotes_gdoc/`
+
+The root **`pyproject.toml`** excludes **`prestonotes_gdoc/`** from Ruff so the large v1-port **`update-gdoc-customer-notes.py`** does not block every commit. **Tradeoff:** style and unused-import hygiene for that tree are manual or follow-up (narrow allowlist, e.g. format **`000-bootstrap-gdoc-customer-notes.py`** only). **`prestonotes_mcp/`** and **`scripts/`** remain fully linted.
 
 ## Discrepancies found (spec vs old code)
 

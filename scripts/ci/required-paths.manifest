@@ -3,6 +3,8 @@ pyproject.toml
 README.md
 setEnv.sh
 .cursor/mcp.json
+.cursor/mcp.env.example
+.github/workflows/ci.yml
 prestonotes_mcp/__init__.py
 prestonotes_gdoc/README.md
 prestonotes_gdoc/config/doc-schema.yaml
@@ -26,6 +28,8 @@ docs/ai/references/exec-summary-template.md
 docs/ai/references/call-type-taxonomy.md
 docs/ai/references/challenge-lifecycle-model.md
 docs/ai/references/health-score-model.md
+docs/ai/references/gdoc-section-changes-v2.md
+docs/ai/references/granola-meeting-summary-templates.md
 docs/project_spec.md
 docs/MIGRATION_GUIDE.md
 scripts/ci/check-repo-integrity.sh
@@ -36,7 +40,11 @@ scripts/rsync-gdrive-notes.sh
 scripts/restart-google-drive.sh
 scripts/syncNotesToMarkdown.js
 scripts/wiz_doc_cache_manager.py
+.cursor/rules/core.mdc
+.cursor/rules/workflow.mdc
+.cursor/rules/99-migration-mode.mdc
 .cursor/rules/15-user-preferences.mdc
 .cursor/rules/ai_learnings.mdc
 .cursor/rules/21-extractor.mdc
 .cursor/rules/22-journey-synthesizer.mdc
+prestonotes_mcp/.env.example

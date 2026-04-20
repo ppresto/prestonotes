@@ -57,7 +57,7 @@ Run these checks in order. If any check fails, **stop** and tell the user what f
 Verify the Drive-backed `MyNotes` root exists and is readable:
 
 ```bash
-# Require GDRIVE_BASE_PATH (same as `.cursor/mcp.json` → Drive-mounted MyNotes root)
+# Require GDRIVE_BASE_PATH (same as `.cursor/mcp.env` → Drive-mounted MyNotes root)
 : "${GDRIVE_BASE_PATH:?Set GDRIVE_BASE_PATH to your MyNotes mount}"
 test -d "$GDRIVE_BASE_PATH" && test -r "$GDRIVE_BASE_PATH" && echo "OK"
 ```
@@ -70,11 +70,11 @@ Wait for confirmation before continuing.
 ### Check 2 — Google API auth works
 
 ```bash
-gcloud auth print-access-token  # optional: add --account from `GCLOUD_ACCOUNT` in `.cursor/mcp.json`
+gcloud auth print-access-token  # optional: add --account from `GCLOUD_ACCOUNT` in `.cursor/mcp.env`
 ```
 
 If this fails, tell the user:
-> "Google API auth is not working. If an MCP tool returned `run_in_terminal_to_fix`, paste that **exact** command from `.cursor/mcp.json` into Terminal (see `check_google_auth`). Otherwise run `gcloud auth login` with the account you use for Docs/Drive."
+> "Google API auth is not working. If an MCP tool returned `run_in_terminal_to_fix`, paste that **exact** command from `.cursor/mcp.env` into Terminal (see `check_google_auth`). Otherwise run `gcloud auth login` with the account you use for Docs/Drive."
 
 Wait for confirmation before continuing.
 

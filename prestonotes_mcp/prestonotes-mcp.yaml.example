@@ -1,4 +1,4 @@
-# Example — copy to prestonotes-mcp.yaml or merge edits. Set GDRIVE_BASE_PATH via Cursor .cursor/mcp.json env.
+# Example — copy to prestonotes-mcp.yaml or merge edits. Set GDRIVE_BASE_PATH via Cursor .cursor/mcp.env.
 
 server:
   name: prestonotes

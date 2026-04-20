@@ -6,7 +6,7 @@ Bidirectional mirror is **not** implemented here: this script **pulls** from you
 
 **Environment**
 
-- **`GDRIVE_BASE_PATH`** — Path to the **MyNotes** folder as mounted by Drive for desktop (same value as in **`.cursor/mcp.json`** `env`).
+- **`GDRIVE_BASE_PATH`** — Path to the **MyNotes** folder as mounted by Drive for desktop (same value as in **`.cursor/mcp.env`**).
 - **`PRESTONOTES_REPO_ROOT`** — Repo root (defaults to the parent of `scripts/`).
 
 **Examples** (from repo root)
@@ -32,7 +32,9 @@ Restarts the **Google Drive** app after a short wait so the local mount picks up
 
 ## `syncNotesToMarkdown.js` (Google Apps Script)
 
-**Not a Node script.** Deploy into **Apps Script** bound to a Drive project (or standalone). Set Script property **`MYNOTES_ROOT_FOLDER_ID`** to your MyNotes root folder ID (same as **`MYNOTES_ROOT_FOLDER_ID`** in **`.cursor/mcp.json`**). Enable the **Drive API** advanced service for PDF OCR. Schedule **`syncNotesToMarkdown`** if you want periodic GDoc → `.md` exports on Drive.
+**Not a Node script.** Deploy into **Apps Script** bound to a Drive project (or standalone). Set Script property **`MYNOTES_ROOT_FOLDER_ID`** to your MyNotes root folder ID (same as **`MYNOTES_ROOT_FOLDER_ID`** in **`.cursor/mcp.env`**). Enable the **Drive API** advanced service for PDF OCR. Schedule **`syncNotesToMarkdown`** if you want periodic GDoc → `.md` exports on Drive.
+
+**Linting:** this file is **excluded** from Biome via root **`biome.json`** (`!!**/scripts/syncNotesToMarkdown.js`) because it follows **Apps Script** conventions, not Node ESM. Do not remove that exclusion without rewriting the script for Node.
 
 Local markdown in **`MyNotes/Customers/.../[Customer] Notes.md`** is what most MCP read paths expect after export + rsync.
 

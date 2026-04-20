@@ -9,7 +9,7 @@ alwaysApply: true
 - **Small Steps**: Break work down into atomic, testable tasks.
 - **TDD**: Write the test case before or alongside the code implementation.
 - **Linting**: Always format and validate code before considering a task complete.
-- **Google / gcloud failures:** When an MCP tool returns JSON containing **`run_in_terminal_to_fix`**, paste that **exact** command for the user first (it comes from **`.cursor/mcp.json`** `env`: `GCLOUD_AUTH_LOGIN_COMMAND` or built from `GCLOUD_ACCOUNT`). Ask them to run it in Terminal, complete browser auth, then continue the workflow.
+- **Google / gcloud failures:** When an MCP tool returns JSON containing **`run_in_terminal_to_fix`**, paste that **exact** command for the user first (it comes from **`.cursor/mcp.env`**: `GCLOUD_AUTH_LOGIN_COMMAND` or built from `GCLOUD_ACCOUNT`). Ask them to run it in Terminal, complete browser auth, then continue the workflow.
 
 ## Customer notes & MyNotes (TASK-007)
 
@@ -18,7 +18,7 @@ These rules apply when working on **customer folders**, **Google Docs customer n
 ### Path resolution
 
 - **Repo mirror:** `./MyNotes/Customers/[CustomerName]/` (synced from Drive via **`sync_notes` MCP** or **`scripts/rsync-gdrive-notes.sh`**; see **`docs/MIGRATION_GUIDE.md`**).
-- **Mounted Drive root:** Use **`GDRIVE_BASE_PATH`** from **`.cursor/mcp.json`** for paths that must refer to the live Google Drive for Desktop tree (never hardcode user-specific mount points in committed files).
+- **Mounted Drive root:** Use **`GDRIVE_BASE_PATH`** from **`.cursor/mcp.env`** for paths that must refer to the live Google Drive for Desktop tree (never hardcode user-specific mount points in committed files).
 
 ### Tool registry
 
