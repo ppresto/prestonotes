@@ -1,0 +1,39 @@
+---
+description: Per-call transcript → structured call record JSON (§7.1); use with extract-call-records playbook.
+globs:
+  - "MyNotes/**"
+  - "docs/ai/playbooks/extract-call-records.md"
+  - "docs/ai/references/call-type-taxonomy.md"
+alwaysApply: false
+---
+# Extractor (Stage 1)
+
+When the user invokes **`Extract Call Records for [CustomerName]`** (or clearly the same intent), follow **`docs/ai/playbooks/extract-call-records.md`** end-to-end. Do not skip the **approval gate** before **`write_call_record`**.
+
+## Authority and validation
+
+- **Canonical schema:** `docs/project_spec.md` **§7.1 Per-Call Record**. On-disk validation is enforced by **`prestonotes_mcp/call_records.py`** (`CALL_RECORD_SCHEMA`, `validate_call_record_object`). Every record you assemble **must** pass that schema or MCP **`write_call_record`** will fail.
+- **Call types:** Only these **`call_type`** values are allowed: `discovery`, `technical_deep_dive`, `campaign`, `exec_qbr`, `poc_readout`, `renewal`, `internal`. Classification rubric: **`docs/ai/references/call-type-taxonomy.md`**.
+- **`call_id`:** Must match the **`write_call_record`** argument and **`record_json.call_id`** exactly. Safe basename only (letters, digits, `._-`); no path segments. Prefer **`YYYY-MM-DD-<type>-<n>`** aligned with the filename stem when one meeting maps to one transcript file.
+- **`raw_transcript_ref`:** Basename of the per-call **`.txt`** source (e.g. `2026-04-15-chain-guard.txt`), not a full path.
+
+## Field discipline
+
+- **`participants`:** Only people who appear or are named in the transcript; use `role` / `company` when stated or clearly inferable — otherwise empty string or omit optional keys if your JSON still validates. Do not fabricate executives.
+- **`verbatim_quotes`:** At most **3** entries; each **`quote`** must be a **substring** of the transcript (trim whitespace only).
+- **`challenges_mentioned`:** Use stable ids **`ch-001`**, **`ch-002`**, … for this meeting. **`status`** should follow §7.4 vocabulary when possible (`identified`, `acknowledged`, `in_progress`, `resolved`, `reopened`, `stalled`).
+- **`deltas_from_prior_call`:** If **`read_call_records`** returns prior calls, summarize factual deltas vs the immediately previous chronological record; otherwise `[]`.
+- **`extraction_confidence`:** `high` | `medium` | `low` — document reason in run notes if not `high` (e.g. partial transcript, overlapping meetings in one file).
+
+## Sentiment (vocabulary)
+
+Use one of: **`positive`**, **`neutral`**, **`cautious`**, **`negative`**. Pick the best fit from customer tone and outcomes discussed.
+
+## Sources
+
+- **Preferred:** One meeting per file under **`MyNotes/Customers/[Customer]/Transcripts/`** (Granola export pattern `YYYY-MM-DD-<slug>.txt` per `scripts/granola-sync.py`).
+- **`_MASTER_TRANSCRIPT_*.txt`:** Do **not** load entire masters into context. If only masters exist, stop and tell the user to run per-call export / split first, **unless** they explicitly instruct a **bounded** excerpt (max length stated in the playbook step).
+
+## Output
+
+Produce **compact JSON** objects ready for **`write_call_record`**. After user approval, write **one file per meeting** then call **`update_transcript_index`** once per batch.

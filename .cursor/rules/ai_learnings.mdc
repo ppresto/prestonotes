@@ -1,0 +1,11 @@
+---
+description: Durable execution notes for PrestoNotes v2 (paths, MCP, transcripts).
+globs: ["*"]
+alwaysApply: true
+---
+# AI execution memory (v2)
+
+- **Stack name:** Use **`prestonotes_gdoc/`** for the Google Docs Python client and config — not legacy **`custom-notes-agent/`** paths.
+- **MCP (customer notes):** Prefer **`discover_doc`**, **`read_doc`**, **`write_doc`**, **`sync_notes`**, **`read_transcripts`**, **`append_ledger`** (and related server tools) over ad-hoc Drive assumptions; env comes from **`.cursor/mcp.json`**.
+- **Transcripts:** Prefer **per-call** **`MyNotes/Customers/<Customer>/Transcripts/*.txt`**; treat **`_MASTER_*`** as fallback only when explicitly allowed by the active playbook/reference.
+- **Corrections:** When a playbook or rule is wrong for this repo, fix the **committed** playbook/rule and, if it is a stable preference, add a short note under **`docs/project_spec.md`** or the relevant reference — do not rely only on chat memory.

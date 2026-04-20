@@ -1,15 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "prestonotes"
-version = "0.1.0"
-description = "Add your description here"
+version = "2.0.0"
+description = "PrestoNotes v2 — account intelligence and Cursor workflows (MCP, docs, migration from prestoNotes.orig)."
 readme = "README.md"
 requires-python = ">=3.12.3"
-dependencies = []
+dependencies = [
+    "fastmcp>=3.2.4",
+    "jsonschema>=4.26.0",
+    "pyyaml>=6.0.3",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
 
 [dependency-groups]
 dev = [
     "pre-commit>=4.5.1",
     "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
     "ruff>=0.15.11",
     "yamllint>=1.38.0",
 ]
+
+[tool.ruff]
+line-length = 100
+exclude = [".venv", "node_modules", "prestonotes_gdoc"]
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.uv.workspace]
+members = [
+    "scripts",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "prestonotes_mcp/tests", "scripts/tests"]

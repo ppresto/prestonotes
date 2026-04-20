@@ -1,0 +1,63 @@
+version: 1
+
+sequence:
+  - order: 5
+    id: "wiz_solution_lens"
+    enabled: true
+    kind: "context"
+    file: "custom-notes-agent/config/prompts/010-wiz-solution-lens.md"
+
+  - order: 10
+    id: "se_persona_prompt"
+    enabled: true
+    kind: "context"
+    file: "custom-notes-agent/config/prompts/015-customer-notes-se-persona-prompt.md"
+
+  - order: 15
+    id: "challenge_tracker"
+    enabled: true
+    kind: "builder"
+    builder: "challenge_tracker"
+    policy: "custom-notes-agent/config/sections/015-challenge_tracker.yaml"
+
+  - order: 20
+    id: "deal_stage_tracker"
+    enabled: true
+    kind: "builder"
+    builder: "deal_stage_tracker"
+    policy: "custom-notes-agent/config/sections/020-deal_stage_tracker.yaml"
+
+  - order: 25
+    id: "exec_account_summary"
+    enabled: true
+    kind: "builder"
+    builder: "exec_account_summary"
+    policy: "custom-notes-agent/config/sections/025-exec_account_summary.yaml"
+
+  - order: 30
+    id: "cloud_environment"
+    enabled: true
+    kind: "builder"
+    builder: "cloud_environment"
+    policy: "custom-notes-agent/config/sections/030-cloud_environment.yaml"
+
+  - order: 35
+    id: "workflows_processes"
+    enabled: true
+    kind: "builder"
+    builder: "workflows_processes"
+    policy: "custom-notes-agent/config/sections/035-workflows_processes.yaml"
+
+  - order: 40
+    id: "contacts"
+    enabled: true
+    kind: "builder"
+    builder: "contacts"
+    policy: "custom-notes-agent/config/sections/040-contacts.yaml"
+
+  - order: 45
+    id: "use_cases_requirements"
+    enabled: true
+    kind: "builder"
+    builder: "use_cases_requirements"
+    policy: "custom-notes-agent/config/sections/045-use_cases_requirements.yaml"

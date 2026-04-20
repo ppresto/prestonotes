@@ -20,6 +20,7 @@
 10. [Definition of Done](#10-definition-of-done)
 11. [Trigger Phrase Reference](#11-trigger-phrase-reference)
 12. [MVP vs Post-MVP Playbooks](#12-mvp-vs-post-mvp-playbooks)
+13. [V2 MVP Build Plan (Operational Guide)](#13-v2-mvp-build-plan-operational-guide)
 
 ---
 
@@ -47,13 +48,13 @@ PrestoNotes is an AI-powered "account intelligence engine" for a cybersecurity S
 These rules must never be violated. The planner should refuse any task that breaks them.
 
 **Rule 1 — Python executes, AI proposes (including GDoc mutations).**
-The LLM reads, analyzes, and produces **structured output** — including **mutation JSON** that conforms to `doc-schema.yaml` and `docs/ai/references/customer-notes-mutation-rules.md` (once ported). **Only after explicit user approval** may an agent invoke MCP tools that mutate external or customer state. Python (via MCP: `write_doc`, `append_ledger` / `append_ledger_v2`, call-record tools, etc.) performs **all** file writes, date calculations, and **Google Docs/Drive API** calls. **Never** instruct the model to paste content into the live Doc as a substitute for the mutation pipeline.
+The LLM reads, analyzes, and produces **structured output** — including **mutation JSON** that conforms to `prestonotes_gdoc/config/doc-schema.yaml` and `docs/ai/references/customer-notes-mutation-rules.md` (once ported). **Only after explicit user approval** may an agent invoke MCP tools that mutate external or customer state. Python (via MCP: `write_doc`, `append_ledger` / `append_ledger_v2`, call-record tools, etc.) performs **all** file writes, date calculations, and **Google Docs/Drive API** calls. **Never** instruct the model to paste content into the live Doc as a substitute for the mutation pipeline.
 
 **Rule 2 — No transcript context flooding.**
 Primary path: load **`transcript-index.json`**, then only the **call record JSON** files needed for the task. **Optional:** load **at most one** per-call raw `.txt` transcript file when a quote or boundary check requires verbatim text — each file represents **one meeting**, so there is no v1-style “many calls in one 50KB slice.” Do **not** load legacy `_MASTER_TRANSCRIPT_*.txt` wholesale into context during normal workflows; if a master file still exists during migration, treat it as **ingestion/source only** until split into per-call files.
 
 **Rule 3 — User approves before any write.**
-Every MCP tool that mutates data (writes to GDoc, appends ledger, writes call records) must be preceded by a human-readable summary of the proposed changes. The user must explicitly approve before the write tool is called.
+Every MCP tool that mutates data (writes to GDoc, appends ledger, writes call records, writes the journey timeline or challenge lifecycle JSON under **`AI_Insights/`**) must be preceded by a human-readable summary of the proposed changes. The user must explicitly approve before the write tool is called.
 
 **Rule 4 — One customer per session.**
 Each Cursor session works on exactly one customer. The planner should ask for the customer name at the start if not given.
@@ -78,15 +79,15 @@ The old project at `../prestoNotes.orig` is used strictly to copy working code. 
 1. Agents load **read-only** context (MCP `read_doc`, call records, ledger, etc.).
 2. The orchestrator / advisors produce a **mutation JSON** payload (same semantic contract v1 used: sections, fields, actions per schema).
 3. **User approval** in chat.
-4. **`write_doc`** MCP tool runs `custom-notes-agent/update-gdoc-customer-notes.py` with `--mutations` (and `dry_run` first when appropriate).
+4. **`write_doc`** MCP tool runs `prestonotes_gdoc/update-gdoc-customer-notes.py` with `--mutations` (and `dry_run` first when appropriate).
 
-**Deprecated in v2:** MCP tool **`run_pipeline`** (`custom-notes-agent/run-main-task.py` YAML section runner) is **not** part of the v2 architecture. Do not port it as a supported tool. Historical playbooks that referenced it remain **reference only** under §12.
+**Deprecated in v2:** MCP tool **`run_pipeline`** (v1: `../prestoNotes.orig/custom-notes-agent/run-main-task.py`) is **not** part of the v2 architecture. Do not register it on the MCP server. Historical playbooks that referenced it remain **reference only** under §12.
 
 ### Ledger writes: `append_ledger` vs `append_ledger_v2`
 
-- **Before TASK-011:** Use **`append_ledger`** (v1 row shape) after successful `write_doc` when ledger v2 is not yet available.
-- **After TASK-011:** Prefer **`append_ledger_v2`** for new rows (extended columns: call type, challenge lifecycle summaries, value, stakeholders). Keep **`append_ledger`** implemented for **backward compatibility**, fixture tests, and migration until `docs/MIGRATION_GUIDE.md` declares a customer migrated.
-- **TASK-017** orchestrator step 9 should use **`append_ledger_v2`** once TASK-011 is complete.
+- **`append_ledger`** — v1 row shape; runs the GDoc **`ledger-append`** flow after a successful **`write_doc`**. Use when the on-disk **“Standard ledger row”** table is still the **19-column** shape or when matching legacy automation.
+- **`append_ledger_v2`** — Appends one row to **`MyNotes/Customers/<Customer>/AI_Insights/<Customer>-History-Ledger.md`**; **`row_json`** must be a JSON object with keys **exactly** the **24** v2 columns (19 header names + **`call_type`**, **`challenges_in_progress`**, **`challenges_resolved`**, **`value_realized`**, **`key_stakeholders`**), all string values. If the standard table is not yet 24 columns, the tool raises **`ValueError`** pointing at **`python -m prestonotes_mcp.tools.migrate_ledger`** (see **`docs/MIGRATION_GUIDE.md`** — History Ledger v2).
+- Keep **`append_ledger`** for **backward compatibility**, tests, and customers not yet migrated. **`TASK-017`** orchestrator step 9 should use **`append_ledger_v2`** after the customer ledger is migrated.
 
 ---
 
@@ -102,16 +103,16 @@ The old project at `../prestoNotes.orig` is used strictly to copy working code. 
 | Python linter | `ruff` | Run before every task is marked complete |
 | JS linter | `biome` | For any `.js` or `.ts` files only |
 | AI orchestration | Cursor agents + `.mdc` rules | Primary reasoning — **no Anthropic key required** for the default Cursor-driven flows; Stage 4 embedding/RAG may require keys where noted |
-| Document format | Markdown (`.md`) for local files | Google Docs for customer-facing content (via MCP + `custom-notes-agent`) |
+| Document format | Markdown (`.md`) for local files | Google Docs for customer-facing content (via MCP + **`prestonotes_gdoc/`** Python backend) |
 | Vector DB | ChromaDB | Stage 4 only — not needed until API keys available |
 
 ### MCP tools and resources (prestonotes server)
 
 **Read tools (non-exhaustive; mirror v1 after TASK-002):** `check_google_auth`, `list_customers`, `get_customer_status`, **`discover_doc`**, **`read_doc`**, `read_transcripts`, `read_ledger`, `read_audit_log`, `check_product_intelligence`, plus Stage 1+ tools as they land (`read_call_records`, `read_transcript_index`, …).
 
-**Write / sync tools (TASK-003+):** `write_doc`, `append_ledger`, `append_ledger_v2` (after TASK-011), `log_run`, `sync_notes`, `sync_transcripts`, `bootstrap_customer`, call-record and journey tools per backlog.
+**Write / sync tools (TASK-003+):** `write_doc`, `append_ledger`, `append_ledger_v2` (TASK-011), `log_run`, `sync_notes`, `sync_transcripts`, `bootstrap_customer`, `write_call_record`, `update_transcript_index`, `write_journey_timeline`, `update_challenge_state` (TASK-010), and further backlog items as they land.
 
-**MCP resources to port** (same URIs as v1 so agents and tests share one source of truth): `prestonotes://config/doc-schema`, `prestonotes://config/section-sequence`, `prestonotes://config/task-budgets`, `prestonotes://prompts/persona`, `prestonotes://prompts/lens`. Payloads are read from files under `custom-notes-agent/config/` after port.
+**MCP resources to port** (same URIs as v1 so agents and tests share one source of truth): `prestonotes://config/doc-schema`, `prestonotes://config/section-sequence`, `prestonotes://config/task-budgets`, `prestonotes://prompts/persona`, `prestonotes://prompts/lens`. Payloads are read from files under **`prestonotes_gdoc/config/`** after port.
 
 **Not ported for v2:** `run_pipeline` (see Rule 7 follow-on “Deprecated in v2”).
 
@@ -122,7 +123,7 @@ The old project at `../prestoNotes.orig` is used strictly to copy working code. 
 ```
 prestonotes/                          ← new v2 repo root
 ├── .cursor/
-│   ├── agents/                       ← AI agent personas (planner, coder, qa, doc)
+│   ├── agents/                       ← Subagents only: coder, tester, doc (orchestrator = main Agent + workflow.mdc)
 │   ├── rules/                        ← Runtime rules applied to every session
 │   │   ├── 00-core-execution.mdc     ← Non-negotiable guardrails
 │   │   ├── 10-task-router.mdc        ← Routes trigger phrases to playbooks
@@ -140,10 +141,10 @@ prestonotes/                          ← new v2 repo root
 │       ├── lint.sh                   ← Runs ruff (Python) and biome (JS) linters
 │       └── test.sh                   ← Runs pytest on the prestonotes_mcp/ package
 │
-├── custom-notes-agent/               ← PORT from v1: GDoc client, bootstrap, YAML schema, prompts
-│   ├── update-gdoc-customer-notes.py
+├── prestonotes_gdoc/                 ← Google Docs / Drive Python backend (ported from v1 `custom-notes-agent/`)
+│   ├── update-gdoc-customer-notes.py   ← discover / read / write / ledger-append (v1 names OK at first port)
 │   ├── 000-bootstrap-gdoc-customer-notes.py
-│   └── config/                       ← doc-schema.yaml, sections, prompts, task-budgets, tools.json, …
+│   ├── config/                       ← doc-schema.yaml, sections, prompts, task-budgets, tools.json, …
 │
 ├── docs/
 │   ├── project_spec.md               ← THIS FILE — master specification
@@ -166,7 +167,7 @@ prestonotes/                          ← new v2 repo root
 │   ├── __main__.py
 │   ├── prestonotes-mcp.yaml          ← Local config (git-ignored, use .yaml.example as template)
 │   ├── prestonotes-mcp.yaml.example  ← Template with all config keys documented
-│   └── .env.example                  ← Template for environment variables
+│   └── (optional) .env               ← Gitignored; not read by MCP — use `.cursor/mcp.json` `env`
 │
 ├── scripts/
 │   ├── granola-sync.py               ← Granola → per-call Transcripts/*.txt (v2); legacy master optional
@@ -200,27 +201,41 @@ prestonotes/                          ← new v2 repo root
 
 **Naming note (TASK-001):** The repo may temporarily use `.cursor/rules/core.mdc` before numbered rules exist. **Target** is the `00-core-execution.mdc` … `27-domain-advisor-ai.mdc` layout above; migrate without losing content when renaming.
 
+### `prestonotes_gdoc/` vs Cursor sub-agents
+
+| Location | Responsibility |
+|----------|----------------|
+| **`prestonotes_gdoc/`** | **Execution plumbing** for Google Docs/Drive: REST calls, mutation JSON application, bootstrap, shared **`config/`** (schema, section YAML, budgets, persona/lens **files** consumed by Python). Same role v1 called `custom-notes-agent/` — renamed because it is **not** a Cursor “agent.” |
+| **`.cursor/rules/`** (`21-extractor`, `23–27` domain advisors, `20-orchestrator`, …) | **Reasoning** and workflow: how the LLM interprets transcripts, builds call records, proposes mutations. |
+| **`docs/ai/playbooks/`** | Human + model **procedure** docs (trigger phrases, step lists). |
+
+Port **from** `../prestoNotes.orig/custom-notes-agent/` **into** `prestonotes_gdoc/`; update **`prestonotes_mcp`** defaults (e.g. `paths.doc_schema`) and all `run_uv_script(...)` paths to use `prestonotes_gdoc/...`.
+
 ---
 
 ## 5. How the Agents Work
 
-The project uses four specialized agents in a strict pipeline. The planner owns the process; the others only execute when delegated to.
+The **main Cursor Agent** acts as the **planner / orchestrator** (see `.cursor/rules/workflow.mdc`). Three **subagents** live under `.cursor/agents/*.md` and run in isolated context when delegated: **`/coder`**, **`/tester`**, **`/doc`**.
 
 ```
-User → @planner → (creates task file, gets approval)
-                → @coder   (writes tests first, then code)
-                → @qa      (runs tests + linters, fixes issues)
-                → @doc     (updates README and docs after QA passes)
+User ↔ Main Agent (planner) → (creates task file, gets approval)
+                → /coder   (writes tests first, then code)
+                → /tester  (runs tests + linters, fixes issues)
+                → /doc     (updates README and docs after tester passes)
                 → User (reports task complete)
 ```
 
-**@planner** — The orchestrator. Reads this spec before every task. Creates one task file per request in `docs/tasks/active/`. Always asks for user approval before code changes. Never writes code directly.
+**Main Agent (planner)** — The orchestrator. Reads this spec before every task. Creates one task file per request in `docs/tasks/active/`. Always asks for user approval before code changes. Delegates implementation and verification; does not skip **`/tester`** or reorder **`/doc`** before tester succeeds.
 
-**@coder** — Reads only the assigned task file and this spec. Writes a failing test first (TDD), then writes the implementation. Runs linters. Updates the task file status when done.
+**`/coder` subagent** — Reads only the assigned task file and this spec. Writes a failing test first (TDD), then writes the implementation. Runs linters. Updates the task file status when done.
 
-**@qa** — Runs `test.sh` and `lint.sh`. Fixes failures up to 3 times. Reports blockers to planner if it can't fix them.
+**`/tester` subagent** — Runs `test.sh` and `lint.sh`. Fixes failures up to 3 times. Reports blockers to the orchestrator if it can't fix them.
 
-**@doc** — Runs only after QA passes. Updates README.md and any affected docs to reflect what was actually built.
+**`/doc` subagent** — Runs only after **`/tester`** passes. Updates README.md and any affected docs to reflect what was actually built.
+
+**Handoffs:** The orchestrator passes a **Delegation packet** (full task path, `spec_refs`, Legacy Reference, prior subagent Output Contracts) into each subagent prompt; each subagent returns a structured **Output Contract** for the next step. See **`.cursor/rules/workflow.mdc`**.
+
+**Hybrid use:** Default is **`/coder` → `/tester` → `/doc`** subagents. The user may opt into **inline** work in the main session only by saying **`same session, inline`** (case-insensitive; comma optional) for that task. Details are in **workflow.mdc**.
 
 ---
 
@@ -375,43 +390,43 @@ in_progress → stalled (if no movement for 60+ days)
 
 The old project lives at `../prestoNotes.orig` (relative to the new repo root). It is read-only reference material. The planner must consult this guide before building any task that involves porting code.
 
-**Critical fact:** In v1, MCP **`write_doc`**, **`read_doc`**, **`discover_doc`**, **`append_ledger`**, and **`bootstrap_customer`** already delegate to **`custom-notes-agent/`** Python entrypoints. v2 **ports that package in-tree** (supported subset: everything those subprocesses and `uv run` paths require, including **`config/`** YAML/MD prompts, **`sections/`** Python if imported by `update-gdoc-customer-notes.py` or `run-main-task.py`, and tests under `custom-notes-agent/test/` as needed for regression). **`docs/MIGRATION_GUIDE.md`** must list the exact file list once the first green CI port exists.
+**Critical fact:** In v1, MCP **`write_doc`**, **`read_doc`**, **`discover_doc`**, **`append_ledger`**, and **`bootstrap_customer`** delegate to Python under **`../prestoNotes.orig/custom-notes-agent/`** (legacy folder name). v2 **ports that codebase into `prestonotes_gdoc/`** (supported subset: everything those subprocesses and `uv run` paths require, including **`config/`** YAML/MD, **`sections/`** Python only if still imported by `update-gdoc-customer-notes.py`, and regression tests — optionally under `prestonotes_gdoc/test/` or invoked from `prestonotes_mcp/tests/`). **`docs/MIGRATION_GUIDE.md`** must list the exact v2 paths once the first green CI port exists.
 
 **What to port vs. what to drop vs. reference-only:**
 
-| Old File / area | Action | Notes |
-|---|---|---|
-| `prestonotes_mcp/server.py` | Port — strip hardcoded paths | Keep FastMCP structure, tool signatures, security patterns; **omit** `run_pipeline` registration for v2 |
-| `prestonotes_mcp/config.py` | Port | Env + yaml resolution |
-| `prestonotes_mcp/exec_helper.py` | Port | `run_uv_script`, `run_shell_script`, repo root |
-| `prestonotes_mcp/runtime.py` | Port | `init_ctx`, `get_ctx` |
-| `prestonotes_mcp/security.py` | Port | `validate_customer_name`, path scope, mutation size checks |
-| `prestonotes_mcp/prestonotes-mcp.yaml.example` | Port — update paths | Document `MYNOTES_ROOT_FOLDER_ID`, `GDRIVE_BASE_PATH`, etc. |
-| MCP **resources** in `server.py` | Port | `prestonotes://config/*`, `prestonotes://prompts/*` → read from ported `custom-notes-agent/config/` |
-| `custom-notes-agent/update-gdoc-customer-notes.py` | **Port in-tree** | GDoc discover/read/write + ledger-append implementation |
-| `custom-notes-agent/000-bootstrap-gdoc-customer-notes.py` | **Port in-tree** | `bootstrap_customer` MCP |
-| `custom-notes-agent/config/` (doc-schema, sections, prompts, task-budgets, tools.json, …) | **Port in-tree** | Ground truth for mutations and MCP resources |
-| `custom-notes-agent/sections/*.py` | Port **if** required by imported graph | `run-main-task.py` section builders are **not** used when `run_pipeline` is removed; keep only modules still imported by the GDoc client |
-| `custom-notes-agent/run-main-task.py` | **Do not expose via MCP** | Optional: copy into `docs/examples/` or rely on `../prestoNotes.orig` for archaeology only |
-| `scripts/granola-sync.py` | Port — **extend** for v2 | Must support (or delegate to a helper that produces) **per-call** `Transcripts/YYYY-MM-DD-[title].txt` layout per §2; preserve idempotency and Internal-folder routing from v1 tests |
-| `scripts/rsync-gdrive-notes.sh` | Port | Bidirectional sync |
-| `scripts/syncNotesToMarkdown.js` | Port | GDoc → Markdown export |
-| `scripts/restart-google-drive.sh` | Port | Drive for Desktop restart helper |
-| `scripts/wiz_doc_cache_manager.py` | Port / reference | Stage 4 ingestion input |
-| `scripts/ci/check-repo-integrity.sh` | Port — update manifest | Include `custom-notes-agent/` and new v2 paths |
-| `pyproject.toml` | Port — bump **2.0.0** | Align deps with `uv lock` |
-| `.cursor/rules/ai_learnings.mdc` | Port | Corrections layer |
-| `.cursor/rules/15-user-preferences.mdc` | Port | Output prefs |
-| `.cursor/rules/00-core-execution.mdc` | Rebuild from v1 | v2 paths, per-call transcript rules |
-| `docs/ai/playbooks/run-logic-audit.md` | Port | Read-only QA |
-| `docs/ai/playbooks/run-license-evidence-check.md` | Port | Commercial |
-| `docs/ai/playbooks/run-bva-report.md` | Port | BVA |
-| `docs/ai/playbooks/load-customer-context.md` | Port — update paths | Session prep |
-| `docs/ai/references/customer-notes-mutation-rules.md` | Port | **Required** for mutation JSON quality |
-| `docs/ai/references/account-summary-format-spec.md` | Port — review | Align with exec summary template (TASK-013) |
-| `docs/ai/references/value-realization-taxonomy.md` | Port | Value language |
-| `docs/ai/playbooks/update-customer-notes.md` | **Reference / archive** | Superseded by **TASK-017** orchestrator; keep for diffing prompt behavior during Stage 3 |
-| `docs/ai/playbooks/build-product-intelligence.md` | Reference — post-MVP | Do not block MVP on this pattern; use wiz-local MCP search per §3 |
+| Legacy source (`../prestoNotes.orig/`) | v2 destination | Action | Notes |
+|---|---|---|---|
+| `prestonotes_mcp/server.py` | `prestonotes_mcp/server.py` | Port — strip hardcoded paths | Keep FastMCP structure, tool signatures, security patterns; **omit** `run_pipeline`; point subprocess paths at **`prestonotes_gdoc/`** |
+| `prestonotes_mcp/config.py` | `prestonotes_mcp/config.py` | Port | Env + yaml resolution |
+| `prestonotes_mcp/exec_helper.py` | `prestonotes_mcp/exec_helper.py` | Port | `run_uv_script`, `run_shell_script`, repo root |
+| `prestonotes_mcp/runtime.py` | `prestonotes_mcp/runtime.py` | Port | `init_ctx`, `get_ctx` |
+| `prestonotes_mcp/security.py` | `prestonotes_mcp/security.py` | Port | `validate_customer_name`, path scope, mutation size checks |
+| `prestonotes_mcp/prestonotes-mcp.yaml.example` | `prestonotes_mcp/prestonotes-mcp.yaml.example` | Port — update paths | Default `paths.doc_schema` (and siblings) → **`prestonotes_gdoc/config/...`** |
+| MCP **resources** in `server.py` | same | Port | `prestonotes://config/*`, `prestonotes://prompts/*` → read from **`prestonotes_gdoc/config/`** |
+| `custom-notes-agent/update-gdoc-customer-notes.py` | `prestonotes_gdoc/update-gdoc-customer-notes.py` | **Port** | GDoc discover/read/write + ledger-append; **rename file later** if desired (TASK-003 can keep v1 filename first) |
+| `custom-notes-agent/000-bootstrap-gdoc-customer-notes.py` | `prestonotes_gdoc/000-bootstrap-gdoc-customer-notes.py` | **Port** | `bootstrap_customer` MCP |
+| `custom-notes-agent/config/` | `prestonotes_gdoc/config/` | **Port** | Ground truth for mutations and MCP resources |
+| `custom-notes-agent/sections/*.py` | `prestonotes_gdoc/sections/*.py` | Port **if** imported by GDoc client | Omit modules only used by **`run-main-task.py`** |
+| `custom-notes-agent/run-main-task.py` | _(none on MCP)_ | **Do not expose via MCP** | Reference only under `../prestoNotes.orig` or `docs/examples/` |
+| `scripts/granola-sync.py` | `scripts/granola-sync.py` | Port — **extend** for v2 | Per-call `Transcripts/YYYY-MM-DD-[title].txt` per §2; preserve idempotency and Internal-folder routing |
+| `scripts/rsync-gdrive-notes.sh` | `scripts/rsync-gdrive-notes.sh` | Port | Bidirectional sync |
+| `scripts/syncNotesToMarkdown.js` | `scripts/syncNotesToMarkdown.js` | Port | GDoc → Markdown export |
+| `scripts/restart-google-drive.sh` | `scripts/restart-google-drive.sh` | Port | Drive for Desktop restart helper |
+| `scripts/wiz_doc_cache_manager.py` | `scripts/wiz_doc_cache_manager.py` | Port / reference | Stage 4 ingestion input |
+| `scripts/ci/check-repo-integrity.sh` | `scripts/ci/check-repo-integrity.sh` | Port — update manifest | Include **`prestonotes_gdoc/`** |
+| `pyproject.toml` | `pyproject.toml` | Port — bump **2.0.0** | Align deps with `uv lock` |
+| `.cursor/rules/ai_learnings.mdc` | `.cursor/rules/ai_learnings.mdc` | Port | Corrections layer |
+| `.cursor/rules/15-user-preferences.mdc` | `.cursor/rules/15-user-preferences.mdc` | Port | Output prefs |
+| `.cursor/rules/00-core-execution.mdc` | **`.cursor/rules/core.mdc`** (merged section) | **TASK-007** | Customer-notes guardrails merged into **`core.mdc`**; v2 paths + per-call transcript rules |
+| `docs/ai/playbooks/run-logic-audit.md` | `docs/ai/playbooks/run-logic-audit.md` | **Deferred** (not Stage 1 MVP) | Report playbook — port under a later **reports / QA** task after core notes flow ships |
+| `docs/ai/playbooks/run-license-evidence-check.md` | `docs/ai/playbooks/run-license-evidence-check.md` | **Port — TASK-007 MVP** | SKU / entitlement evidence; may **update** local `*-AI-AcctSummary.md` (**Wiz Commercials**) and **History Ledger** license columns; depends on **wiz docs MCP** + optional **`wiz_doc_cache_manager`** (port or document fallback) |
+| `docs/ai/playbooks/run-bva-report.md` | `docs/ai/playbooks/run-bva-report.md` | **Deferred** (not Stage 1 MVP) | BVA is **not** MVP |
+| `docs/ai/playbooks/load-customer-context.md` | `docs/ai/playbooks/load-customer-context.md` | **Port — TASK-007 MVP** | Session prep (read-only) |
+| `docs/ai/references/customer-notes-mutation-rules.md` | `docs/ai/references/customer-notes-mutation-rules.md` | Port | **Required** for mutation JSON quality |
+| `docs/ai/references/account-summary-format-spec.md` | `docs/ai/references/account-summary-format-spec.md` | Port — review | Align with exec summary template (TASK-013) |
+| `docs/ai/references/value-realization-taxonomy.md` | `docs/ai/references/value-realization-taxonomy.md` | Port | Value language |
+| `docs/ai/playbooks/update-customer-notes.md` | `docs/ai/playbooks/update-customer-notes.md` | **Port — TASK-007 MVP** | **AI meeting recaps (Daily Activity)** + structured **Customer Notes** mutations via MCP **`write_doc`** / ledger / audit log; **TASK-017** may later replace routing with the multi-advisor orchestrator (same trigger phrase) |
+| `docs/ai/playbooks/build-product-intelligence.md` | _(post-MVP)_ | Reference — post-MVP | wiz-local MCP search per §3 |
 
 ---
 
@@ -426,30 +441,30 @@ Tasks are organized into four stages. Build them in order — each stage depends
 ---
 
 **TASK-001 — Scaffold the repo**
-- **What it builds:** The directory structure, `pyproject.toml`, `.gitignore`, `README.md` skeleton, `docs/MIGRATION_GUIDE.md` (stub OK), and placeholder dirs: `prestonotes_mcp/`, `custom-notes-agent/` (empty or README-only until TASK-003), `docs/ai/playbooks/`, `docs/ai/references/`.
+- **What it builds:** The directory structure, `pyproject.toml`, `.gitignore`, `README.md` skeleton, `docs/MIGRATION_GUIDE.md` (stub OK), and placeholder dirs: `prestonotes_mcp/`, **`prestonotes_gdoc/`** (README-only until TASK-003), `docs/ai/playbooks/`, `docs/ai/references/`.
 - **Why it matters:** Nothing else can be built until the repo skeleton is correct.
 - **Reference from old project:** `../prestoNotes.orig/pyproject.toml` for dependencies. Bump version to `2.0.0`.
 - **Test:** Run `python -c "import prestonotes_mcp"` — should import without error. Run `scripts/ci/check-repo-integrity.sh` — should pass.
-- **Files created:** `pyproject.toml`, `README.md`, `.gitignore`, `docs/project_spec.md` (this file), `docs/MIGRATION_GUIDE.md`, `docs/tasks/INDEX.md`, `.cursor/skills/lint.sh`, `.cursor/skills/test.sh`, `scripts/ci/check-repo-integrity.sh`, `scripts/ci/required-paths.manifest` (include **`custom-notes-agent/`** once populated).
+- **Files created:** `pyproject.toml`, `README.md`, `.gitignore`, `docs/project_spec.md` (this file), `docs/MIGRATION_GUIDE.md`, `docs/tasks/INDEX.md`, `.cursor/skills/lint.sh`, `.cursor/skills/test.sh`, `scripts/ci/check-repo-integrity.sh`, `scripts/ci/required-paths.manifest` (include **`prestonotes_gdoc/`** once populated).
 
 ---
 
 **TASK-002 — Port the MCP server (read-only tools only)**
-- **What it builds:** A working FastMCP server with **all** safe read-only tools from v1: `check_google_auth`, `list_customers`, `get_customer_status`, **`discover_doc`**, **`read_doc`**, `read_transcripts`, `read_ledger`, `read_audit_log`, `check_product_intelligence`. **`read_doc` / `discover_doc`** require the **`custom-notes-agent`** port (TASK-003 dependency order: either merge TASK-002+003 in one PR or stub discover/read until the agent exists — planner choice). Register **MCP resources**: `prestonotes://config/doc-schema`, `prestonotes://config/section-sequence`, `prestonotes://config/task-budgets`, `prestonotes://prompts/persona`, `prestonotes://prompts/lens`.
+- **What it builds:** A working FastMCP server with **all** safe read-only tools from v1: `check_google_auth`, `list_customers`, `get_customer_status`, **`discover_doc`**, **`read_doc`**, `read_transcripts`, `read_ledger`, `read_audit_log`, `check_product_intelligence`. **`read_doc` / `discover_doc`** require the **`prestonotes_gdoc/`** port (TASK-003 dependency order: either merge TASK-002+003 in one PR or stub discover/read until that tree exists — planner choice). Register **MCP resources**: `prestonotes://config/doc-schema`, `prestonotes://config/section-sequence`, `prestonotes://config/task-budgets`, `prestonotes://prompts/persona`, `prestonotes://prompts/lens`.
 - **Why it matters:** This is the foundation that all AI tools call. Stage 2/3 cannot load structured GDoc state without **`read_doc`**. Resources keep one canonical copy of schema/budgets/prompts.
 - **`read_transcripts` behavior (v2):** Implement as “latest **N transcript files**” (newest mtime first) from `Transcripts/*.txt`, **excluding** or deprioritizing `_MASTER_*.txt` once per-call files exist; optional per-file byte cap for safety. Document default `N` and cap in `prestonotes-mcp.yaml.example`.
 - **Reference from old project:** `../prestoNotes.orig/prestonotes_mcp/server.py` (read tools + resource block). Port `config.py`, `exec_helper.py`, `runtime.py`, `security.py`. Strip hardcoded personal paths. **Do not** register `run_pipeline`.
 - **Test:** Run `uv run python -m prestonotes_mcp` — server should start. Run `pytest prestonotes_mcp/tests/test_server_read_tools.py` — at least `check_google_auth` returns valid JSON; **`read_doc`** with a fixture or mocked subprocess if needed.
-- **Files created:** `prestonotes_mcp/server.py`, `prestonotes_mcp/config.py`, `prestonotes_mcp/exec_helper.py`, `prestonotes_mcp/runtime.py`, `prestonotes_mcp/security.py`, `prestonotes_mcp/__init__.py`, `prestonotes_mcp/__main__.py`, `prestonotes_mcp/prestonotes-mcp.yaml.example`, `prestonotes_mcp/.env.example`, `prestonotes_mcp/tests/test_server_read_tools.py`.
+- **Files created:** `prestonotes_mcp/server.py`, `prestonotes_mcp/config.py`, `prestonotes_mcp/exec_helper.py`, `prestonotes_mcp/runtime.py`, `prestonotes_mcp/security.py`, `prestonotes_mcp/__init__.py`, `prestonotes_mcp/__main__.py`, `prestonotes_mcp/prestonotes-mcp.yaml.example`, `.cursor/mcp.json` (MCP env template), `prestonotes_mcp/tests/test_server_read_tools.py`.
 
 ---
 
 **TASK-003 — Port the write/sync tools to MCP server**
-- **What it builds:** The mutation MCP tools: `write_doc`, `append_ledger`, `log_run`, `sync_notes`, `sync_transcripts`, `bootstrap_customer` — same subprocess contracts as v1, targeting **in-repo** `custom-notes-agent/` (TASK-001 / companion task must land the ported tree first). **`run_pipeline` is intentionally omitted** from v2 (see §2).
-- **Why it matters:** These tools apply approved changes. **Mutation path:** Cursor agents produce **mutation JSON** → user approves → **`write_doc`** runs Python (`update-gdoc-customer-notes.py write --mutations …`). **`append_ledger`** runs the v1 `ledger-append` path after a successful write. Nothing writes customer or Google state without MCP + approval.
+- **What it builds:** The mutation MCP tools: `write_doc`, `append_ledger`, `log_run`, `sync_notes`, `sync_transcripts`, `bootstrap_customer` — same subprocess contracts as v1, targeting **in-repo** **`prestonotes_gdoc/`** (TASK-001 / companion task must land the ported tree first). **`run_pipeline` is intentionally omitted** from v2 (see §2).
+- **Why it matters:** These tools apply approved changes. **Mutation path:** Cursor agents produce **mutation JSON** → user approves → **`write_doc`** runs Python under **`prestonotes_gdoc/`** (`update-gdoc-customer-notes.py write --mutations …`). **`append_ledger`** runs the `ledger-append` subcommand after a successful write. Nothing writes customer or Google state without MCP + approval.
 - **Reference from old project:** `../prestoNotes.orig/prestonotes_mcp/server.py` (write/sync section). Preserve `check_mutation_json_size` and temp mutation file behavior.
 - **Test:** `pytest prestonotes_mcp/tests/test_server_write_tools.py` — test `bootstrap_customer` with `dry_run=True` (never `dry_run=False` in CI). Test `append_ledger` against a fixture file. Test `write_doc` with `dry_run=True` and minimal valid mutations JSON.
-- **Files modified:** `prestonotes_mcp/server.py` (add write tools). `prestonotes_mcp/tests/test_server_write_tools.py` (new). **`custom-notes-agent/`** tree per §8.
+- **Files modified:** `prestonotes_mcp/server.py` (add write tools). `prestonotes_mcp/tests/test_server_write_tools.py` (new). **`prestonotes_gdoc/`** tree per §8.
 
 ---
 
@@ -485,11 +500,11 @@ Tasks are organized into four stages. Build them in order — each stage depends
 ---
 
 **TASK-007 — Port the cursor rules and ai_learnings**
-- **What it builds:** Runtime `.mdc` rules: `00-core-execution.mdc` (or merge into existing `core.mdc` until renamed), `15-user-preferences.mdc`, `ai_learnings.mdc`. **MVP playbooks** (prompt logic references for v2 rebuild): `load-customer-context.md`, `run-logic-audit.md`, `run-license-evidence-check.md`, `run-bva-report.md`. Additional long-form playbooks from v1 live under **§12 post-MVP** unless explicitly promoted into MVP by the user.
-- **Why it matters:** Rules + a small playbook set establish guardrails and repeatable read-only checks before write paths exist.
-- **Reference from old project:** `../prestoNotes.orig/.cursor/rules/` and `../prestoNotes.orig/docs/ai/playbooks/`. Update paths for v2 repo layout and per-call transcripts.
-- **Test:** Create `MyNotes/Customers/TestCo/` skeleton. Run `Load Customer Context for TestCo`. Verify correct files and no accidental `_MASTER_` full-file load unless intentional.
-- **Files created:** `.cursor/rules/00-core-execution.mdc` (or equivalent), `.cursor/rules/15-user-preferences.mdc`, `.cursor/rules/ai_learnings.mdc`, MVP playbooks under `docs/ai/playbooks/`.
+- **What it builds:** Runtime `.mdc` rules: legacy **`00-core-execution`** guardrails **merged into** **`.cursor/rules/core.mdc`** (Customer notes & MyNotes), plus **`15-user-preferences.mdc`**, **`ai_learnings.mdc`**. **Stage 1 MVP playbooks (three):** `load-customer-context.md` (read-only session prep), **`update-customer-notes.md`** (**AI meeting summaries / Daily Activity prepends** + structured **Customer Notes** updates via MCP **`read_doc` → approved mutation JSON → `write_doc`** / ledger / log), and **`run-license-evidence-check.md`** (SKU / entitlement evidence matrix; may **update** local **`[Customer]-AI-AcctSummary.md`** and **History Ledger** license columns when conflicts are found — uses **wiz docs MCP** and optional doc-cache scripts; port paths and document fallbacks when tools are absent). **Not MVP in TASK-007:** **`run-bva-report.md`** and **`run-logic-audit.md`** — defer to a **later reports task** (see **§12**). Additional long-form playbooks from v1 remain **§12 post-MVP** unless promoted with an owner task.
+- **Why it matters:** Rules plus **context load**, **notes update**, and **license evidence** cover session prep, human-in-the-loop GDoc work, and **commercial-field accuracy** for ledger and AI account summary before extractors and Stage 3 orchestration expand scope.
+- **Reference from old project:** `../prestoNotes.orig/.cursor/rules/` and `../prestoNotes.orig/docs/ai/playbooks/`. Update paths for v2 repo layout and **per-call** transcripts (prefer `Transcripts/*.txt` + MCP **`read_transcripts`**; bounded `_MASTER_*` only when intentional).
+- **Test:** Create `MyNotes/Customers/TestCo/` skeleton. Run **`Load Customer Context for TestCo`** (paths + ingestion). Run **`Update Customer Notes for TestCo`** through the **approval gate** (dry run / plan presentation acceptable for CI-free validation). Run **`Run License Evidence Check for TestCo`** to completion **or** document blocked steps if wiz MCP / cache paths are not configured. Verify no accidental full-file **`_MASTER_`** load unless the playbook explicitly allows it.
+- **Files created:** **`.cursor/rules/core.mdc`** (merged customer-notes section), **`.cursor/rules/15-user-preferences.mdc`**, **`.cursor/rules/ai_learnings.mdc`**, the **three** MVP playbooks under **`docs/ai/playbooks/`**, plus supporting reference ports under **`docs/ai/references/`** (e.g. **customer-data-ingestion-weights**, **customer-notes-mutation-rules**, **daily-activity-ai-prepend**).
 
 ---
 
@@ -537,11 +552,11 @@ Tasks are organized into four stages. Build them in order — each stage depends
 ---
 
 **TASK-011 — Extend the ledger schema for challenge lifecycle**
-- **What it builds:** A new MCP tool `append_ledger_v2` that extends the history ledger with new columns: `call_type`, `challenges_in_progress`, `challenges_resolved`, `value_realized`, `key_stakeholders`. Also a Python migration script for existing customers' ledgers.
+- **What it builds:** MCP tool **`append_ledger_v2(customer_name, row_json)`**; module **`prestonotes_mcp/ledger_v2.py`** (validation, append, 19→24 migration helpers); CLI **`python -m prestonotes_mcp.tools.migrate_ledger`** with **`--customer`** / **`--fixture`** and optional **`--dry-run`** (see **`docs/MIGRATION_GUIDE.md`**).
 - **Why it matters:** The history ledger is the persistent state of an account over time. Adding challenge lifecycle and value columns gives the journey narrative its raw data.
-- **Reference from old project:** `../prestonotes_mcp/server.py` — the existing `append_ledger` tool. The new v2 version adds columns but must be backward compatible with existing ledger rows.
+- **Reference from old project:** `../prestonotes_mcp/server.py` — the existing `append_ledger` tool. The new v2 version adds columns; existing **19-column** ledgers are upgraded in place by **`migrate_ledger`** (padded cells), not by **`append_ledger_v2`** alone.
 - **Test:** `pytest prestonotes_mcp/tests/test_ledger_v2.py` — write a v2 ledger row, read it back, verify all new columns persist correctly. Run migration script on a fixture ledger file, verify old rows are preserved unchanged.
-- **Files modified:** `prestonotes_mcp/server.py`. New: `prestonotes_mcp/tools/migrate_ledger.py`, `prestonotes_mcp/tests/test_ledger_v2.py`.
+- **Files modified:** `prestonotes_mcp/server.py`. New: `prestonotes_mcp/ledger_v2.py`, `prestonotes_mcp/tools/migrate_ledger.py`, `prestonotes_mcp/tests/test_ledger_v2.py`.
 
 ---
 
@@ -657,7 +672,7 @@ Tasks are organized into four stages. Build them in order — each stage depends
 - **Test (manual):**
   1. Archive the old `update-customer-notes.md`
   2. Run `Update Customer Notes for [CustomerName]` with the new orchestrator
-  3. Run `Run Logic Audit for [CustomerName]` to verify no data regressions
+  3. Run read-only regression checks (e.g. **`read_doc`** section diff vs last known good, or the **logic-audit** playbook **once** that deferred report task has ported it)
   4. Compare output quality to the last known good run from the old playbook
 - **Files created:** `docs/ai/playbooks/debug-pipeline.md`.
 
@@ -711,23 +726,23 @@ A task is only complete when ALL of the following are true:
 
 ## 11. Trigger Phrase Reference (MVP)
 
-These triggers are **in scope for the v2 MVP** and map directly to tasks in §9. Wording in playbooks may vary slightly; the **task router** (`10-task-router.mdc`) is the source of truth for aliases.
+These triggers are **in scope for the v2 MVP** (Stage 1–2 and Stage 3 where noted) and map to tasks in §9. Wording in playbooks may vary slightly; the **task router** (`10-task-router.mdc`, TASK-017) is the source of truth for aliases when it ships. **Report-only** triggers **`Run Logic Audit`** and **`Run BVA Report`** are **not** Stage 1 MVP — defer to a **later reports** backlog item (see **§12**). **`Run License Evidence Check`** **is** Stage 1 MVP (**TASK-007**).
 
 | Trigger | What It Does | Stage |
 |---|---|---|
 | `Load Customer Context for [Customer]` | Read-only snapshot for session prep | 1 |
+| `Update Customer Notes for [Customer]` | **MVP (TASK-007):** Monolithic playbook — sync/read, **Daily Activity AI recaps** + structured doc mutations, user-approved **`write_doc`** / ledger / log via MCP. **Later (TASK-017):** same trigger may route through multi-advisor orchestrator. | 1 → 3 |
 | `Extract Call Records for [Customer]` | Build/update **call-records** + **transcript-index** from per-call transcript files | 1 |
 | `Test Call Record Extraction for [Customer]` | Manual QA / coverage report for extraction | 1 |
-| `Run Logic Audit for [Customer]` | Read-only quality check — no writes | 1 |
-| `Run License Evidence Check for [Customer]` | Commercial entitlement check | 1 |
-| `Run BVA Report for [Customer]` | Business value assessment | 1 |
-| `Run Journey Timeline for [Customer]` | Build or refresh **Journey-Timeline** artifact | 2 |
-| `Run Account Summary for [Customer]` | Exec + detailed account summary (template-driven) | 2 |
+| `Run License Evidence Check for [Customer]` | SKU / entitlement evidence matrix; may **update** local **`[Customer]-AI-AcctSummary.md`** (**Wiz Commercials**) and **History Ledger** license columns; **wiz docs MCP** + optional cache tooling | 1 |
+| `Run Journey Timeline for [Customer]` | Build or refresh **`[Customer]-Journey-Timeline.md`** under **`AI_Insights/`** using **`docs/ai/playbooks/run-journey-timeline.md`** and **`.cursor/rules/22-journey-synthesizer.mdc`** (TASK-012); optional **`update_challenge_state`** when proposing lifecycle corrections. Refs: **`docs/ai/references/challenge-lifecycle-model.md`**, **`docs/ai/references/health-score-model.md`**. | 2 |
+| `Run Account Summary for [Customer]` | Structured exec + account narrative via **`docs/ai/playbooks/run-account-summary.md`** and **`docs/ai/references/exec-summary-template.md`** (TASK-013). **Read-heavy:** optional **`sync_notes`** MCP or **`scripts/rsync-gdrive-notes.sh`**, then MCP reads such as **`discover_doc`**, **`read_doc`**, **`read_transcript_index`**, **`read_ledger`**, **`read_call_records`**, **`read_transcripts`**, optional **`read_audit_log`**; weighted context per **`docs/ai/references/customer-data-ingestion-weights.md`**. No mandatory writes; optional **`log_run`** only if the user asks for an audit trail entry. | 2 |
 | `Run Exec Briefing for [Customer]` | One-page exec summary | 2 |
-| `Run Challenge Review for [Customer]` | Challenge table + stall signals | 2 |
-| `Update Customer Notes for [Customer]` | Full orchestrated update: sync → extract → advisors → approval → **write_doc** / ledger / log | 3 |
+| `Run Challenge Review for [Customer]` | **`docs/ai/playbooks/run-challenge-review.md`** (TASK-014): read **`AI_Insights/challenge-lifecycle.json`**, **§7.1** call records, optional **History Ledger**; emit one table (**state**, **last updated**, **evidence**, **recommended action**, stall signals e.g. 60+ days idle). MCP **`update_challenge_state`** only after **explicit user approval** per proposed transition. Refs: **`docs/ai/references/challenge-lifecycle-model.md`**, §7.4. | 2 |
 | `Run Tech Acct Plan for [Customer] [Domain]` | **Single-domain** advisor pass (used to validate SOC-first, then others as their `.mdc` ship) | 3 |
 | `Debug Pipeline for [Customer]` | Verbose troubleshooting playbook for Stage 3 integration | 3 |
+
+**Customer-local MCP writes (MyNotes mirror, not GDoc):** Stage 1–2 tools that mutate files under **`MyNotes/Customers/<Customer>/`** include **`write_call_record`**, **`update_transcript_index`**, **`write_journey_timeline`** ( **`AI_Insights/<Customer>-Journey-Timeline.md`** ), and **`update_challenge_state`** ( **`AI_Insights/challenge-lifecycle.json`** ). Each requires the **Rule 3** approval gate in chat before the tool runs. Journey timeline markdown is UTF-8 with a configurable max body size (**`max_journey_timeline_bytes`** in **`prestonotes-mcp.yaml`**). Challenge transitions follow §7.4 states; the JSON file stores **`current_state`** and an append-only **`history`** (`state`, `at`, `evidence`) per challenge id.
 
 ---
 
@@ -739,9 +754,19 @@ These triggers are **in scope for the v2 MVP** and map directly to tasks in §9.
 
 | Legacy / extra trigger | Notes |
 |---|---|
+| `Run Logic Audit for [Customer]` | Read-only QA report — **deferred** (not TASK-007 MVP) |
+| `Run BVA Report for [Customer]` | Business value assessment — **deferred** (not TASK-007 MVP); explicitly out of MVP per product direction |
 | `Run Full Account Rebuild for [Customer]` | Composed multi-step v1 workflow — **superseded** by orchestrator + explicit triggers when needed |
 | `Run Step 9 Post-Seed Synthesis` / `Polish Account Summary` (and related) | Heavy **replace_field_entries** passes — reference `run-seeded-notes-replay.md` in orig |
 | `build-product-intelligence` / deep doc-harvest flows | Revisit with **wiz-local** + Stage 4 RAG; avoid context flooding |
 | Any playbook depending on **`run_pipeline`** / `run-main-task.py` | **Unsupported** in v2 — rewrite to LLM mutation JSON + `write_doc` if a capability must return |
 
 **Promotion rule:** A post-MVP playbook graduates into MVP only when it has an **owner task** in §9 and passes Definition of Done (§10).
+
+---
+
+## 13. V2 MVP Build Plan (Operational Guide)
+
+The **follow-along migration and MVP sequence** — task order, validation gates, session habits, and how this maps to the planner workflow — lives in **[`docs/V2_MVP_BUILD_PLAN.md`](V2_MVP_BUILD_PLAN.md)**.
+
+**Related:** [`docs/MIGRATION_GUIDE.md`](MIGRATION_GUIDE.md) (legacy paths, **`prestonotes_gdoc/`** checklist), [`examples/BUILD_ADVISORY.md`](../examples/BUILD_ADVISORY.md) (advisory narrative; may be gitignored locally).

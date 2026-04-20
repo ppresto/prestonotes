@@ -1,0 +1,36 @@
+# Example — copy to prestonotes-mcp.yaml or merge edits. Set GDRIVE_BASE_PATH via Cursor .cursor/mcp.json env.
+
+server:
+  name: prestonotes
+  version: "2.0.0"
+
+paths:
+  gdrive_base: "${GDRIVE_BASE_PATH}"
+  local_notes: MyNotes
+  scripts: scripts
+  custom_agent: prestonotes_gdoc
+  doc_schema: prestonotes_gdoc/config/doc-schema.yaml
+  section_sequence: prestonotes_gdoc/config/section-sequence.yaml
+  task_budgets: prestonotes_gdoc/config/task-budgets.yaml
+  product_intel: MyNotes/Internal/AI_Insights/Product-Intelligence.md
+  audit_log_rel: tmp/mcp-audit.log
+
+google:
+  auth_account: "${GCLOUD_ACCOUNT}"
+  mynotes_root_folder_id: "${MYNOTES_ROOT_FOLDER_ID}"
+
+defaults:
+  # read_transcripts: max files (newest mtime first), max bytes per file (UTF-8), master transcript handling
+  transcript_limit: 3
+  transcript_max_bytes: 51200
+  transcript_exclude_master_when_per_call: true
+  ledger_max_rows: 10
+  product_intel_max_age_days: 7
+
+security:
+  customer_name_pattern: "^[A-Za-z0-9][A-Za-z0-9 _\\-]{0,63}$"
+  rate_limit_per_minute: 30
+  max_mutation_json_bytes: 524288
+  # write_journey_timeline: max UTF-8 bytes for markdown body (default 2 MiB if omitted)
+  max_journey_timeline_bytes: 2097152
+  audit_tool_calls: true

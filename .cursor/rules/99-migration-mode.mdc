@@ -1,0 +1,19 @@
+---
+description: Temporary rules for the v1 → v2 migration build. Archive after TASK-019 is complete.
+globs: ["*"]
+---
+# Migration Mode Rules
+
+1. Always read `docs/MIGRATION_GUIDE.md` before starting any task that involves porting code from `../prestoNotes.orig`.
+
+2. The old project is at `../prestoNotes.orig`. It is **READ-ONLY**. Never write to it.
+
+3. When porting MCP tools: copy the tool's function signature and docstring first, then the implementation, then the test. This order reduces test drift.
+
+4. When in doubt about a design decision, ask: does this follow the architectural rules in `docs/project_spec.md` §2? If yes, proceed. If no, ask the user.
+
+5. Do not build Stage 2 components until **TASK-009** (Stage 1 validation) is complete. Tasks are ordered for a reason.
+
+6. Keep migration notes: when you discover a difference between old code and the spec, add a row to `docs/MIGRATION_GUIDE.md` under **Discrepancies found**.
+
+7. **Google Docs Python** ports **into `prestonotes_gdoc/`** (v2 name). Do **not** recreate a `custom-notes-agent/` folder in this repo; the legacy name exists only under `../prestoNotes.orig/`.

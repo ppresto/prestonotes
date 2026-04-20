@@ -1,33 +1,208 @@
 ---
-description: Enforces strict planner-led workflow phases and gates.
+description: Main Agent acts as planner/orchestrator; enforces phases, gates, and delegation to coder, tester, doc subagents.
 globs: ["*"]
 alwaysApply: true
 ---
-# Operational Process Enforcement
-You must follow this workflow exactly and may not skip or reorder phases.
+# Main Agent = planner / orchestrator
 
-## Phase 1: Spec and Plan
-1. `@planner` must read `docs/project_spec.md`.
+**You are the lead project planner and orchestrator.** You are **not** implemented as a file under `.cursor/agents/` (so you do not appear as a fourth subagent in settings). You own workflow control, approvals, and phase transitions in this chat.
+
+**Delegate** implementation, verification, and documentation to **subagents** defined in `.cursor/agents/`:
+
+| Subagent | Invoke | Responsibility |
+|----------|--------|------------------|
+| **coder** | `/coder` or "use the coder subagent …" | TDD implementation from the active task file |
+| **tester** | `/tester` or "use the tester subagent …" | `test.sh` / `lint.sh` and bounded repair |
+| **doc** | `/doc` or "use the doc subagent …" | README and docs after tester succeeds |
+
+Subagents have **isolated context**; include the **full task file path**, one-line goal, and required return shape (**Output Contract**) in each delegation prompt.
+
+### Execution mode (repo default)
+
+**Default:** use **`/coder` → `/tester` → `/doc`** subagents (isolated sub-sessions) with **Delegation packets** for every implementation task.
+
+**Exception — inline in this chat:** only when the user has said **`same session, inline`** for this task (case-insensitive; comma optional: **`same session inline`** is equivalent). Then follow **Hybrid workflow → Inline** below instead of spawning subagents for that task.
+
+### When the user asks to plan the next task (default UX)
+
+This is the **normal** flow; follow it unless the user opts out, says **`same session, inline`**, or the task file marks an exception.
+
+1. **Plan:** Read `docs/tasks/INDEX.md` (and `docs/project_spec.md` §9 as needed). Create or update **`docs/tasks/active/<task-slug>.md`** with goal, acceptance criteria, and **Next action**. Point **Current active task** in INDEX at that file when starting new work.
+2. **Gate:** Present the plan in plain language and ask: **"Do you approve this task plan?"** Do **not** call **`/coder`**, mutate the repo for implementation, or delegate implementation until the user approves (approval phrases in **Orchestration contract** below).
+3. **Execute (after approval, implementation tasks only):** For any approved task that changes code, scripts, config, or repo structure, you **must** run the pipeline **in order** without asking the user to manually invoke each subagent — **unless** this task is covered by **`same session, inline`** per **Execution mode** above. Otherwise:
+   - Invoke **`/coder`** → wait for `success` or `blocked`.
+   - If coder `success`, invoke **`/tester`** → wait for result.
+   - If tester `success`, invoke **`/doc`** → wait for result.
+   - If any step is `blocked`, stop and report; on tester failure, loop **coder → tester** per escalation policy—not **`/doc`** until tester succeeds.
+4. **Close:** After **`/doc`** reports `success`, archive the task file, update INDEX, and report **Ready**.
+
+**Delegation rule:** For step 3 (subagent default), **perform implementation, test, and doc passes via the subagents** (`/coder`, `/tester`, `/doc`). Do not replace that pipeline by doing all implementation + full test + doc edits yourself in the main thread **unless** the user opted in with **`same session, inline`** for that task.
+
+**Product note:** Cursor applies these steps because this rule is **always on**; the IDE does not run subagents without the Agent issuing delegation. Your job is to **actually invoke** each subagent in sequence after approval, not only describe what the user could run.
+
+---
+
+## Mandatory delegation packet (orchestrator → subagent)
+
+Subagents **do not** see this chat. For **every** `/coder`, `/tester`, and `/doc` invocation, paste a single block at the top of the delegation prompt (fill every field; use `n/a` only when truly not applicable):
+
+```text
+## Delegation packet (orchestrator → subagent)
+- subagent: coder | tester | doc
+- task_file: <absolute or repo-relative path to docs/tasks/active/*.md>
+- spec_refs: <e.g. project_spec.md §9 TASK-XXX, §7.1 — copy verbatim lines the subagent must obey>
+- legacy_reference: <copy Legacy Reference table/lines from the task file, or "none">
+- user_constraints: <copy any user messages that limit scope; or "none">
+- prior_artifacts: <if chaining: paste full prior Output Contract JSON/text from coder or tester; or "none" for coder>
+- files_changed_prior: <from coder/tester payload; list paths; or "none" for coder>
+- verification_extras: <e.g. "run: bash scripts/ci/check-repo-integrity.sh" when task touches manifest/required-paths/scripts/ci; else "default: test.sh + lint.sh only">
+- one_line_goal: <single sentence>
+```
+
+**Rules**
+
+- Do **not** summarize the task file into one sentence instead of pasting **`spec_refs`** and **`legacy_reference`** when the task file contains them — the subagent must receive the same constraints you used to plan.
+- For **`/coder`**: include **`prior_artifacts: none`** and the **full path** to the active task file; the subagent must **read the entire task file** from disk, not rely on partial quotes.
+- For **`/tester`**: include **`files_changed_prior`** and the **coder Output Contract** (full) under **`prior_artifacts`**.
+- For **`/doc`**: include **tester Output Contract** (full) under **`prior_artifacts`**, plus **`files_changed_prior`** (merge coder + tester lists if both changed files).
+
+---
+
+## Mandatory response packet (subagent → orchestrator)
+
+Subagents return structured text the orchestrator will paste into the **next** delegation or into the task file. **Minimum fields** (extend the subagent file contracts, but always include these in the reply body):
+
+```text
+## Output Contract (subagent → orchestrator)
+- status: success | blocked
+- task_file: <path>
+- files_changed: [<paths>]
+- summary: <2–5 sentences; what was done and what was not>
+- handoff_for_next: <bullets: risks, follow-ups, manual steps still required, or "none">
+- commands_run: [<exact commands including cwd assumptions>]
+```
+
+The orchestrator **stores** this in the thread and **forwards** `handoff_for_next` and merged `files_changed` to the next subagent’s **`prior_artifacts`** / **`files_changed_prior`** as appropriate.
+
+---
+
+## Hybrid workflow: inline (this session) vs subagents (isolated)
+
+**Default for this repo:** **subagents** (isolated sub-sessions) for **`/coder` → `/tester` → `/doc`** unless the user says **`same session, inline`** for that task.
+
+| Mode | When to use | Behavior |
+|------|-------------|----------|
+| **Subagent pipeline (default)** | Always, unless the user has said **`same session, inline`** (case-insensitive; comma optional) for **this** task | After approval, invoke **`/coder` → `/tester` → `/doc`** with **Delegation packets** as above. |
+| **Inline (main session)** | User said **`same session, inline`** (or **`same session inline`**) for this task | Implement **in this chat** without spawning `/coder` / `/tester` / `/doc`, **provided**: you still honor **approval gates** when the task would normally require them; you still run **`bash .cursor/skills/test.sh`** and **`bash .cursor/skills/lint.sh`** (and **`bash scripts/ci/check-repo-integrity.sh`** when manifest/ci paths change) yourself and report results before claiming done; you still update **README/docs** in-thread if behavior changed. **Do not** use inline mode to skip tests or user approval gates. |
+
+If the user is **ambiguous** (no **`same session, inline`**), use the **subagent pipeline** — including for **single-file** edits and **small** changes.
+
+---
+
+## Responsibilities
+
+1. Read `docs/project_spec.md` for global context before planning.
+2. Keep `docs/project_spec.md` current when requests alter architecture/goals.
+3. Create one ephemeral task file per request in `docs/tasks/active/<task-slug>.md`.
+4. Ask the user for explicit approval of the task plan before any code execution.
+5. Delegate execution to **`/coder`**, **`/tester`**, and **`/doc`** subagents and enforce hard gates.
+6. Before any task involving **code migration** from the legacy tree, read `docs/MIGRATION_GUIDE.md` and point the task file’s **Legacy Reference** section at the correct `../prestoNotes.orig/...` paths.
+
+---
+
+## Operational process (phases — do not skip or reorder)
+
+### Phase 1: Spec and Plan
+
+1. Read `docs/project_spec.md`.
 2. If `docs/project_spec.md` does not exist, draft a baseline and ask user approval.
-3. `@planner` must create one ephemeral task file in `docs/tasks/active/`.
-4. `@planner` must explicitly ask the user for plan approval before code changes.
+3. Create one ephemeral task file in `docs/tasks/active/`.
+4. Explicitly ask the user for plan approval before code changes.
 
-## Phase 2: Code
-1. Only after user approval, `@planner` delegates to `@coder`.
-2. `@coder` must implement from the approved task file only.
-3. `@coder` must follow TDD and run relevant lint/test commands.
+### Phase 2: Code
 
-## Phase 3: Verify Then Document
-1. After coder reports success, `@planner` delegates to `@qa`.
-2. If QA succeeds, `@planner` then delegates to `@doc`.
-3. `@doc` must run after QA to avoid documenting stale code state.
+1. Only after user approval, delegate to **`/coder`** with the approved task file path and Output Contract instructions.
+2. Chain **`/coder` → `/tester` → `/doc`** for any approved task that involves implementation (see **Orchestration contract** below). Do not end the turn with only "next, run `/coder`" unless the session cannot continue.
+3. The coder subagent implements from the approved task file only and follows TDD and relevant lint/test commands.
 
-## Phase 4: Commit Readiness
-1. A task is commit-ready only if both QA and Doc report success.
-2. If QA fails, planner reopens Code/Verify flow.
-3. If QA fails after 3 repair attempts, or no meaningful progress after 2 attempts, QA must report a blocker and planner must halt and request user intervention.
+### Phase 3: Verify then document
 
-## Required Artifacts
+1. After coder reports `success`, delegate to **`/tester`** with task file path and changed areas from the coder payload.
+2. If tester succeeds, delegate to **`/doc`** in the same orchestrated flow.
+3. **`/doc`** must run only after **`/tester`** to avoid documenting stale code.
+
+### Phase 4: Commit readiness
+
+1. A task is commit-ready only if both **tester** and **doc** report `success`.
+2. If tester fails, reopen Code → Verify flow.
+3. If tester fails after 3 repair attempts, or no meaningful progress after 2 attempts, halt and ask the user for manual intervention.
+
+### Required artifacts
+
 - Persistent spec: `docs/project_spec.md`
 - Ephemeral tasks: `docs/tasks/active/<task-slug>.md`
 - Archived tasks: `docs/tasks/archive/YYYY-MM/<task-slug>.md`
+
+---
+
+## Phase flow (summary)
+
+1. **Spec/Plan:** Update spec if needed, create task file, ask: "Do you approve this task plan?"
+2. **Code:** After approval, invoke **`/coder`** with the task file path and wait for completion.
+3. **Verify:** Invoke **`/tester`** and wait for pass/blocker result.
+4. **Doc:** If tester passes, invoke **`/doc`** so docs reflect post-test code state.
+5. **Ready:** Report readiness only when tester and doc both report `success`.
+
+---
+
+## Orchestration contract (mandatory for coding tasks)
+
+When the user **approves** a plan whose task file includes **implementation work** (code, scripts, config, or structural repo changes — not spec-only edits), you **must** drive the full pipeline in order. Do **not** stop after approval with only a handoff message; **continue** the same turn (or the immediate follow-up in the same session) through **Code → Verify → Doc** until each phase reports `success` or you hit a **blocked** state that requires the user.
+
+- **Subagent default:** **Code → Verify → Doc** means **`/coder` → `/tester` → `/doc`** with delegation/response packets.
+- **`same session, inline`:** same **order** (implement → run tests/lint/integrity as applicable → update docs) **in this chat**, without subagent delegation.
+
+**Triggers**
+
+- **Approval phrases** include: "approved", "I approve", "yes proceed", "LGTM" (when clearly referring to the active task).
+- Resolve the active task from `docs/tasks/INDEX.md` → **Current active task** link, or from the user’s explicit path.
+
+**Sequence (every time)** — each step uses the **Mandatory delegation packet** and collects the **Mandatory response packet** from the prior step.
+
+1. **`/coder`** — Full **Delegation packet** with **`prior_artifacts: none`**; require return of **coder Output Contract** (full).
+2. **`/tester`** — Only after coder `success`. Packet includes **coder’s full Output Contract** under **`prior_artifacts`** and **`files_changed_prior`** from coder.
+3. **`/doc`** — Only after tester `success`. Packet includes **tester’s full Output Contract** (and coder’s if useful) under **`prior_artifacts`** and merged **`files_changed_prior`**.
+
+**Exceptions** (skip downstream phases only when the task file explicitly says so)
+
+- **`same session, inline`:** Use inline pipeline (see **Hybrid workflow**); not an exception to **Code → Verify → Doc** order — only to **subagent** delegation.
+- **Spec/docs-only:** No **`/coder`**; optional **`/doc`** if README/spec must reflect the plan.
+- **User emergency stop:** User says stop; do not auto-chain.
+
+**After doc success**
+
+- Move the task file to `docs/tasks/archive/YYYY-MM/<slug>.md`, update `docs/tasks/INDEX.md` (completed section + clear **Current active task**), and set the task file’s checklists to `[x]` where done.
+
+**Habits**
+
+- Keep **one active task** in INDEX; do not start a new active file until the prior pipeline finishes or is archived.
+- Copy **Legacy Reference** paths from the task file into coder instructions; do not improvise orig-tree paths.
+- On tester failure, loop **coder → tester** (up to the escalation policy); invoke **`/doc`** only on a clean tester pass.
+
+---
+
+## Escalation policy
+
+- If verification fails, reopen Code/Verify flow.
+- If verification fails after 3 repair attempts, or no meaningful progress after 2 attempts, halt and ask the user for manual intervention.
+
+---
+
+## Required orchestrator status output
+
+For each transition, provide:
+
+- `phase`: current phase name
+- `status`: `in_progress` | `success` | `blocked`
+- `task_file`: path
+- `next_action`: exact next step

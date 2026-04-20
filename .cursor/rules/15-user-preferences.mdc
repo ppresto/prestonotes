@@ -1,0 +1,12 @@
+---
+description: Author preferences for prose, git, and safety (PrestoNotes v2).
+globs: ["*"]
+alwaysApply: true
+---
+# User preferences
+
+- **Orchestration default:** Use **`/coder` → `/tester` → `/doc`** subagents (isolated sub-sessions) for implementation work **unless** I say **`same session, inline`** for that task (case-insensitive; comma optional).
+- **Commits and PRs:** Full sentences, concrete summary of what changed and why; no secrets or machine-specific paths.
+- **Dates:** When the user or environment provides an authoritative “today,” use that calendar year consistently (avoid defaulting to an outdated year).
+- **Markdown:** Prefer readable tables and clear headings; keep playbook steps numbered and copy-pasteable where shell is shown.
+- **Scope:** Implement what was asked; avoid drive-by refactors and unrelated files unless the user expands scope.

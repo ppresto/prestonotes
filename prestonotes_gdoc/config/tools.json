@@ -1,0 +1,5 @@
+{
+	"$schema": "prestonotes-tool-registry-v1",
+	"description": "v2: Primary tool surface is the prestonotes MCP server (prestonotes_mcp). This file is reserved for optional non-MCP script registry metadata — not permission gates for MCP (those live in Cursor rules + user approval).",
+	"tools": []
+}

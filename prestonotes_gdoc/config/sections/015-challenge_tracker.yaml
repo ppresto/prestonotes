@@ -1,0 +1,144 @@
+version: 1
+
+managed_by: "planner"
+section_key: "challenge_tracker"
+
+runtime:
+  enabled: true
+  llm_first: true
+  llm_required: true
+
+mutation_contract:
+  section_type: "table"
+  allowed_actions:
+    - "add_table_row"
+    - "update_table_row"
+  required_fields_by_action:
+    add_table_row:
+      - challenge
+      - date
+      - category
+      - status
+      - notes_references
+    update_table_row:
+      - target_value
+      - row
+  allowed_enums:
+    status:
+      - Open
+      - In Progress
+      - Resolved
+      - Closed
+      - Needs Validation
+    category:
+      - Technical
+      - Process
+      - Business
+      - Other
+
+dedupe_policy:
+  canonical_per_theme: true
+  require_theme_key: true
+  compare_against_existing_doc: true
+  on_duplicate: "update_existing_with_new_evidence"
+  guidance: "One active challenge row per theme. Rephrases must not create new rows."
+
+quality_gates:
+  intent: "execution_blockers_with_status_lifecycle"
+  cross_section_leakage_block: true
+
+section_extensions:
+  extraction_mode: "semantic_first"
+  notes_style_ref: "extract_from_sources.notes_style"
+  severity_profiles_ref: "extract_from_sources.severity_profiles"
+  readability_gate_ref: "extract_from_sources.readability_gate"
+
+table_contract:
+  action_preference:
+    - "add_table_row"
+    - "update_table_row"
+  required_row_fields:
+    - challenge
+    - date
+    - category
+    - status
+    - notes_references
+
+extract_from_sources:
+  enabled: true
+  llm_first: true
+  llm_required: true
+  mode: semantic_first
+  source_scope: "daily_seed_note_with_prior_context"
+  fallback_keyword: "challenge"
+  min_signal_hits: 2
+  min_chars: 40
+  category_strategy: infer_or_other
+  default_status: "Open"
+  dedupe_key: "challenge_plus_evidence_fingerprint"
+  merge_existing_notes: true
+  dedupe_policy:
+    canonical_per_theme: true
+    require_theme_key: true
+    compare_against_existing_doc: true
+    on_duplicate: "update_existing_with_new_evidence"
+    guidance: "One active challenge row per theme. Rephrases must not create new rows."
+  severity_profile_default: "medium"
+  severity_profiles:
+    major:
+      min_signal_hits: 3
+      dedupe_similarity: 0.82
+    medium:
+      min_signal_hits: 2
+      dedupe_similarity: 0.72
+    minor:
+      min_signal_hits: 1
+      dedupe_similarity: 0.62
+  readability_gate:
+    min_words: 6
+    max_token_len: 64
+    min_alpha_ratio: 0.45
+    max_symbol_ratio: 0.35
+    exclude_patterns:
+      - "^\\[image\\d+\\]:"
+      - "data:image/"
+      - "base64,"
+      - "^\\|.*\\|$"
+      - "^[-=]{3,}$"
+      - "^entry\\s+\\d+\\s*:"
+      - "^source_(kind|path)\\s*:"
+      - "^date(_quality|_source)?\\s*:"
+  title_generation:
+    mode: "ai_chat_orchestrated_preferred"
+    guidance: "Generate short, meaningful challenge titles; avoid bullets, numbering, markdown artifacts, and clipped fragments."
+  notes_style:
+    narrative_sentences_only: true
+    min_sentences: 2
+    disallow_label_prefixes:
+      - "Evidence:"
+      - "Impact:"
+    guidance: "Write 2-3 clear executive sentences describing the challenge, why it matters, and business/security impact. Do not use label prefixes."
+  semantic_signals:
+    - blocker
+    - blocked
+    - issue
+    - pain
+    - manual
+    - delay
+    - bottleneck
+    - missing
+    - cannot
+    - lack
+    - overwhelmed
+    - incident
+    - vulnerability
+    - triage
+
+status_rules:
+  allowed_statuses:
+    - Open
+    - In Progress
+    - Resolved
+    - Closed
+    - Needs Validation
+  default_if_missing: "Open"

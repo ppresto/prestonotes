@@ -1,0 +1,111 @@
+version: 1
+
+managed_by: "planner"
+section_key: "deal_stage_tracker"
+
+runtime:
+  enabled: true
+  llm_first: true
+  llm_required: true
+
+mutation_contract:
+  section_type: "table"
+  allowed_actions:
+    - "update_table_row"
+  required_fields_by_action:
+    update_table_row:
+      - target_value
+      - row
+  allowed_enums:
+    stage:
+      - "not-active"
+      - "pov"
+      - "tech win"
+      - "procurement"
+      - "win"
+    activity:
+      - "active"
+      - "inactive"
+
+dedupe_policy:
+  canonical_per_theme: true
+  require_theme_key: true
+  compare_against_existing_doc: true
+  on_duplicate: "update_existing_with_new_evidence"
+  guidance: "One active lifecycle row per SKU theme/state transition. Avoid duplicate status narratives."
+
+quality_gates:
+  intent: "per_sku_lifecycle_status_tracking"
+  cross_section_leakage_block: true
+
+section_extensions:
+  stage_signal_hints_ref: "update_from_evidence.required_stage_signals"
+  semantic_support_signals_ref: "update_from_evidence.semantic_support_signals"
+  sku_aliases_ref: "update_from_evidence.sku_aliases"
+
+update_from_evidence:
+  enabled: true
+  llm_first: true
+  llm_required: true
+  suppress_noop_updates: true
+  preserve_user_edited_rows: true
+  require_transition_signals: true
+  dedupe_policy:
+    canonical_per_theme: true
+    require_theme_key: true
+    compare_against_existing_doc: true
+    on_duplicate: "update_existing_with_new_evidence"
+    guidance: "One active lifecycle row per SKU theme/state transition. Avoid duplicate status narratives."
+  allowed_stage_values:
+    - "not-active"
+    - "pov"
+    - "tech win"
+    - "procurement"
+    - "win"
+  allowed_activity_values:
+    - "active"
+    - "inactive"
+  # Stage updates are keyword-gated for reliability.
+  required_stage_signals:
+    - "pov"
+    - "poc"
+    - "proof of value"
+    - "proof of concept"
+  # Semantic cues improve line selection, but do not bypass required stage signals.
+  semantic_support_signals:
+    - "tech win"
+    - "evaluation"
+    - "pilot"
+    - "success criteria"
+    - "approved"
+  negation_tokens:
+    - "not a pov"
+    - "no pov"
+    - "not pursuing pov"
+    - "pov not approved"
+  contradiction_signals:
+    - "cancelled"
+    - "not pursuing"
+    - "on hold"
+    - "disqualified"
+    - "lost"
+    - "de-scoped"
+    - "moved back"
+  reason_max_chars: 220
+  # Simple SKU mention routing. If POV appears without a SKU, default cloud.
+  sku_aliases:
+    cloud:
+      - "wiz cloud"
+      - "cloud"
+      - "cspm"
+    sensor:
+      - "wiz sensor"
+      - "sensor"
+    defend:
+      - "wiz defend"
+      - "defend"
+      - "cdr"
+    code:
+      - "wiz code"
+      - "code"
+      - "aspm"

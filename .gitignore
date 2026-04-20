@@ -13,6 +13,7 @@ wheels/
 node_modules/
 .vector_db/
 .env
+prestonotes_mcp/.env
 MyNotes/
 
 # Local examples (not tracked; replace in your own clone if needed)
@@ -20,3 +21,12 @@ examples/
 
 # Local logs and share artifacts
 logs/
+
+# MCP temp mutation files (write_doc)
+tmp/
+
+# GDoc stack scratch (never commit artifacts under the port tree)
+prestonotes_gdoc/tmp/
+
+# macOS
+.DS_Store

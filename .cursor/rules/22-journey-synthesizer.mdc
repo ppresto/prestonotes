@@ -1,0 +1,41 @@
+---
+description: Synthesize account journey from call records + index into Journey-Timeline.md; use with run-journey-timeline playbook.
+globs:
+  - "MyNotes/**"
+  - "docs/ai/playbooks/run-journey-timeline.md"
+  - "docs/ai/references/challenge-lifecycle-model.md"
+  - "docs/ai/references/health-score-model.md"
+alwaysApply: false
+---
+# Journey synthesizer (Stage 2)
+
+When the user invokes **`Run Journey Timeline for [CustomerName]`** (or clearly the same intent), follow **`docs/ai/playbooks/run-journey-timeline.md`** end-to-end. Do not skip **approval gates** before **`write_journey_timeline`** or **`update_challenge_state`**.
+
+## Authority
+
+- **Synthesizer steps (1–9):** `docs/project_spec.md` **§9 TASK-012** — same ordering as the playbook.
+- **Challenge states:** `docs/project_spec.md` **§7.4** and **`docs/ai/references/challenge-lifecycle-model.md`**. Valid **`new_state`** values for **`update_challenge_state`**: `identified`, `acknowledged`, `in_progress`, `resolved`, `reopened`, `stalled` (see **`prestonotes_mcp/journey.py`** — invalid transitions raise **`ValueError`**).
+- **Health score:** **`docs/ai/references/health-score-model.md`** — definitions are **verbatim** from the spec; do not paraphrase the 🟢🟡🔴⚪ rules when labeling an account.
+- **Evidence tags:** When narrative claims tie to meetings, prefer **`docs/project_spec.md` §7.5** tags in prose where appropriate (`[Verified: …]`, `[Inferred: …]`, etc.).
+- **One customer per session:** `docs/project_spec.md` **Rule 4**.
+
+## MCP tools (prestonotes server)
+
+**Read (default path):**
+
+- **`read_transcript_index(customer_name)`** — load **`transcript-index.json`** (call list, `record_file` pointers, coverage).
+- **`read_call_records(customer_name, since_date?, call_type?)`** — full §7.1 JSON for synthesis (omit filters to load the full set needed for the timeline, unless the user scopes a date range).
+- **`read_ledger(customer_name, max_rows?)`** — optional color on commercial motion, historical themes, or ledger-stated challenges (file can be large; rely on playbook guidance).
+
+**Write (approval required — Rule 3):**
+
+- **`write_journey_timeline(customer_name, content)`** — writes **`MyNotes/Customers/<Customer>/AI_Insights/<Customer>-Journey-Timeline.md`**. **`content`** must stay under **`max_journey_timeline_bytes`** in **`prestonotes-mcp.yaml`**.
+- **`update_challenge_state(customer_name, challenge_id, new_state, evidence)`** — appends to **`AI_Insights/challenge-lifecycle.json`**. Use **only** when you are proposing a **correcting** lifecycle transition with **dated, citeable evidence** (call id, quote, or ledger row). One approval batch per playbook step is fine.
+
+**Optional context:** **`sync_notes`**, **`get_customer_status`**, **`read_audit_log`** — if the mirror may be stale or you need run / rejection history. Do not use these as substitutes for call records.
+
+## Discipline
+
+- Prefer **call records + index** over bulk **`read_transcripts`**; load **at most one** raw **`.txt`** when a verbatim boundary quote is required (**Rule 2**).
+- Never fabricate milestones or challenge transitions; if data is thin, say so in the artifact and reflect **⚪ Unknown** health per **`health-score-model.md`**.
+- After approved writes, you may **`log_run`** a short note (optional; separate approval if your session treats it as a mutating follow-up).
