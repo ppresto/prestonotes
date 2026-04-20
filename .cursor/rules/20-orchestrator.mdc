@@ -1,0 +1,42 @@
+---
+description: Gated MCP playbook for Update Customer Notes — sync, load, extractor delta, advisors SOC→APP→VULN→ASM→AI, compile mutations, STOP for approval, then writes.
+globs:
+  - "docs/ai/playbooks/update-customer-notes.md"
+  - "docs/ai/references/customer-state-update-delta.md"
+  - "MyNotes/**"
+alwaysApply: false
+---
+# Orchestrator — Update Customer Notes (Stage 3)
+
+**Scope:** When the user runs **`Update Customer Notes for [CustomerName]`** via **`10-task-router.mdc`**, execute the steps below **in order**. This is a **product-run playbook** for the **main Agent in this chat**; it does **not** replace **`.cursor/rules/workflow.mdc`** (repo planner, subagent **`/coder` `/tester` `/doc`** gates, or task-file approval).
+
+**Handoff contract:** The extractor (or wrapper) produces a delta shaped per **`docs/ai/references/customer-state-update-delta.md`** (conventional filename **`CustomerStateUpdate.json`**). Domain advisors consume that object and return structured JSON per their rules:
+
+| Order | Advisor | Rule file |
+|------|---------|-----------|
+| 1 | SOC | **`.cursor/rules/23-domain-advisor-soc.mdc`** |
+| 2 | APP | **`.cursor/rules/24-domain-advisor-app.mdc`** |
+| 3 | VULN | **`.cursor/rules/25-domain-advisor-vuln.mdc`** |
+| 4 | ASM | **`.cursor/rules/26-domain-advisor-asm.mdc`** |
+| 5 | AI | **`.cursor/rules/27-domain-advisor-ai.mdc`** |
+
+Load **`.cursor/rules/ai_learnings.mdc`** and honor overrides (**`docs/project_spec.md` §2 Rule 5**). For extractor discipline, align with **`.cursor/rules/21-extractor.mdc`** when creating or validating call records.
+
+## Approval (non-negotiable)
+
+- **Steps 1–7:** Read-only MCP and reasoning only, except where **`.cursor/rules/21-extractor.mdc`** already requires approval before **`write_call_record`** / index updates.
+- **After step 7, before step 9:** **STOP.** Present a human-readable summary, concrete **mutation JSON**, proposed **ledger row** (v2 shape for **`append_ledger_v2`** when the customer is migrated — see **`docs/project_spec.md` §2**), and any other pending writes. Do **not** call **`write_doc`**, **`append_ledger`**, **`append_ledger_v2`**, **`write_journey_timeline`**, **`log_run`**, or **`sync_notes`** for mutation purposes until the user explicitly approves (same contract as **`.cursor/rules/core.mdc`**).
+
+## Steps (MCP and logic — **`docs/project_spec.md` §9 TASK-017**)
+
+1. **Sync** — Call MCP **`sync_notes`** and **`sync_transcripts`** for the customer context.
+2. **Load (transcripts / records)** — Read **`transcript-index.json`** (via MCP **`read_transcript_index`** when available). Check for gaps vs **`call-records/`**; if new raw transcript chunks lack call records, run the extractor path per **`21-extractor.mdc`** (user approval before **`write_call_record`**).
+3. **Load (notes / audit)** — Read account summary context (**`read_doc`** / **`discover_doc`** as needed), **last 5** History Ledger rows (**`read_ledger`** or file tools on the export path), **last 10** audit log entries (**`read_audit_log`**).
+4. **Scope** — If there are **new call records since the last ledger row** (or equivalent signal), plan a **full update**; otherwise prefer a **logic-audit / lighter** pass (still execute read steps needed for safety).
+5. **Extractor** — For new material, combine **new call records** + current state; produce **`CustomerStateUpdate.json`** per **`docs/ai/references/customer-state-update-delta.md`**.
+6. **Advisors (strictly sequential)** — Feed the same delta object to each advisor in order: **SOC → APP → VULN → ASM → AI**. Wait for each advisor output before starting the next. **ASM** may use **`architecture_diagram_paths`** (images under **`MyNotes/Customers/<Customer>/`**) per **`26-domain-advisor-asm.mdc`**.
+7. **Compile** — Merge extractor output and all advisor outputs into **one** coherent proposed **Google Doc mutation** payload (schema per **`prestonotes_gdoc/config/doc-schema.yaml`** and **`docs/ai/references/customer-notes-mutation-rules.md`**). Prepare **`append_ledger_v2`** **`row_json`** when the ledger is on the **24-column** v2 model; otherwise follow **`core.mdc`** / project spec for **`append_ledger`** compatibility.
+8. **STOP — user review** — Plain-language summary, mutations, ledger row, and diff/preview (**`write_doc`** with **`dry_run=true`** when available). **No mutating MCP tools** beyond what step 2 already allowed for call records.
+9. **Execute (only after explicit user approval)** — In order typical for a completed run: **`write_doc`**, **`append_ledger_v2`** (or **`append_ledger`** if not migrated), **`write_journey_timeline`** as needed, **`log_run`**, then **`sync_notes`** to refresh local exports.
+
+If any step is blocked (auth, missing customer folder, schema validation), stop with a clear fix instruction (including any **`run_in_terminal_to_fix`** hints from MCP — **`core.mdc`**).

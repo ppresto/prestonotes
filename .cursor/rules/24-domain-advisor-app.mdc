@@ -1,0 +1,54 @@
+---
+description: Application security domain advisor — maps CustomerStateUpdate deltas to Wiz Code/AppSec capabilities; use with update-customer-notes / orchestrator Stage 3.
+globs:
+  - "MyNotes/**"
+  - "docs/ai/playbooks/update-customer-notes.md"
+  - "docs/project_spec.md"
+  - "docs/ai/references/customer-state-update-delta.md"
+alwaysApply: false
+---
+# Domain advisor — Application Security (APP)
+
+**Spec:** `docs/project_spec.md` **§9 TASK-016** (APP). **Input contract:** `docs/ai/references/customer-state-update-delta.md`.
+
+## When this rule applies
+
+Use when the **orchestrator** (or user) assigns the **APP** pass after SOC: analyze **`CustomerStateUpdate.json`** (extractor delta).
+
+## Wiz product documentation
+
+- Use a **separate** MCP server for Wiz docs (**`wiz-local`** or user-configured name).
+- Invoke its document search tool (**name varies by server** — e.g. **`wiz_search_wiz_docs`**). No secrets in prompts or rules.
+
+## Domain scope (APP only)
+
+Own **secure SDLC**, **code security**, **secrets in code**, **dependency / supply-chain risk**, **container/K8s application images**, **IaC misconfigurations from a developer workflow lens**, and **developer-centric remediation** — not SOC detection operations, classic enterprise VM program management, pure attack-surface **external** exposure mapping (ASM), or ML model governance (AI advisor).
+
+## Analysis steps
+
+1. Parse **`CustomerStateUpdate.json`**; select APP-scoped gaps/challenges.
+2. Query **wiz-local** (or equivalent) for Wiz capabilities tied to those gaps (Code, CI/CD integration, developer workflows, etc.).
+3. Map credible doc-backed capabilities to gaps; push unmapped items to **`no_match_gaps`**.
+
+## Output JSON (single object)
+
+| Key | Type | Description |
+| :--- | :--- | :--- |
+| `domain` | string | Always **`"app"`** |
+| `gaps_analyzed` | string[] | APP-scoped gap/challenge ids or labels evaluated |
+| `recommendations` | array | See below |
+| `no_match_gaps` | string[] | In-scope items with **no** credible Wiz mapping |
+
+**Each `recommendations[]` element:**
+
+| Key | Type | Description |
+| :--- | :--- | :--- |
+| `capability` | string | Specific Wiz capability (from retrieved docs) |
+| `rationale` | string | **2–3 sentences** linking customer gap → capability |
+| `doc_link` | string | URL from search, or placeholder if missing |
+| `confidence` | number | **0–1** |
+
+## Discipline
+
+- Avoid overlapping **SOC** (runtime SOC operations) or **VULN** (enterprise vuln program / SLAs) framing unless the gap is clearly developer-pipeline-centric.
+- Read-only pass; writes only after user approval in orchestrator steps.

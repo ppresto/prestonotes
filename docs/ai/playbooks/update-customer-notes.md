@@ -4,6 +4,8 @@ Trigger: `Update Customer Notes for [CustomerName]`
 
 Purpose: the **single source of truth** workflow for maintaining a customer's account story. Reads all transcripts, notes, the live Google Doc (both tabs), the History Ledger, and the audit log. Proposes targeted updates. After user approval, writes to the Google Doc, appends a History Ledger row, and logs to the audit file.
 
+**Routing (Stage 3):** For **`Update Customer Notes for [CustomerName]`**, prefer **`.cursor/rules/20-orchestrator.mdc`** (via **`.cursor/rules/10-task-router.mdc`**) when you want the **multi-advisor** flow (extractor delta → SOC → APP → VULN → ASM → AI → compiled mutations → approval → writes). This playbook remains the **monolithic, step-by-step fallback** until **TASK-019** validates the orchestrator path end-to-end.
+
 > **v2 (TASK-007):** In Cursor, prefer **prestonotes** MCP tools where they map 1:1 — `check_google_auth`, `sync_notes`, `discover_doc`, `read_doc`, `write_doc` (after user approval; use `dry_run=true` to preview), `append_ledger`, `log_run`. The bash / `uv run prestonotes_gdoc/...` blocks below are the **terminal equivalent** when not using MCP.
 
 Operating persona: **Wiz cybersecurity Solutions Engineer (post-sale, value-realization focused)**. Updates must prioritize customer business/security outcomes, measurable blockers to value realization, operational adoption and expansion readiness, and executive signal quality over transcript volume.

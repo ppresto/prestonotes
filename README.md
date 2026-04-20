@@ -2,7 +2,7 @@
 
 **PrestoNotes** is a **Cursor-first** workspace for Solutions Engineers: **meeting transcripts**, a **local `MyNotes/` mirror** of Google Drive, **playbooks** (step-by-step markdown), and a **local MCP server** that talks to **Google Docs**, **customer files**, and **sync scripts** — so you can load context, update customer notes, extract structured call records, and (as migration progresses) build journey and account views **without** pasting secrets into chat.
 
-**Migration status:** **Stages 1–2** through **[`docs/tasks/INDEX.md`](docs/tasks/INDEX.md)** (through **TASK-014**) are implemented in this repo. **Stage 3** (domain advisors + orchestrator) and beyond are **not** shipped here yet — see **[`docs/V2_MVP_BUILD_PLAN.md`](docs/V2_MVP_BUILD_PLAN.md)** for the full roadmap. Legacy **v1** lived under `../prestoNotes.orig/` (read-only reference).
+**Migration status:** **Stages 1–3** implementation **artifacts** through **[`docs/tasks/INDEX.md`](docs/tasks/INDEX.md)** (**TASK-019** playbooks and rules) are **in this repo** — domain advisor **`.mdc`** files, **[`.cursor/rules/10-task-router.mdc`](.cursor/rules/10-task-router.mdc)** / **[`20-orchestrator.mdc`](.cursor/rules/20-orchestrator.mdc)**, and playbooks under **`docs/ai/playbooks/`** including **[`debug-pipeline.md`](docs/ai/playbooks/debug-pipeline.md)**. **Manual** end-to-end validation of the orchestrator path (diffs, ledger, audit, quality vs monolithic **`update-customer-notes.md`**) remains **your** checklist — run **`Debug Pipeline for [CustomerName]`** per that playbook; **Stage 4** (RAG) is **not** shipped. See **[`docs/V2_MVP_BUILD_PLAN.md`](docs/V2_MVP_BUILD_PLAN.md)** §11 and the roadmap. Legacy **v1** lived under `../prestoNotes.orig/` (read-only reference).
 
 ---
 
@@ -52,7 +52,15 @@ Use these **exact trigger phrases** (replace `[Customer]` / `[CustomerName]` wit
 |-------------------|---------|-----------------|
 | **`Run Journey Timeline for [CustomerName]`** | Narrative + **`write_journey_timeline`** (approval). | [`run-journey-timeline.md`](docs/ai/playbooks/run-journey-timeline.md) · [`.cursor/rules/22-journey-synthesizer.mdc`](.cursor/rules/22-journey-synthesizer.mdc) |
 | **`Run Account Summary for [CustomerName]`** | Exec-oriented account summary using the template. | [`run-account-summary.md`](docs/ai/playbooks/run-account-summary.md) · [`exec-summary-template.md`](docs/ai/references/exec-summary-template.md) |
+| **`Run Exec Briefing for [CustomerName]`** | One-page executive briefing in plain language (not the full account summary). | [`run-exec-briefing.md`](docs/ai/playbooks/run-exec-briefing.md) · [`exec-summary-template.md`](docs/ai/references/exec-summary-template.md) |
 | **`Run Challenge Review for [CustomerName]`** | Challenge table, stall signals, optional **`update_challenge_state`** (approval per change). | [`run-challenge-review.md`](docs/ai/playbooks/run-challenge-review.md) |
+
+### Stage 3 — Advisors, router, and validation
+
+| Trigger (example) | Purpose | Playbook / rules |
+|-------------------|---------|------------------|
+| **`Update Customer Notes for [Customer]`** | Same trigger as Stage 1; **task router** may steer the session toward the **orchestrator** (multi-advisor flow) — see playbook header. | [`update-customer-notes.md`](docs/ai/playbooks/update-customer-notes.md) · [`.cursor/rules/10-task-router.mdc`](.cursor/rules/10-task-router.mdc) · [`.cursor/rules/20-orchestrator.mdc`](.cursor/rules/20-orchestrator.mdc) |
+| **`Debug Pipeline for [CustomerName]`** | **Manual** Stage 3 checklist: orchestrator path vs monolithic fallback, **`read_doc`** diff, ledger, audit, quality compare. | [`debug-pipeline.md`](docs/ai/playbooks/debug-pipeline.md) |
 
 **Full trigger table** (MVP + future): **[`docs/project_spec.md` §11](docs/project_spec.md#11-trigger-phrase-reference-mvp)**.
 
@@ -77,8 +85,10 @@ Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (espe
 | **[`docs/tasks/INDEX.md`](docs/tasks/INDEX.md)** | What shipped / what’s next |
 | **[`scripts/README.md`](scripts/README.md)** | **`granola-sync`**, **`rsync-gdrive-notes`**, flags, Drive helpers |
 | **[`docs/ai/references/`](docs/ai/references/)** | Ingestion weights, mutation rules, taxonomies, templates |
+| **[`.cursor/rules/10-task-router.mdc`](.cursor/rules/10-task-router.mdc)** / **[`20-orchestrator.mdc`](.cursor/rules/20-orchestrator.mdc)** | Routes **`Update Customer Notes for [Name]`** toward the orchestrator; multi-advisor flow and approval gates (see **`workflow.mdc`**). |
+| Domain advisors **`23`–`27`** | **[`.cursor/rules/23-domain-advisor-soc.mdc`](.cursor/rules/23-domain-advisor-soc.mdc)** … **`27-domain-advisor-ai.mdc`** — SOC / APP / VULN / ASM / AI context for structured updates. |
 
-**Cursor:** subagents **`coder` / `tester` / `doc`** live under **[`.cursor/agents/`](.cursor/agents/)**; orchestration rules in **[`.cursor/rules/workflow.mdc`](.cursor/rules/workflow.mdc)** (default **`/coder` → `/tester` → `/doc`**, or **`same session, inline`** when you want one chat). While migrating, **[`.cursor/rules/99-migration-mode.mdc`](.cursor/rules/99-migration-mode.mdc)** stays on until **TASK-019**.
+**Cursor:** subagents **`coder` / `tester` / `doc`** live under **[`.cursor/agents/`](.cursor/agents/)**; orchestration rules in **[`.cursor/rules/workflow.mdc`](.cursor/rules/workflow.mdc)** (default **`/coder` → `/tester` → `/doc`**, or **`same session, inline`** when you want one chat). **[`.cursor/rules/99-migration-mode.mdc`](.cursor/rules/99-migration-mode.mdc)** remains **on disk and in use** until Phase 3 **close-out** (practical validation of the orchestrator + optional archive per **`workflow.mdc`** / build plan) — shipping **`debug-pipeline.md`** does not remove it automatically.
 
 ---
 

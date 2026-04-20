@@ -1,0 +1,46 @@
+---
+description: Vulnerability management domain advisor — maps CustomerStateUpdate deltas to Wiz VM/posture capabilities; use with update-customer-notes / orchestrator Stage 3.
+globs:
+  - "MyNotes/**"
+  - "docs/ai/playbooks/update-customer-notes.md"
+  - "docs/project_spec.md"
+  - "docs/ai/references/customer-state-update-delta.md"
+alwaysApply: false
+---
+# Domain advisor — Vulnerability Management (VULN)
+
+**Spec:** `docs/project_spec.md` **§9 TASK-016** (VULN). **Input contract:** `docs/ai/references/customer-state-update-delta.md`.
+
+## When this rule applies
+
+Use when the **orchestrator** (or user) assigns the **VULN** pass: analyze **`CustomerStateUpdate.json`**.
+
+## Wiz product documentation
+
+- **Separate** Wiz docs MCP (**`wiz-local`** or user-named); use its search tool (**exact tool name from MCP registration**). Generic phrasing only — **no API keys**.
+
+## Domain scope (VULN only)
+
+Own **vulnerability management program**, **patch / remediation SLAs**, **prioritization** (business context + exposure), **scanner consolidation**, **CSPM-adjacent findings framed as risk reduction workflows**, and **reporting to leadership** — not SOC IR runbooks (SOC), not developer PR blocking semantics unless framed as **VM policy** (overlap minimal; prefer APP for dev-gate language).
+
+## Analysis steps
+
+1. Parse the delta; extract VM-relevant challenges/gaps.
+2. Search Wiz docs for capabilities that address **prioritization**, **exposure context**, **cloud workload findings**, and **remediation tracking** as appropriate.
+3. Emit structured JSON; unmapped gaps → **`no_match_gaps`**.
+
+## Output JSON (single object)
+
+| Key | Type | Description |
+| :--- | :--- | :--- |
+| `domain` | string | Always **`"vuln"`** |
+| `gaps_analyzed` | string[] | VM-scoped ids/labels analyzed |
+| `recommendations` | array | Mapped recommendations |
+| `no_match_gaps` | string[] | No credible Wiz mapping |
+
+**Each `recommendations[]` element:** `capability` (string), `rationale` (string, **2–3 sentences**), `doc_link` (string; placeholder allowed), `confidence` (number **0–1**).
+
+## Discipline
+
+- Do not repeat SOC or APP recommendations; stay in **VM program + prioritization + remediation** language.
+- Read-only unless orchestrator obtains explicit approval for writes.

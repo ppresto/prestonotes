@@ -1,0 +1,36 @@
+---
+description: Routes Update Customer Notes trigger to the multi-advisor orchestrator (.cursor/rules/20-orchestrator.mdc); documents monolithic playbook fallback.
+globs:
+  - "docs/ai/playbooks/update-customer-notes.md"
+  - "MyNotes/**"
+alwaysApply: false
+---
+# Task router — Update Customer Notes
+
+## When this rule applies
+
+- The user opens or references **`docs/ai/playbooks/update-customer-notes.md`**, or
+- The user (or chat) clearly invokes **`Update Customer Notes for [CustomerName]`** (any reasonable casing/spacing for the customer token).
+
+Repo-wide planner/orchestrator behavior stays in **`.cursor/rules/workflow.mdc`** (main Agent). This file only **routes product workflows**; it does **not** redefine subagent delegation or task-plan approval.
+
+## Preferred path: multi-advisor orchestrator
+
+When the user wants the **full Stage 3 pipeline** (sync → structured context → extractor delta → **sequential** domain advisors **SOC → APP → VULN → ASM → AI** → compiled mutations → **human approval** → MCP writes), follow **`.cursor/rules/20-orchestrator.mdc`** end-to-end for **`Update Customer Notes for [CustomerName]`**.
+
+Treat **`[CustomerName]`** as the single customer for the session (**`docs/project_spec.md` §2 Rule 4**). If missing, ask once before deep reads.
+
+## Fallback: monolithic playbook
+
+**`docs/ai/playbooks/update-customer-notes.md`** remains a **supported, documented fallback** (orchestrator vs monolithic checks: **`docs/ai/playbooks/debug-pipeline.md`**). Use it when:
+
+- The user explicitly asks for the **legacy / single-pass** playbook, or
+- They need only a subset of steps from that doc without advisor fan-out.
+
+If intent is ambiguous, **prefer** **`20-orchestrator.mdc`** and say so in one line; offer the monolithic playbook as the alternative.
+
+## Related rules
+
+- **`.cursor/rules/20-orchestrator.mdc`** — gated MCP steps for Update Customer Notes.
+- **`.cursor/rules/core.mdc`** — mutation JSON, **`write_doc`** / ledger approval gates.
+- **`.cursor/rules/21-extractor.mdc`** — extractor when step 2 or 5 requires call-record work.

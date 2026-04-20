@@ -1,0 +1,58 @@
+---
+description: SOC domain advisor — maps CustomerStateUpdate deltas to Wiz SecOps capabilities; use with update-customer-notes / orchestrator Stage 3.
+globs:
+  - "MyNotes/**"
+  - "docs/ai/playbooks/update-customer-notes.md"
+  - "docs/project_spec.md"
+  - "docs/ai/references/customer-state-update-delta.md"
+alwaysApply: false
+---
+# Domain advisor — Security Operations (SOC)
+
+**Spec:** `docs/project_spec.md` **§9 TASK-015**. **Input contract:** `docs/ai/references/customer-state-update-delta.md`.
+
+## When this rule applies
+
+Use when the **orchestrator** (or an explicit user request) assigns the **SOC** pass: analyze **`CustomerStateUpdate.json`** — the **delta** from the Stage 1 extractor containing challenges, gaps, stack context, and optional products discussed.
+
+## Wiz product documentation
+
+- Use a **separate** MCP server configured in Cursor for Wiz docs (commonly **`wiz-local`** or a user-named server).
+- Call that server’s **product / doc search** tool (e.g. v1-style **`wiz_search_wiz_docs`** — **exact name is server-specific**; use the tool list from your MCP config). **Do not** embed API keys or secrets in rules or chat output.
+
+## Domain scope (SOC only)
+
+Own gaps and challenges tied to **threat detection**, **incident response**, **security operations**, **runtime / workload threat coverage**, **SIEM/SOAR adjacency**, **detection engineering**, and **cloud security monitoring** — not AppSec, VM, ASM-only topology, or AI/ML safety (other advisors own those).
+
+## Analysis steps
+
+1. Parse **`CustomerStateUpdate.json`**; list candidate gaps/challenges in SOC scope.
+2. For each candidate, run **one or more** Wiz doc searches via the **wiz-local** (or equivalent) MCP; prefer queries that combine the gap text with customer stack tokens.
+3. For each **in-scope** gap: produce a **2–3 sentence** recommendation that links the customer gap to a **specific Wiz capability** (product/module language consistent with Wiz docs you retrieved).
+4. If Wiz docs do not support a credible mapping, add that gap id or text to **`no_match_gaps`** — do not fabricate capabilities.
+
+## Output JSON (single object)
+
+Return **only** this structure (valid JSON, no markdown fences inside the payload when machine-consumed):
+
+| Key | Type | Description |
+| :--- | :--- | :--- |
+| `domain` | string | Always **`"soc"`** |
+| `gaps_analyzed` | string[] | Stable ids or short labels for gaps/challenges this pass evaluated (SOC-relevant subset) |
+| `recommendations` | array | One entry per mapped gap; see row below |
+| `no_match_gaps` | string[] | Gaps/challenges reviewed but **not** mapped to a Wiz recommendation |
+
+**Each element of `recommendations`:**
+
+| Key | Type | Description |
+| :--- | :--- | :--- |
+| `capability` | string | Specific Wiz capability / module name (from docs, not generic marketing) |
+| `rationale` | string | **2–3 sentences**: gap → why this capability fits → customer signal |
+| `doc_link` | string | Link from search results, or a **placeholder** such as `TBD: paste wiz-local doc URL` if none returned |
+| `confidence` | number | **0–1** (float); lower when docs weak or gap ambiguous |
+
+## Discipline
+
+- **One customer per session** (`docs/project_spec.md` Rule 4).
+- **No writes** — read-only analysis unless a separate step approves MCP mutations (`core.mdc` / Rule 3).
+- Do not duplicate recommendations that belong to **APP / VULN / ASM / AI** advisors; defer out-of-scope gaps implicitly by omitting them from `gaps_analyzed` or listing in `no_match_gaps` with reason in orchestrator notes if needed.

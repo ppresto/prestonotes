@@ -193,6 +193,12 @@ When in doubt: **§9 task Test section is law**; this plan is navigation.
 
 ---
 
-## 11. Phase 3 close-out — Python vs Node housekeeping
+## 11. Phase 3 close-out — shipped artifacts vs manual validation
 
-After **TASK-019**, skim **[`docs/tasks/INDEX.md` — Phase 3 close-out cleanup](tasks/INDEX.md#phase-3-close-out-cleanup-after-task-019)**. **Biome / root npm were removed** (they only covered a few JSON files; CI does not need **`npm ci`** for **`pre-commit`**). Reintroduce a JS toolchain only if the product adds real JS/TS.
+**Stage 3 code/docs in-tree (TASK-015–019):** Domain advisor rules **`.cursor/rules/23-domain-advisor-soc.mdc`** through **`27-domain-advisor-ai.mdc`**, **`.cursor/rules/10-task-router.mdc`** and **`20-orchestrator.mdc`**, playbook updates (including **`docs/ai/playbooks/run-exec-briefing.md`** and **`docs/ai/playbooks/debug-pipeline.md`**), and the batch log **[`docs/tasks/active/PHASE3-PLAN.md`](tasks/active/PHASE3-PLAN.md)**. CI manifests list required paths as implemented.
+
+**Manual validation (human, not automated):** Completing the numbered checklist in **`docs/ai/playbooks/debug-pipeline.md`** for **`Debug Pipeline for [CustomerName]`** is still **operator-owned** signoff — compare orchestrator vs monolithic **`update-customer-notes.md`**, **`read_doc`** diffs, ledger/audit evidence, and quality vs expectations.
+
+**`.cursor/rules/99-migration-mode.mdc`:** Remains in the repo until Phase 3 **close-out** explicitly retires or archives it (see **`workflow.mdc`** / Part 4 in **[`examples/BUILD_ADVISORY.md`](../examples/BUILD_ADVISORY.md)**). Do **not** treat “playbook landed” as automatic removal.
+
+**Python vs Node housekeeping:** Skim **[`docs/tasks/INDEX.md` — Phase 3 close-out cleanup](tasks/INDEX.md#phase-3-close-out-cleanup-after-task-019)**. **Biome / root npm were removed** (they only covered a few JSON files; CI does not need **`npm ci`** for **`pre-commit`**). Reintroduce a JS toolchain only if the product adds real JS/TS.

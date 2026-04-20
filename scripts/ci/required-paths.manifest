@@ -19,6 +19,8 @@ docs/ai/playbooks/run-license-evidence-check.md
 docs/ai/playbooks/extract-call-records.md
 docs/ai/playbooks/run-journey-timeline.md
 docs/ai/playbooks/run-challenge-review.md
+docs/ai/playbooks/run-exec-briefing.md
+docs/ai/playbooks/debug-pipeline.md
 docs/ai/playbooks/test-call-record-extraction.md
 docs/ai/references/.gitkeep
 docs/ai/references/customer-data-ingestion-weights.md
@@ -41,10 +43,18 @@ scripts/restart-google-drive.sh
 scripts/syncNotesToMarkdown.js
 scripts/wiz_doc_cache_manager.py
 .cursor/rules/core.mdc
+.cursor/rules/10-task-router.mdc
+.cursor/rules/20-orchestrator.mdc
 .cursor/rules/workflow.mdc
 .cursor/rules/99-migration-mode.mdc
 .cursor/rules/15-user-preferences.mdc
 .cursor/rules/ai_learnings.mdc
 .cursor/rules/21-extractor.mdc
 .cursor/rules/22-journey-synthesizer.mdc
+.cursor/rules/23-domain-advisor-soc.mdc
+.cursor/rules/24-domain-advisor-app.mdc
+.cursor/rules/25-domain-advisor-vuln.mdc
+.cursor/rules/26-domain-advisor-asm.mdc
+.cursor/rules/27-domain-advisor-ai.mdc
+docs/ai/references/customer-state-update-delta.md
 prestonotes_mcp/.env.example

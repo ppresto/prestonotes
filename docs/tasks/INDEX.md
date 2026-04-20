@@ -4,7 +4,7 @@ Master backlog status for PrestoNotes v2. **Canonical task definitions:** [`proj
 
 ## Current active task
 
-- **None** — next backlog item: **TASK-015** (SOC domain advisor), see [`project_spec.md` §9](../project_spec.md#9-master-task-backlog). **phase2-cleanup** done — [`archive/2026-04/phase2-cleanup.md`](archive/2026-04/phase2-cleanup.md).
+- **Phase 3 close-out cleanup** — optional repo hygiene + migration-mode decision — see [Backlog — Phase 3 close-out cleanup](#phase-3-close-out-cleanup-after-task-019). Implementation batch (TASK-015–019) is recorded in [`active/PHASE3-PLAN.md`](active/PHASE3-PLAN.md) until the orchestrator archives it.
 
 ## Backlog (not started) — Stage 1
 
@@ -31,11 +31,11 @@ Master backlog status for PrestoNotes v2. **Canonical task definitions:** [`proj
 
 ## Backlog — Stage 3
 
-- [ ] **TASK-015** — SOC domain advisor
-- [ ] **TASK-016** — APP, VULN, ASM, AI advisors
-- [ ] **TASK-017** — Orchestrator + task router
-- [ ] **TASK-018** — Exec briefing playbook
-- [ ] **TASK-019** — Stage 3 integration test
+- [x] **TASK-015** — SOC domain advisor — [`.cursor/rules/23-domain-advisor-soc.mdc`](../../.cursor/rules/23-domain-advisor-soc.mdc) · batch [`active/PHASE3-PLAN.md`](active/PHASE3-PLAN.md) (Wave A)
+- [x] **TASK-016** — APP, VULN, ASM, AI advisors — [`.cursor/rules/24-domain-advisor-app.mdc`](../../.cursor/rules/24-domain-advisor-app.mdc), [`25-domain-advisor-vuln.mdc`](../../.cursor/rules/25-domain-advisor-vuln.mdc), [`26-domain-advisor-asm.mdc`](../../.cursor/rules/26-domain-advisor-asm.mdc), [`27-domain-advisor-ai.mdc`](../../.cursor/rules/27-domain-advisor-ai.mdc) · optional [`docs/ai/references/customer-state-update-delta.md`](../ai/references/customer-state-update-delta.md) · batch [`active/PHASE3-PLAN.md`](active/PHASE3-PLAN.md) (Wave A)
+- [x] **TASK-017** — Orchestrator + task router — [`.cursor/rules/20-orchestrator.mdc`](../../.cursor/rules/20-orchestrator.mdc), [`.cursor/rules/10-task-router.mdc`](../../.cursor/rules/10-task-router.mdc) · routing note in [`docs/ai/playbooks/update-customer-notes.md`](../ai/playbooks/update-customer-notes.md) · batch [`active/PHASE3-PLAN.md`](active/PHASE3-PLAN.md) (Wave B)
+- [x] **TASK-018** — Exec briefing playbook — [`docs/ai/playbooks/run-exec-briefing.md`](../ai/playbooks/run-exec-briefing.md) · batch [`active/PHASE3-PLAN.md`](active/PHASE3-PLAN.md) (Wave C)
+- [x] **TASK-019** — Stage 3 integration validation (manual checklist) — [`docs/ai/playbooks/debug-pipeline.md`](../ai/playbooks/debug-pipeline.md) · batch [`active/PHASE3-PLAN.md`](active/PHASE3-PLAN.md) (Wave D)
 
 ## Phase 3 close-out cleanup (after TASK-019)
 
@@ -70,6 +70,7 @@ Master backlog status for PrestoNotes v2. **Canonical task definitions:** [`proj
 - **TASK-014** — Challenge review playbook — [`archive/2026-04/TASK-014-challenge-review-playbook.md`](archive/2026-04/TASK-014-challenge-review-playbook.md) (2026-04-19)
 - **Stage 2 batch plan** — [`archive/2026-04/STAGE2-PLAN-TASK-011-014.md`](archive/2026-04/STAGE2-PLAN-TASK-011-014.md) (2026-04-19)
 - **phase2-cleanup** — Repo hygiene + MCP secrets pattern + CI — [`archive/2026-04/phase2-cleanup.md`](archive/2026-04/phase2-cleanup.md) (2026-04-19)
+- **Stage 3 (TASK-015–019)** — Advisors, router, orchestrator, exec briefing + debug playbooks — [`active/PHASE3-PLAN.md`](active/PHASE3-PLAN.md) (2026-04-19)
 
 ## Conventions
 
