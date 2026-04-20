@@ -34,7 +34,7 @@ Restarts the **Google Drive** app after a short wait so the local mount picks up
 
 **Not a Node script.** Deploy into **Apps Script** bound to a Drive project (or standalone). Set Script property **`MYNOTES_ROOT_FOLDER_ID`** to your MyNotes root folder ID (same as **`MYNOTES_ROOT_FOLDER_ID`** in **`.cursor/mcp.env`**). Enable the **Drive API** advanced service for PDF OCR. Schedule **`syncNotesToMarkdown`** if you want periodic GDoc → `.md` exports on Drive.
 
-**Linting:** this file is **excluded** from Biome via root **`biome.json`** (`!!**/scripts/syncNotesToMarkdown.js`) because it follows **Apps Script** conventions, not Node ESM. Do not remove that exclusion without rewriting the script for Node.
+**Linting:** this file is **not** linted as Node/ESM (Google **Apps Script**). The repo does not run a JS linter on it in CI; use the Apps Script editor or your own checks if you change it.
 
 Local markdown in **`MyNotes/Customers/.../[Customer] Notes.md`** is what most MCP read paths expect after export + rsync.
 

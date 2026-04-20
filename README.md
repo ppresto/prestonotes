@@ -21,8 +21,8 @@ There is **no** v1 **`run_pipeline`** / `run-main-task.py` in v2; structured wor
 
 | Step | Action |
 |------|--------|
-| 1 | **Install:** Python **3.12+**, **[uv](https://docs.astral.sh/uv/)**, **Node + npm** (for Biome in pre-commit), **Google Drive for Desktop**, **`gcloud`**, **[Cursor](https://cursor.com)**. |
-| 2 | **Bootstrap repo:** from the repo root, run **`./setEnv.sh --bootstrap`** (creates **`.venv`**, **`uv sync`**, npm dev deps). Optional: **`uv run pre-commit install`**. |
+| 1 | **Install:** Python **3.12+**, **[uv](https://docs.astral.sh/uv/)**, **Google Drive for Desktop**, **`gcloud`**, **[Cursor](https://cursor.com)**. |
+| 2 | **Bootstrap repo:** from the repo root, run **`./setEnv.sh --bootstrap`** (creates **`.venv`**, **`uv sync`**). Optional: **`uv run pre-commit install`**. |
 | 3 | **Configure MCP (secrets off-repo):** copy **[`.cursor/mcp.env.example`](.cursor/mcp.env.example)** → **`.cursor/mcp.env`** (gitignored) and replace placeholders with your Drive path, folder ID, and `gcloud` account. **[`.cursor/mcp.json`](.cursor/mcp.json)** only sets **`PRESTONOTES_REPO_ROOT`** and points **`envFile`** at **`mcp.env`**. See [Cursor MCP — STDIO](https://cursor.com/docs/mcp). |
 | 4 | **Optional YAML:** copy **`prestonotes_mcp/prestonotes-mcp.yaml.example`** → **`prestonotes_mcp/prestonotes-mcp.yaml`** if you want a writable local config. The MCP process **does not** read **`prestonotes_mcp/.env`** (see **`prestonotes_mcp/.env.example`** for optional shell exports only). |
 | 5 | **Cursor:** enable the **prestonotes** MCP server. Cursor runs **`uv run python -m prestonotes_mcp`** with **`mcp.json`** + **`mcp.env`**. |
@@ -89,13 +89,13 @@ Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (espe
 - **Repo file manifest:** **`bash scripts/ci/check-repo-integrity.sh`**
 - **CI:** GitHub Actions **`.github/workflows/ci.yml`** runs integrity + pytest + pre-commit on pushes and PRs to **main** and **phase3**.
 
-**Pre-commit** runs Ruff, Biome, ShellCheck (via shellcheck-py), yamllint, and **Terraform hooks only if you have `.tf` files`** — you do not need Terraform for a Python-only tree. See **`.pre-commit-config.yaml`** for versions.
+**Pre-commit** runs Ruff, ShellCheck (via shellcheck-py), yamllint, and **Terraform hooks only if you have `.tf` files`** — you do not need Terraform for a Python-only tree. See **`.pre-commit-config.yaml`** for versions.
 
 ---
 
 ## Use as a template for a new project
 
-To fork the **pattern** (not this PrestoNotes product): copy the tree, then in the **copy** rename **`pyproject.toml`** `[project].name`, run **`uv lock`**, update **`package.json` `name`**, replace **`docs/project_spec.md`**, and fix **`.cursor/`** paths that still say “PrestoNotes”. **Do not** change those in **this** repo unless you intend to rebrand here.
+To fork the **pattern** (not this PrestoNotes product): copy the tree, then in the **copy** rename **`pyproject.toml`** `[project].name`, run **`uv lock`**, replace **`docs/project_spec.md`**, and fix **`.cursor/`** paths that still say “PrestoNotes”. **Do not** change those in **this** repo unless you intend to rebrand here.
 
 ---
 
@@ -107,7 +107,7 @@ To fork the **pattern** (not this PrestoNotes product): copy the tree, then in t
 | **MCP server fails to start (missing env)** | Create **`.cursor/mcp.env`** from the example; **`mcp.json`** no longer embeds Drive / account variables. |
 | **`append_ledger_v2` raises migrate error** | Standard ledger table is still **19** columns. Run **`uv run python -m prestonotes_mcp.tools.migrate_ledger --customer "<Customer>"`** (or **`--fixture`** / **`--dry-run`**). See **`docs/MIGRATION_GUIDE.md`** (History Ledger v2). |
 | **Drive path not found** | Confirm **Google Drive for Desktop** is running; **`GDRIVE_BASE_PATH`** matches your mount; optional **`./scripts/restart-google-drive.sh`**. |
-| **Biome / pre-commit reformats files** | Stage the changes and commit again. |
+| **Ruff / pre-commit reformats Python** | Stage the changes and commit again. |
 | **Terraform hooks complain** | You have **`.tf`** files; install Terraform / tflint or narrow the hook in **`.pre-commit-config.yaml`**. |
 | **`pre-commit` not found** | Run **`uv sync`** and use **`uv run pre-commit …`**. |
 
@@ -116,4 +116,3 @@ To fork the **pattern** (not this PrestoNotes product): copy the tree, then in t
 ## Dependencies
 
 - **Python:** **`pyproject.toml`** / **`uv.lock`**
-- **JS tooling:** **`package.json`** / **`package-lock.json`**

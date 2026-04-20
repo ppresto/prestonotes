@@ -27,10 +27,6 @@ if [[ "${1:-}" == "--bootstrap" ]]; then
   # shellcheck disable=SC1091
   source ".venv/bin/activate"
   uv sync
-  if [[ -f package.json ]]; then
-    echo "setEnv: bootstrapping JS (npm)…"
-    npm install
-  fi
   echo "setEnv: --bootstrap complete."
   exit 0
 fi
@@ -38,7 +34,7 @@ fi
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   echo "Usage:"
   echo "  source ./setEnv.sh       Export PRESTONOTES_REPO_ROOT (same idea as Cursor mcp.json workspaceFolder)"
-  echo "  ./setEnv.sh --bootstrap  Create/use .venv, uv sync, npm install"
+  echo "  ./setEnv.sh --bootstrap  Create/use .venv, uv sync"
   exit 0
 fi
 

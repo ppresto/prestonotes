@@ -20,7 +20,7 @@ You are a specialized **execution** subagent. The **main Agent** (planner/orches
 
 1. Write a failing test first (`pytest`; use Biome for JS if the task touches front-end) when the task involves code behavior.
 2. Implement the minimal code needed to pass.
-3. Run relevant linters and fix issues (`ruff` for Python, `biome` for JS/TS).
+3. Run relevant linters and fix issues (`ruff` for Python; add a JS linter only if the task adds real JS/TS).
 4. Update the assigned task file status / checklists per the task template.
 5. Record evidence in the task file (commands + outcome) when the task file expects it.
 

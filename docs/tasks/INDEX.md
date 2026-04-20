@@ -39,18 +39,12 @@ Master backlog status for PrestoNotes v2. **Canonical task definitions:** [`proj
 
 ## Phase 3 close-out cleanup (after TASK-019)
 
-**Node / npm today:** The repo is **Python-first**. The only tracked **`.js`** file is **`scripts/syncNotesToMarkdown.js`** (Google **Apps Script**, not executed with Node in this tree) and it is **excluded** from Biome in **`biome.json`**. **`package.json`** / **`package-lock.json`** / **`node_modules`** exist **only** to install **[@biomejs/biome](https://biomejs.dev/)** for:
+**Done (2026-04):** Removed **Biome** from **`.pre-commit-config.yaml`** and deleted root **`package.json`**, **`package-lock.json`**, **`biome.json`**, **`npm ci`** in CI, and **`npm install`** in **`setEnv.sh`**. In practice Biome had only been checking a few JSON config files. The old **`biomejs/pre-commit`** hook downloaded its own Biome binary, so **`npm ci` was never required** for pre-commit to run that hook — **`npm ci` only fed** local **`node_modules/.bin/biome`** / **`lint.sh`**. **`scripts/syncNotesToMarkdown.js`** stays Apps Script source (not Node-run here).
 
-- **`.pre-commit-config.yaml`** → `biomejs/pre-commit` → **`biome-check`**
-- **`.cursor/skills/lint.sh`** (runs `node_modules/.bin/biome` when `*.js` exists — currently only the excluded file, but Biome may still touch other file types per config)
+**Optional later** (after **TASK-019** or when adding a real front-end):
 
-**`setEnv.sh --bootstrap`** runs **`npm install`** at the repo root when **`package.json`** is present. **CI** (`.github/workflows/ci.yml`) runs **`npm ci`** for the same reason.
-
-**Phase 3 close-out candidates** (pick up after **TASK-019** or when adding real front-end work):
-
-- [ ] **Drop or replace Biome** so **Node is not a hard prerequisite**: e.g. remove the Biome hook and rely on **Ruff + yamllint + ShellCheck** only; or switch to a **pre-commit hook** that installs Biome without a committed **`package-lock.json`** (if a supported pattern exists); or reintroduce Node only when there is **real** JS/TS in-repo.
-- [ ] **Clarify docs**: README “Install Node” becomes optional once Biome is optional; **`Dependencies`** section should match reality.
-- [ ] Optionally **rename** `syncNotesToMarkdown.js` → e.g. **`syncNotesToMarkdown.gs.txt`** and adjust references, if that reduces confusion (still not run by Node).
+- [ ] Reintroduce a **JS/TS linter** (Biome, ESLint, etc.) **only if** the repo gains maintained JS/TS beyond the Apps Script artifact.
+- [ ] Optionally **rename** `syncNotesToMarkdown.js` → e.g. **`syncNotesToMarkdown.gs.txt`** to signal “not Node” (update references).
 
 ## Backlog — Stage 4 (post-MVP)
 

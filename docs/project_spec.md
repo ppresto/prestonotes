@@ -101,7 +101,7 @@ The old project at `../prestoNotes.orig` is used strictly to copy working code. 
 | Wiz product search (Stage 3–4 bridge) | **wiz-local** (separate MCP server) | v1 pattern: domain advisors call **`wiz_search_wiz_docs`** (or equivalent) on the Wiz docs MCP until **TASK-021** `wiz_knowledge_search` (Chroma) replaces direct search |
 | Testing | `pytest` | Write tests before code (TDD) |
 | Python linter | `ruff` | Run before every task is marked complete |
-| JS linter | `biome` | For any `.js` or `.ts` files only |
+| JS / Apps Script | _(none in CI)_ | **`scripts/syncNotesToMarkdown.js`** is Google Apps Script source, not run with Node here; no JS linter in pre-commit until real JS/TS lands |
 | AI orchestration | Cursor agents + `.mdc` rules | Primary reasoning — **no Anthropic key required** for the default Cursor-driven flows; Stage 4 embedding/RAG may require keys where noted |
 | Document format | Markdown (`.md`) for local files | Google Docs for customer-facing content (via MCP + **`prestonotes_gdoc/`** Python backend) |
 | Vector DB | ChromaDB | Stage 4 only — not needed until API keys available |
@@ -138,7 +138,7 @@ prestonotes/                          ← new v2 repo root
 │   │   ├── 27-domain-advisor-ai.mdc   ← AI/ML security advisor (Stage 3)
 │   │   └── ai_learnings.mdc          ← Dynamic correction patches (port from old project)
 │   └── skills/
-│       ├── lint.sh                   ← Runs ruff (Python) and biome (JS) linters
+│       ├── lint.sh                   ← Runs ruff (Python), shellcheck, yamllint
 │       └── test.sh                   ← Runs pytest on the prestonotes_mcp/ package
 │
 ├── prestonotes_gdoc/                 ← Google Docs / Drive Python backend (ported from v1 `custom-notes-agent/`)
