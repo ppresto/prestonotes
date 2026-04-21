@@ -1,6 +1,6 @@
 # TASK-048 — Challenge lifecycle write-side discipline
 
-**Status:** [ ] NOT STARTED
+**Status:** [x] COMPLETE — write-side discipline, MCP validations, 6 new tests, rule + playbook updates landed and docs aligned. Bullet 8 (E2E fixture refresh, §F) is runtime-dependent and re-checks on the next `Run E2E Test Customer` pass.
 **Opened:** 2026-04-21
 **Related:** Surfaced by the TASK-044 E2E review (Q4). Pairs with `TASK-047` (Account Summary elevates `challenge-lifecycle.json` to a +2 weighted input) and `TASK-051` (call-record quality). Independent of `TASK-046`.
 **Related files:**
@@ -137,15 +137,15 @@ Add:
 
 ## Acceptance
 
-- [ ] `update_challenge_state` and `append_challenge_transition` both require explicit `transitioned_at`; omitting the field returns a loud validation error, no silent default.
-- [ ] `at > today + 1 day` rejected with named error payload.
-- [ ] `at` older than the latest existing `at` for the same challenge rejected with named error payload.
-- [ ] `at = today - 45 days` and `at = today - 400 days` both accepted without warning.
-- [ ] Evidence containing any forbidden term rejected with `matched` field identifying the term.
-- [ ] Six new tests in `test_journey_tools.py` pass.
-- [ ] `.cursor/rules/21-extractor.mdc` documents the seven extractor-side rules in §A.
-- [ ] Post-TASK-048 GDoc Challenge Tracker rows for `_TEST_CUSTOMER`: every `notes_references` `Evidence: YYYY-MM-DD` value points to a real transcript file in `MyNotes/Customers/_TEST_CUSTOMER/Transcripts/`. Zero hallucinated dates (the `2026-03-29 exec readout` class of bug cannot recur).
-- [ ] Post-TASK-048 TASK-044 E2E run produces `_TEST_CUSTOMER/AI_Insights/challenge-lifecycle.json` with:
+- [x] `update_challenge_state` and `append_challenge_transition` both require explicit `transitioned_at`; omitting the field returns a loud validation error, no silent default.
+- [x] `at > today + 1 day` rejected with named error payload.
+- [x] `at` older than the latest existing `at` for the same challenge rejected with named error payload.
+- [x] `at = today - 45 days` and `at = today - 400 days` both accepted without warning.
+- [x] Evidence containing any forbidden term rejected with `matched` field identifying the term.
+- [x] Six new tests in `test_journey_tools.py` pass.
+- [x] `.cursor/rules/21-extractor.mdc` documents the seven extractor-side rules in §A.
+- [ ] Post-TASK-048 GDoc Challenge Tracker rows for `_TEST_CUSTOMER`: every `notes_references` `Evidence: YYYY-MM-DD` value points to a real transcript file in `MyNotes/Customers/_TEST_CUSTOMER/Transcripts/`. Zero hallucinated dates (the `2026-03-29 exec readout` class of bug cannot recur). _(Verified at next `Run E2E Test Customer` execution — §F.)_ (runtime-deferred; re-check after next Run E2E Test Customer)
+- [ ] Post-TASK-048 TASK-044 E2E run produces `_TEST_CUSTOMER/AI_Insights/challenge-lifecycle.json` with: (runtime-deferred; re-check after next Run E2E Test Customer)
     - ≥ 4 distinct `challenge_id`s.
     - All `at` values on call dates in 2026-03-24 … 2026-04-18 range, none on 2026-04-21 (the run date).
     - Sensor rollout marked `resolved`.
@@ -170,9 +170,20 @@ Land **after TASK-046 → TASK-047**, **before TASK-051**. Rationale:
 
 ## Output / Evidence
 
-_(Filled in as the task is executed.)_
+- Rule + playbook diffs:
+    - `.cursor/rules/21-extractor.mdc` — added top-level sections **"Challenge lifecycle write rules (TASK-048)"** (§A rules 1–7) and **"Challenge Tracker row discipline (TASK-048 §B.1)"** (4 rules). Rule 7 cites `FORBIDDEN_EVIDENCE_TERMS` in `prestonotes_mcp/journey.py` as the single source of truth; the list mirror in `.cursor/rules/11-e2e-test-customer-trigger.mdc` is operator-facing only.
+    - `.cursor/rules/20-orchestrator.mdc` — added pointer lines to the new extractor sections from the UCN post-approval **Execute** block (lifecycle path and Challenge Tracker path). No new orchestrator steps.
+    - `docs/ai/playbooks/update-customer-notes.md` — mirrored both §A and §B.1 as operator-facing UCN prose at the end of the playbook (before References).
+- MCP + journey.py + test diffs:
+    - `prestonotes_mcp/journey.py` — added `FORBIDDEN_EVIDENCE_TERMS` constant (declaration-ordered tuple, case-insensitive substring match via `_match_forbidden_evidence`), added `ChallengeValidationError(ValueError)` carrying a JSON-serializable `payload` dict, replaced the `at: str | None = None` kwarg on `append_challenge_transition` with a required `transitioned_at: str | None = None` that rejects empty/missing with a plain `ValueError`, and added three hard-reject `ChallengeValidationError` checks (future date `> today + 1 day`, forbidden evidence vocabulary, history regression). Existing illegal-transition and redundant-same-state `ValueError`s preserved verbatim so `test_update_challenge_state_rejects_illegal_jump` still raises.
+    - `prestonotes_mcp/server.py` — `update_challenge_state` MCP tool gained required positional `transitioned_at: str` parameter, docstring documents the three structured rejections, and the tool catches `ChallengeValidationError` and returns `json.dumps({"ok": False, **payload})` on stdout while letting plain `ValueError` (illegal transitions) propagate. **Parameter schema change** — flagged to `/tester` for the required-paths integrity sweep (`scripts/ci/check-repo-integrity.sh`).
+    - `prestonotes_mcp/tests/test_journey_tools.py` — updated the 4 existing tests to pass explicit `transitioned_at` (no silent default exists any more), added the 6 new tests from §E verbatim. `uv run pytest prestonotes_mcp/tests/test_journey_tools.py` → 10 passed. `uv run pytest` → 79 passed, 1 skipped.
+- Post-task E2E `challenge-lifecycle.json` vs acceptance bullets: Runtime-deferred; bullet 8 requires a fresh `Run E2E Test Customer` pass. Write-side discipline is enforced in code + rules + playbook; the §F acceptance content assertions only produce signal after a full E2E rerun.
+- Operator-safety run (≥30-day-old transcript) result: Runtime-deferred; §Verification step 3 is an operational smoke test. Unit coverage (`test_update_challenge_state_accepts_month_old_at` at today − 45 days, `test_update_challenge_state_accepts_year_old_at` at today − 400 days) already guards the "old call dates write cleanly" invariant.
 
-- Rule + playbook diffs: —
-- MCP + journey.py + test diffs: —
-- Post-task E2E `challenge-lifecycle.json` vs acceptance bullets: —
-- Operator-safety run (≥30-day-old transcript) result: —
+## Handoff / follow-ups
+
+- **MCP parameter schema change** (`update_challenge_state` gained required `transitioned_at`) — no entries in `scripts/ci/required-paths.manifest` track tool signatures (only file paths), so `scripts/ci/check-repo-integrity.sh` should pass unchanged. Noted for `/tester` all the same.
+- **§F E2E fixture refresh** is runtime-only (the §F acceptance bullets are content assertions on `_TEST_CUSTOMER/AI_Insights/challenge-lifecycle.json` produced by a full E2E pass). This TASK-048 hardens the write path that produces it; closing §F requires a fresh `Run E2E Test Customer` run and a diff vs the acceptance bullets, which is out of scope for the coder subagent.
+- **TASK-049 reuse**: `FORBIDDEN_EVIDENCE_TERMS` now lives in `prestonotes_mcp/journey.py`; TASK-049's ledger-cell vocabulary check should import from there rather than redefining.
+- **TASK-050 reuse**: same import source when TASK-050 extends forbidden-vocab enforcement to GDoc cells.

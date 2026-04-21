@@ -30,7 +30,11 @@ from prestonotes_mcp.config import (
     repo_root_from_env_or_file,
 )
 from prestonotes_mcp.exec_helper import repo_root, run_shell_script, run_uv_script
-from prestonotes_mcp.journey import append_challenge_transition, challenge_lifecycle_path
+from prestonotes_mcp.journey import (
+    ChallengeValidationError,
+    append_challenge_transition,
+    challenge_lifecycle_path,
+)
 from prestonotes_mcp.ledger_v2 import append_ledger_v2_row, validate_ledger_v2_row
 from prestonotes_mcp.runtime import AppContext, init_ctx
 from prestonotes_mcp.security import (
@@ -706,9 +710,27 @@ def read_challenge_lifecycle(customer_name: str) -> str:
 
 @mcp.tool
 def update_challenge_state(
-    customer_name: str, challenge_id: str, new_state: str, evidence: str
+    customer_name: str,
+    challenge_id: str,
+    new_state: str,
+    evidence: str,
+    transitioned_at: str,
 ) -> str:
-    """Append a challenge lifecycle transition to AI_Insights/challenge-lifecycle.json (states §7.4). Mutates customer data — get user approval in chat before calling."""
+    """Append a challenge lifecycle transition to AI_Insights/challenge-lifecycle.json (states §7.4).
+
+    ``transitioned_at`` is REQUIRED (ISO ``YYYY-MM-DD``, UTC calendar date of the cited
+    transcript / call). There is no silent default; see TASK-048. Three structured
+    rejections return a JSON error payload (``{"error": ..., ...}``) instead of raising:
+
+    - ``transitioned_at`` > today + 1 day (future-date guard).
+    - ``transitioned_at`` strictly older than the newest existing ``at`` for this
+      ``challenge_id`` (history-regression guard).
+    - ``evidence`` contains a term from ``FORBIDDEN_EVIDENCE_TERMS`` (harness
+      vocabulary; see ``prestonotes_mcp/journey.py``).
+
+    Illegal single-step transitions still raise ``ValueError`` (legacy contract).
+    Mutates customer data — get user approval in chat before calling.
+    """
     with tool_scope(
         "update_challenge_state",
         customer_name=customer_name,
@@ -716,7 +738,16 @@ def update_challenge_state(
         new_state=new_state,
     ):
         validate_customer_name(customer_name)
-        result = append_challenge_transition(customer_name, challenge_id, new_state, evidence)
+        try:
+            result = append_challenge_transition(
+                customer_name,
+                challenge_id,
+                new_state,
+                evidence,
+                transitioned_at=transitioned_at,
+            )
+        except ChallengeValidationError as exc:
+            return json.dumps({"ok": False, **exc.payload}, ensure_ascii=False)
         return json.dumps({"ok": True, **result})
 
 

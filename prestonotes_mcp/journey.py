@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +20,52 @@ CHALLENGE_STATES = frozenset(
         "stalled",
     }
 )
+
+# Forbidden evidence vocabulary — single source of truth, shared by
+# `append_challenge_transition` and the TASK-047 rule-side artifact hygiene
+# block in `.cursor/rules/11-e2e-test-customer-trigger.mdc`. Keep the two
+# lists in lockstep; the rule file is the operator-facing mirror. Order
+# matters: the first match (substring, case-insensitive) is reported.
+FORBIDDEN_EVIDENCE_TERMS: tuple[str, ...] = (
+    "round 1",
+    "round 2",
+    "v1 corpus",
+    "v2 corpus",
+    "phase",
+    "E2E",
+    "harness",
+    "fixture",
+    "UCN round",
+    "UCN wrote",
+    "challenge rows added",
+    "TASK-",
+    "prestoNotes session",
+)
+
+
+class ChallengeValidationError(ValueError):
+    """Structured write-side rejection carrying a JSON-serializable payload.
+
+    The MCP tool layer catches this and emits the payload as a JSON error
+    response. Plain ``ValueError`` (e.g. the existing illegal-transition check)
+    continues to propagate unchanged so the current test contract is preserved.
+    """
+
+    def __init__(self, payload: dict[str, Any]):
+        self.payload = payload
+        super().__init__(json.dumps(payload, ensure_ascii=False))
+
+
+def _match_forbidden_evidence(evidence: str) -> str | None:
+    """Return the first forbidden term (in declaration order) found as a
+    case-insensitive substring of ``evidence``; ``None`` when none match.
+    """
+    haystack = evidence.lower()
+    for term in FORBIDDEN_EVIDENCE_TERMS:
+        if term.lower() in haystack:
+            return term
+    return None
+
 
 # Allowed single-step transitions (§7.4). `identified` may skip to `in_progress` for MCP/tests.
 _ALLOWED_NEXT: dict[str, frozenset[str]] = {
@@ -107,12 +153,22 @@ def append_challenge_transition(
     new_state: str,
     evidence: str,
     *,
-    at: str | None = None,
+    transitioned_at: str | None = None,
 ) -> dict[str, Any]:
     """
     Append-only transition: merge into challenge-lifecycle.json.
 
-    First transition for a challenge_id creates the entry. Illegal state jumps raise ValueError.
+    ``transitioned_at`` is REQUIRED (ISO ``YYYY-MM-DD``, UTC calendar date of the
+    cited transcript / call). There is no silent default — TASK-048 removed the
+    prior fallback to today so every transition carries the real call date.
+
+    Raises:
+        ValueError: missing ``transitioned_at``, malformed ISO date, empty
+            evidence, illegal single-step transition, or redundant same-state.
+        ChallengeValidationError: one of the three hard-reject structured
+            validations (future date, history regression, forbidden evidence
+            vocabulary). The exception's ``payload`` attribute carries the
+            user-facing dict the MCP tool layer returns as JSON.
     """
     cid = validate_challenge_id(challenge_id)
     nxt = validate_challenge_state(new_state)
@@ -120,9 +176,44 @@ def append_challenge_transition(
     if not ev:
         raise ValueError("evidence is required")
 
-    date_s = (at or "").strip() or utc_date_iso()
+    # TASK-048 §D: required, no silent default. Raise a plain ValueError (not
+    # ChallengeValidationError) so a missing-field bug in an upstream caller
+    # surfaces as a hard error, not a user-visible MCP JSON response.
+    date_s = (transitioned_at or "").strip()
+    if not date_s:
+        raise ValueError(
+            "transitioned_at is required (ISO YYYY-MM-DD call date); no silent default"
+        )
     if not re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", date_s):
-        raise ValueError("at must be YYYY-MM-DD (UTC calendar date)")
+        raise ValueError("transitioned_at must be YYYY-MM-DD (UTC calendar date)")
+    try:
+        incoming = date.fromisoformat(date_s)
+    except ValueError as exc:
+        raise ValueError(f"transitioned_at is not a valid calendar date: {date_s}") from exc
+
+    # TASK-048 §C.1 — Future date rejection (today + 1 day of slop permitted).
+    today = datetime.now(timezone.utc).date()
+    if incoming > today + timedelta(days=1):
+        raise ChallengeValidationError(
+            {
+                "error": "transitioned_at in future",
+                "field": "transitioned_at",
+                "value": date_s,
+                "expected": "<= today (UTC)",
+            }
+        )
+
+    # TASK-048 §C.3 — Forbidden evidence vocabulary (pre-load so we fail fast
+    # before reading the lifecycle file; matches the TASK-047 hygiene list).
+    matched_term = _match_forbidden_evidence(ev)
+    if matched_term is not None:
+        raise ChallengeValidationError(
+            {
+                "error": "evidence contains forbidden harness vocabulary",
+                "field": "evidence",
+                "matched": matched_term,
+            }
+        )
 
     path = challenge_lifecycle_path(customer_name)
     data = _load_lifecycle(path)
@@ -132,6 +223,21 @@ def append_challenge_transition(
         entry: dict[str, Any] = {"current_state": nxt, "history": []}
     else:
         entry = _normalize_entry(prev_raw)
+
+    # TASK-048 §C.2 — History regression rejection (strictly greater only;
+    # equal `at` is allowed — same-day multi-transition is handled by the
+    # extractor-side collapse rule in 21-extractor.mdc).
+    if entry["history"]:
+        latest_existing = max(h["at"] for h in entry["history"])
+        if latest_existing > date_s:
+            raise ChallengeValidationError(
+                {
+                    "error": "transitioned_at regresses history",
+                    "field": "transitioned_at",
+                    "value": date_s,
+                    "latest_existing": latest_existing,
+                }
+            )
 
     cur = entry["current_state"]
     if prev_raw is not None:

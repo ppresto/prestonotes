@@ -352,6 +352,8 @@ identified → acknowledged → in_progress → resolved
 in_progress → stalled (if no movement for 60+ days)
 ```
 
+**Write-path discipline (TASK-048).** MCP tool `update_challenge_state(customer_name, challenge_id, new_state, transitioned_at, evidence)` takes `transitioned_at` as a **required** ISO `YYYY-MM-DD` string; there is no silent default. The caller (the UCN extractor) MUST pass the **ISO call date of the cited transcript**, not the date of the UCN run. The same rule applies to the helper `append_challenge_transition` in `prestonotes_mcp/journey.py`. Three hard rejections run inside both write paths and return a structured error payload (field, value, expected / matched): future date (`transitioned_at > today + 1 day` UTC), history regression (`transitioned_at` older than the newest existing `at` for that `challenge_id`), and forbidden evidence vocabulary (substring match, case-insensitive). Old dates of any age are fully accepted — a transcript pulled weeks or months after the call is the common case, not an edge case. The forbidden-vocabulary list is defined exactly once — **`FORBIDDEN_EVIDENCE_TERMS`** in `prestonotes_mcp/journey.py` — and is mirrored as operator-facing prose under `.cursor/rules/11-e2e-test-customer-trigger.mdc` "Artifact hygiene". Extractor-side write rules (one transition = one call, direct-quote evidence ≤ 160 chars, explicit customer directives override heuristics, resolved sweep, split / collapse rules) live in `.cursor/rules/21-extractor.mdc` and are mirrored in `docs/ai/playbooks/update-customer-notes.md`.
+
 ### 7.5 Evidence Tags
 
 | Tag | Meaning | When to Use |

@@ -49,8 +49,8 @@ After Step 7, if Phase 0 was **skipped**: present **Block B** only (summary, mut
 
 **Execute (only after explicit approval)**
 
-1. **If Block A approved (in full or in part):** run **`update_challenge_state`** once per **approved** row **before** any **`write_doc`**.
-2. **If Block B approved:** run **`write_doc`** with MCP **`customer_name`** set to **`[CustomerName]`** whenever known (enables lifecycle ↔ Challenge Tracker parity checks in `update-gdoc-customer-notes.py`), then **`append_ledger_v2`** (or **`append_ledger`** if not migrated).
+1. **If Block A approved (in full or in part):** run **`update_challenge_state`** once per **approved** row **before** any **`write_doc`**. Every call must obey the **Challenge lifecycle write rules** in **`.cursor/rules/21-extractor.mdc`** (TASK-048) — notably `transitioned_at` is the cited transcript's call date (not the run date) and `evidence` must be free of harness vocabulary from `FORBIDDEN_EVIDENCE_TERMS` in **`prestonotes_mcp/journey.py`**.
+2. **If Block B approved:** run **`write_doc`** with MCP **`customer_name`** set to **`[CustomerName]`** whenever known (enables lifecycle ↔ Challenge Tracker parity checks in `update-gdoc-customer-notes.py`), then **`append_ledger_v2`** (or **`append_ledger`** if not migrated). **Challenge Tracker rows** in the mutation plan must obey the **Challenge Tracker row discipline** in **`.cursor/rules/21-extractor.mdc`** (§B.1) — call-date `date` column, only transcript-backed evidence dates, no harness vocabulary.
 3. Optional **`log_run`**, then **`sync_notes`** (when local mirror / Drive policy expects it), same as the default path.
 4. If the user approved **Block B only**, **skip** step **1** entirely — still run steps **2**, **3**.
 

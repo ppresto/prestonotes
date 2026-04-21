@@ -399,6 +399,27 @@ This applies to every customer, not just one account.
 - Run-log format: Markdown headings/sections/tables, with `+` for adds, `~` for modifications, `-` for removals.
 - **Daily Activity Logs** are updated only via **`prepend_daily_activity_ai_summary`**, which is **part of this task** whenever Step 6 finds meetings in lookback that are not yet captured there; those mutations ship in the **same** approved JSON as other UCN changes (one `write`).
 
+## Challenge lifecycle write rules (TASK-048)
+
+When UCN calls **`update_challenge_state`** in Step 10 (Block A execute), every call must follow these rules. Three are hard-enforced by MCP (future date, history regression, forbidden evidence vocabulary — see `prestonotes_mcp/journey.py`); the rest are operator / extractor discipline only.
+
+1. **Call date, not run date.** The `transitioned_at` argument is the ISO call date from the cited transcript's `DATE:` header, not today. If you cannot determine a call date from the transcript, **do not write the transition** — log `skip update_challenge_state ch=<id> reason=unknown_call_date` and move on.
+2. **Evidence format:** `<YYYY-MM-DD> <call-topic-short>: "<direct quote, ≤ 160 chars>"`. No paraphrase. No multi-call blobs. No meta-process language ("challenge rows added to Notes doc", "UCN round-1", etc.).
+3. **Customer directives win.** When a transcript contains an explicit directive ("treat as in progress, not stalled", "mark it resolved", "this is no longer stalled"), use that target state verbatim and cite the same line as evidence.
+4. **Resolved sweep.** After processing new transcripts, for every challenge still at `in_progress` or `stalled`, scan the newest in-lookback transcript for unblock language ("no longer stalled", "resolved", "shipped", "done", "we got it"). If found, write a `resolved` transition at that transcript's call date.
+5. **No no-op transitions.** Skip the call if the proposed `(state, transitioned_at)` tuple equals the last history entry for that challenge.
+6. **Split composite challenges.** If a transcript explicitly splits two subjects ("keep Splunk renewal separate from the budget blocker"), open two `challenge_id`s and write them separately.
+7. **Forbidden evidence vocabulary.** `evidence` must not contain any term from `FORBIDDEN_EVIDENCE_TERMS` in `prestonotes_mcp/journey.py` (case-insensitive substring match): `round 1`, `round 2`, `v1 corpus`, `v2 corpus`, `phase`, `E2E`, `harness`, `fixture`, `UCN round`, `UCN wrote`, `challenge rows added`, `TASK-`, `prestoNotes session`. The MCP layer will reject violations with a structured JSON error — scrub before calling.
+
+## Challenge Tracker row discipline (TASK-048 §B.1)
+
+The same "call date wins over run date" rule applies to a **second write path** — the Challenge Tracker rows UCN writes through **`write_doc`**. That path is a generic doc writer and does **not** validate these; the operator / extractor is the sole check.
+
+1. **`date` column** in every Challenge Tracker row must be the ISO call date of the most recent transcript that touched the challenge, not today.
+2. **`notes_references` `Evidence: YYYY-MM-DD`** values must cite ISO dates that exist as transcript files in `MyNotes/Customers/[CustomerName]/Transcripts/`. Preflight: confirm each `YYYY-MM-DD` has a matching transcript file prefix. If the check fails, **skip the row** and log `skip challenge_tracker_row ch=<id> reason=evidence_date_not_in_corpus` — do not persist a row citing a date that is not in the corpus.
+3. **No forbidden vocabulary** in `notes_references` — same list as §Challenge lifecycle write rules #7. Scrub before building the mutation plan.
+4. **Parity with lifecycle writes.** Every Block A `update_challenge_state` row should have a matching Challenge Tracker row in Block B whose `date` and `notes_references` dates come from the same transcript(s). If §B.1 #1–#3 cannot be satisfied for a row, drop the Block A lifecycle row too rather than persist an inconsistent pair.
+
 ## References
 
 - `docs/ai/playbooks/run-seeded-notes-replay.md` — **daily bundle seed + replay** (fork or migrated folder); use when you need `SEED-YYYY-MM-DD.txt` files and **block-by-block** date replay before or instead of a single monolithic pass. After all replays, that playbook’s **Step 9** is the **post-seed synthesis** pass (separate from UCN policy).

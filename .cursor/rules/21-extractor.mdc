@@ -39,3 +39,26 @@ Use one of: **`positive`**, **`neutral`**, **`cautious`**, **`negative`**. Pick 
 ## Output
 
 Produce **compact JSON** objects ready for **`write_call_record`**. For normal (non-E2E) runs: after user approval, write **one file per meeting**. For the `_TEST_CUSTOMER` E2E override, execute without waiting for approval.
+
+---
+
+## Challenge lifecycle write rules (TASK-048)
+
+Every **`update_challenge_state`** call UCN makes MUST obey the following. Three of these are also hard-enforced MCP-side (future date, history regression, forbidden evidence vocabulary — see **`prestonotes_mcp/journey.py`**). The rest are extractor-side only; the MCP write path intentionally does not regex-check them, so the extractor is the sole enforcement point.
+
+1. **`transitioned_at` is the call date, not the run date.** Read it from the cited transcript's header (`DATE:` line, ISO form). If the transcript does not expose a parseable call date, the extractor **does not write** that transition and emits one log line: `skip update_challenge_state ch=<id> reason=unknown_call_date`. UCN continues with the rest of its work.
+2. **Evidence format (one transition = one call).** `evidence` MUST be structured as `<YYYY-MM-DD> <call-topic-short>: "<direct quote, ≤ 160 chars>"`. No paraphrase. No multi-call blobs. No meta-process language.
+3. **Honor explicit state directives verbatim.** If a transcript contains a directive from the customer (regex-detectable family: *"treat as X, not Y"*, *"track as X instead of Y"*, *"mark it resolved"*, *"this is no longer stalled"*, *"resolved after the patch cycle"*), the extractor uses the directive's target state verbatim and cites that same line as evidence.
+4. **Resolved sweep at end of run.** After writing all transitions from the current run, for each challenge whose current state is `in_progress` or `stalled`, scan the newest-in-lookback transcript for explicit unblock language (*"no longer stalled"*, *"resolved"*, *"shipped"*, *"done"*, *"we got it"*). If found, write a `resolved` transition at that transcript's call date.
+5. **Collapse rule (no no-op transitions).** Do not call `update_challenge_state` if the proposed `(state, at)` tuple equals the last entry already in `history` for that `challenge_id`.
+6. **Split rule.** If a single extracted challenge actually contains two distinct subjects and the transcript contains explicit split language (*"keep Splunk renewal separate from the budget blocker"*), open two ids (e.g. `ch-soc-budget` and `ch-splunk-integration`) and write them separately.
+7. **Forbidden evidence vocabulary.** `evidence` MUST NOT contain any term from `FORBIDDEN_EVIDENCE_TERMS` in **`prestonotes_mcp/journey.py`** (case-insensitive substring match — that module is the single source of truth; the list in **`.cursor/rules/11-e2e-test-customer-trigger.mdc`** is the operator-facing mirror). The MCP write path rejects violations with `{"error": "evidence contains forbidden harness vocabulary", "field": "evidence", "matched": "<term>"}`; avoid the round-trip by scrubbing before calling.
+
+## Challenge Tracker row discipline (TASK-048 §B.1)
+
+The **same "call date wins over run date" rule** applies to a **second write path** that bypasses `update_challenge_state`: UCN's GDoc mutation plan writes **Challenge Tracker** rows directly via **`write_doc`**, and those rows have their own `date` column and `notes_references` evidence string. **`write_doc`** is a generic doc writer and does not validate these — enforcement is extractor-side preflight only.
+
+1. **Challenge Tracker row `date` column** MUST be the ISO call date of the most recent transcript that touched this challenge, **not** the run date.
+2. **`notes_references` `Evidence: YYYY-MM-DD` dates** MUST cite ISO dates that exist in the customer's `MyNotes/Customers/<Customer>/Transcripts/` folder. Preflight: for every `YYYY-MM-DD` referenced in `notes_references`, verify a transcript file with that date prefix exists on disk. If the check fails, skip the row and emit `skip challenge_tracker_row ch=<id> reason=evidence_date_not_in_corpus`.
+3. **Forbidden vocabulary.** `notes_references` MUST NOT contain any term from `FORBIDDEN_EVIDENCE_TERMS` (same list as above). Scrub before the mutation plan is built.
+4. **Parity with lifecycle writes.** Every `update_challenge_state` row in Block A should have a matching Challenge Tracker row in Block B whose `date` and `notes_references` dates come from the same transcript(s). If you cannot satisfy §B.1 #1–#3 for a row, drop the lifecycle row too rather than persist an inconsistent pair (mirrors the lifecycle–tracker parity guard in **`.cursor/rules/20-orchestrator.mdc`** step 7).
