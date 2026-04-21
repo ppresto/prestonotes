@@ -136,12 +136,11 @@ Use these **exact trigger phrases** (replace `[Customer]` / `[CustomerName]` wit
 | **`Extract Call Records for [Customer]`** | Per-call **`Transcripts/*.txt`** → **`call-records/*.json`** (sole enumeration API: **`read_call_records`**). | [`extract-call-records.md`](docs/ai/playbooks/extract-call-records.md) |
 | **`Test Call Record Extraction for [Customer]`** | Coverage report **`X of Y meetings indexed…`** (gate before leaning on extraction). | [`test-call-record-extraction.md`](docs/ai/playbooks/test-call-record-extraction.md) |
 
-### Stage 2 — Journey, account summary
+### Stage 2 — Account summary
 
 | Trigger (example) | Purpose | Playbook / rule |
 |-------------------|---------|-----------------|
-| **`Run Journey Timeline for [CustomerName]`** | Journey markdown + **TASK-014 challenge governance** (lifecycle union, stall/drift, review table) + **`write_journey_timeline`** / optional **`update_challenge_state`** (approval). Default **UCN** often refreshes the same artifacts; run standalone when you need **`Journey-Timeline.md`** without a full UCN. | [`run-journey-timeline.md`](docs/ai/playbooks/run-journey-timeline.md) · [`.cursor/rules/22-journey-synthesizer.mdc`](.cursor/rules/22-journey-synthesizer.mdc) |
-| **`Run Account Summary for [CustomerName]`** | Exec-oriented account summary using the template (use **§1 only** when you want a short exec blurb). | [`run-account-summary.md`](docs/ai/playbooks/run-account-summary.md) · [`exec-summary-template.md`](docs/ai/references/exec-summary-template.md) |
+| **`Run Account Summary for [CustomerName]`** | Exec + account narrative in one pass — 30-Second Brief, Health line, chronological call spine, milestones, challenge review (sourced from `challenge-lifecycle.json`), stakeholder evolution, value realized, strategic position, Wiz commercials, open challenges. Exec-only cut skips the optional sections. | [`run-account-summary.md`](docs/ai/playbooks/run-account-summary.md) · [`exec-summary-template.md`](docs/ai/references/exec-summary-template.md) |
 
 ### Stage 3 — Advisors, router, and validation
 
@@ -155,8 +154,8 @@ Use these **exact trigger phrases** (replace `[Customer]` / `[CustomerName]` wit
 
 ## MCP tools (cheat sheet)
 
-- **Reads (examples):** **`check_google_auth`**, **`list_customers`**, **`discover_doc`**, **`read_doc`**, **`read_transcripts`**, **`read_call_records`**, **`read_ledger`**, **`read_audit_log`** (tail of **`logs/mcp-audit.log`** by default), **`wiz_knowledge_search`**, **`sync_notes`**, **`sync_transcripts`**, …
-- **Writes (always show a plan + get approval in chat):** **`write_doc`**, **`append_ledger`** (v1 row via subprocess), **`append_ledger_v2`** (24-column JSON row — migrate ledger first: **`uv run python -m prestonotes_mcp.tools.migrate_ledger --customer "<Name>"`**), **`write_call_record`**, **`write_journey_timeline`**, **`update_challenge_state`**, **`bootstrap_customer`** (`dry_run=false` only after approval), **`log_run`**, …
+- **Reads (examples):** **`check_google_auth`**, **`list_customers`**, **`discover_doc`**, **`read_doc`**, **`read_transcripts`**, **`read_call_records`**, **`read_ledger`**, **`read_challenge_lifecycle`**, **`read_audit_log`** (tail of **`logs/mcp-audit.log`** by default), **`wiz_knowledge_search`**, **`sync_notes`**, **`sync_transcripts`**, …
+- **Writes (always show a plan + get approval in chat):** **`write_doc`**, **`append_ledger`** (v1 row via subprocess), **`append_ledger_v2`** (24-column JSON row — migrate ledger first: **`uv run python -m prestonotes_mcp.tools.migrate_ledger --customer "<Name>"`**), **`write_call_record`**, **`update_challenge_state`**, **`bootstrap_customer`** (`dry_run=false` only after approval), **`log_run`**, …
 
 Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (especially **Rule 3** / customer-local writes). **Auth failures** often include **`run_in_terminal_to_fix`** — paste that command from **`.cursor/mcp.env`** (or **`GCLOUD_AUTH_LOGIN_COMMAND`** there).
 

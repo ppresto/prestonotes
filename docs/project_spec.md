@@ -108,9 +108,9 @@ The old project at `../prestoNotes.orig` is used strictly to copy working code. 
 
 ### MCP tools and resources (prestonotes server)
 
-**Read tools (non-exhaustive; mirror v1 after TASK-002):** `check_google_auth`, `list_customers`, `get_customer_status`, **`discover_doc`**, **`read_doc`**, `read_transcripts`, `read_ledger`, `read_audit_log` (tail of the file at `paths.audit_log_rel`, default **`logs/mcp-audit.log`**), `check_product_intelligence`, plus Stage 1+ tools as they land (`read_call_records`, …).
+**Read tools (non-exhaustive; mirror v1 after TASK-002):** `check_google_auth`, `list_customers`, `get_customer_status`, **`discover_doc`**, **`read_doc`**, `read_transcripts`, `read_ledger`, `read_challenge_lifecycle` (TASK-047), `read_audit_log` (tail of the file at `paths.audit_log_rel`, default **`logs/mcp-audit.log`**), `check_product_intelligence`, plus Stage 1+ tools as they land (`read_call_records`, …).
 
-**Write / sync tools (TASK-003+):** `write_doc`, `append_ledger`, `append_ledger_v2` (TASK-011), `log_run`, `sync_notes`, `sync_transcripts`, `bootstrap_customer`, `write_call_record`, `write_journey_timeline`, `update_challenge_state` (TASK-010), and further backlog items as they land.
+**Write / sync tools (TASK-003+):** `write_doc`, `append_ledger`, `append_ledger_v2` (TASK-011), `log_run`, `sync_notes`, `sync_transcripts`, `bootstrap_customer`, `write_call_record`, `update_challenge_state` (TASK-010), and further backlog items as they land.
 
 **MCP resources to port** (same URIs as v1 so agents and tests share one source of truth): `prestonotes://config/doc-schema`, `prestonotes://config/section-sequence`, `prestonotes://config/task-budgets`, `prestonotes://prompts/persona`, `prestonotes://prompts/lens`. Payloads are read from files under **`prestonotes_gdoc/config/`** after port.
 
@@ -130,7 +130,6 @@ prestonotes/                          ← new v2 repo root
 │   │   ├── 15-user-preferences.mdc   ← Output format preferences
 │   │   ├── 20-orchestrator.mdc       ← Main workflow orchestration (built in Stage 3)
 │   │   ├── 21-extractor.mdc          ← Per-call extraction logic (built in Stage 1)
-│   │   ├── 22-journey-synthesizer.mdc ← Journey timeline builder (built in Stage 2)
 │   │   ├── 23-domain-advisor-soc.mdc ← Security operations advisor (Stage 3)
 │   │   ├── 24-domain-advisor-app.mdc ← Application security advisor (Stage 3)
 │   │   ├── 25-domain-advisor-vuln.mdc ← Vulnerability management advisor (Stage 3)
@@ -192,8 +191,8 @@ prestonotes/                          ← new v2 repo root
 │           │   └── 2026-02-05-technical_deep_dive-2.json
 │           └── AI_Insights/
 │               ├── [CustomerName]-History-Ledger.md
-│               ├── [CustomerName]-AI-AcctSummary.md
-│               └── [CustomerName]-Journey-Timeline.md  ← NEW (Stage 2)
+│               ├── [CustomerName]-AI-AcctSummary.md    ← optional manual save from Run Account Summary
+│               └── challenge-lifecycle.json            ← §7.4 append-only lifecycle state
 │
 ├── pyproject.toml                    ← uv package config, dependencies, tool settings
 ├── README.md                         ← Setup guide and quick-start
@@ -255,17 +254,17 @@ Granola app → granola-sync.py → per-call Transcripts/YYYY-MM-DD-[title].txt
                                          ↓
                               [MCP] write_call_record
 
-[Stage 2 — Journey Intelligence]
-call-records/*.json + History-Ledger.md + AcctSummary.md
+[Stage 2 — Account Narrative]
+call-records/*.json + History-Ledger.md + challenge-lifecycle.json
                                          ↓
-                              22-journey-synthesizer.mdc (Cursor)
+                              run-account-summary.md (Cursor playbook)
                                          ↓
-                              [CustomerName]-Journey-Timeline.md
-                              Enhanced History Ledger (with lifecycle states)
-                                         ↓
-                              [MCP] write_journey_timeline
-                              [MCP] update_challenge_state
-                              [MCP] append_ledger_v2
+                              Account Summary (chat; optional manual save
+                              to [CustomerName]-AI-AcctSummary.md)
+                              [MCP] read_call_records / read_ledger /
+                                    read_challenge_lifecycle (reads only)
+                              [MCP] update_challenge_state (during UCN)
+                              [MCP] append_ledger_v2 (during UCN)
 
 [Stage 3 — Domain Advisors]
 CustomerStateUpdate.json (delta output from extractor)
@@ -515,16 +514,17 @@ Tasks are organized into four stages. Build them in order — each stage depends
 
 ---
 
-### Stage 2 — Journey Intelligence (Build the customer story)
+### Stage 2 — Account Narrative (tell the customer story)
 
-**Goal of Stage 2:** Produce the Journey Timeline artifact. Make the system tell the "story" of the customer from call 1 to today. Improve the exec summary format. Track challenges through their lifecycle.
+**Goal of Stage 2:** Give the system a clean view of "the story of this customer" — chronological calls, milestones, challenge state over time, stakeholder evolution, value realized — and deliver it through the exec + account-summary format. Track challenges through their lifecycle in a source-of-truth JSON file.
 
 ---
 
-**TASK-010 — Add journey timeline and challenge lifecycle MCP tools**
-- **What it builds:** Two new MCP tools: `write_journey_timeline(customer_name, content)` and `update_challenge_state(customer_name, challenge_id, new_state, evidence)`.
-- **Why it matters:** The journey timeline is the core new artifact in v2. The challenge lifecycle tool lets Python track state transitions with evidence, so the AI can't accidentally "lose" a challenge's history.
-- **Test:** `pytest prestonotes_mcp/tests/test_journey_tools.py` — write a journey timeline, read it back. Update a challenge state from `identified` to `in_progress`, verify the transition is logged with a date and evidence reference.
+**TASK-010 — Add challenge lifecycle MCP tools**
+- **What it builds:** MCP tool `update_challenge_state(customer_name, challenge_id, new_state, evidence)` and, after TASK-047, `read_challenge_lifecycle(customer_name)`.
+- **Why it matters:** The lifecycle JSON is the source-of-truth for challenge state and history. The write tool lets Python enforce legal single-step transitions with dated evidence; the read tool (added in TASK-047) gives the rest of the system a uniform read surface next to `read_ledger` / `read_call_records` / `read_doc`.
+- **Historical note (TASK-047):** the companion `write_journey_timeline` tool was retired along with the `*-Journey-Timeline.md` artifact — nothing downstream was reading it. The narrative content that artifact tried to carry now lives in `Run Account Summary`; see `docs/ai/playbooks/run-account-summary.md`.
+- **Test:** `pytest prestonotes_mcp/tests/test_journey_tools.py` — update a challenge state from `identified` to `in_progress`, verify the transition is logged with a date and evidence reference; round-trip `read_challenge_lifecycle` against a seeded file and a missing file.
 - **Files modified:** `prestonotes_mcp/server.py`. New: `prestonotes_mcp/tests/test_journey_tools.py`.
 
 ---
@@ -538,27 +538,25 @@ Tasks are organized into four stages. Build them in order — each stage depends
 
 ---
 
-**TASK-012 — Build the journey synthesizer rule and playbook**
-- **What it builds:** `22-journey-synthesizer.mdc` and `docs/ai/playbooks/run-journey-timeline.md`. Also creates `docs/ai/references/challenge-lifecycle-model.md` and `docs/ai/references/health-score-model.md`.
-- **Why it matters:** This produces the "story of the account" — the core new value in v2. It takes all call records, traces how challenges evolved, and writes a narrative humans actually want to read.
-- **What the synthesizer does:**
+**TASK-012 — Build the account narrative (history: journey synthesizer; current home: Run Account Summary)**
+- **Status:** The Stage 2 narrative originally shipped as a dedicated synthesizer rule and a `Run Journey Timeline` playbook that produced `AI_Insights/<Customer>-Journey-Timeline.md`. **TASK-047 retired that surface** (nothing downstream read the artifact; see `docs/MIGRATION_GUIDE.md`). The equivalent narrative now lives as **optional sections** inside **`docs/ai/playbooks/run-account-summary.md`** — Health line, chronological call spine, milestones, challenge review, stakeholder evolution with first-seen / last-seen, value realized, strategic position.
+- **Why it matters:** This produces the "story of the account" — the core new value in v2. It takes all call records plus `challenge-lifecycle.json` and writes a narrative humans actually want to read, in the same place as the exec summary so operators have one deliverable instead of two.
+- **What the narrative does:**
   1. Read all call records via `read_call_records` (returned sorted by `(date, call_id)`)
-  2. Build a chronological timeline of all calls
-  3. Identify milestone events (first call, first win, POC start, commercial discussion)
-  4. Trace each challenge from `identified` → current state
-  5. Build a stakeholder evolution map (who joined, who left)
-  6. Compile "value realized" entries from all call records
-  7. Write the opening 2-3 sentence narrative (the "story arc" for a VP audience)
-  8. Produce the Journey Timeline markdown (schema in section 7 of the v2 design plan)
-  9. Call `write_journey_timeline` MCP tool
-- **Trigger phrase:** `Run Journey Timeline for [CustomerName]`
+  2. Read `challenge-lifecycle.json` via `read_challenge_lifecycle` (TASK-047) — JSON wins over inferring state from call records
+  3. Build a chronological spine of all calls and label milestone events (first discovery, first POC, commercial close, renewal gate)
+  4. Trace each challenge via `current_state` + `history[]` from the lifecycle JSON
+  5. Build a stakeholder evolution map (first seen, last seen) from `participants[]`
+  6. Compile "value realized" entries from call records
+  7. Write the opening 2–3 sentence 30-Second Brief for a VP audience
+- **Trigger phrase:** `Run Account Summary for [CustomerName]`
 - **Health score model:**
   - 🟢 Green: Active engagement, no stalled challenges, positive sentiment, clear next steps
   - 🟡 Yellow: One of: stalled challenge, missed follow-up, cautious sentiment, unclear next step
   - 🔴 Red: Two or more yellow signals, or: champion departure, competitive threat, budget lost
   - ⚪ Unknown: Fewer than 2 calls or no recent data
-- **Test (manual):** Run on a customer with 5+ calls. Verify: timeline has the right number of entries, challenge lifecycle states match what you know happened, value realized section has at least one entry if applicable, health score is correct.
-- **Files created:** `.cursor/rules/22-journey-synthesizer.mdc`, `docs/ai/playbooks/run-journey-timeline.md`, `docs/ai/references/challenge-lifecycle-model.md`, `docs/ai/references/health-score-model.md`.
+- **Test (manual):** Run `Run Account Summary for [CustomerName]` on a customer with 5+ calls. Verify: spine has the right number of entries, challenge review states match `challenge-lifecycle.json`, value-realized section has at least one entry when applicable, and the Health line follows the verbatim band rules.
+- **Files created (current):** `docs/ai/references/challenge-lifecycle-model.md`, `docs/ai/references/health-score-model.md`. **Files removed by TASK-047:** `.cursor/rules/22-journey-synthesizer.mdc`, `docs/ai/playbooks/run-journey-timeline.md`.
 
 ---
 
@@ -579,9 +577,9 @@ Tasks are organized into four stages. Build them in order — each stage depends
 ---
 
 **TASK-014 — Build the challenge review playbook**
-- **Status:** **Merged** into **`docs/ai/playbooks/run-journey-timeline.md`** as **Steps 5–8 (Challenge governance)**. Standalone trigger **`Run Challenge Review for [CustomerName]`** **retired**; default **UCN** Phase 0 implements the same TASK-014 table + gates (**`20-orchestrator.mdc`**).
-- **What it built (preserved behavior):** Review **`challenge-lifecycle.json`**, union ids with **§7.1** call records, **last_updated** / stall / drift, **one review table**, **`update_challenge_state`** only after explicit approval per row.
-- **Test (manual):** Run **`Run Journey Timeline for [CustomerName]`** on a customer with ≥ 3 challenges (or run **UCN** and confirm Phase 0 table). Verify: all challenges listed, stall flags match dates, at least one recommended action is sensible.
+- **Status:** Originally merged into `run-journey-timeline.md` as Steps 5–8. After TASK-047 the Journey Timeline playbook is retired; the review table now lives in **UCN Phase 0** (`.cursor/rules/20-orchestrator.mdc`) and in `Run Account Summary` as an optional section sourced from `read_challenge_lifecycle`. Standalone trigger `Run Challenge Review for [CustomerName]` remains retired.
+- **What it built (preserved behavior):** Review `challenge-lifecycle.json`, union ids with §7.1 call records, `last_updated` / stall / drift, one review table, `update_challenge_state` only after explicit approval per row.
+- **Test (manual):** Run **UCN** on a customer with ≥ 3 challenges (Phase 0 table) or run `Run Account Summary for [CustomerName]` and verify the Challenge review section lists all challenges, stall flags match dates, and at least one recommended action is sensible.
 
 ---
 
@@ -625,7 +623,7 @@ Tasks are organized into four stages. Build them in order — each stage depends
   6. Run advisors: SOC → APP → VULN → ASM → AI (sequential, each receives `CustomerStateUpdate.json`)
   7. Compile: merge extractor output + advisor recommendations into proposed GDoc mutations
   8. **STOP — present to user:** plain English summary of what will change, specific mutations, new ledger row
-  9. Execute (only after approval): `update_challenge_state` (when Block A approved), then `write_doc` + `append_ledger_v2` (when Block B approved), then **`write_journey_timeline` whenever lifecycle rows were persisted and/or `write_doc` ran** (sidecar must match `challenge-lifecycle.json`), then optional `log_run`, `sync_notes`
+  9. Execute (only after approval): `update_challenge_state` (when Block A approved), then `write_doc` + `append_ledger_v2` (when Block B approved), then optional `log_run`, `sync_notes`. After TASK-047, UCN writes persisted state only — the human-readable account narrative lives in `Run Account Summary`, not in a sidecar.
 - **Trigger phrase:** `Update Customer Notes for [CustomerName]`
 - **Test (manual):** Run full orchestrator on a customer with one new call record. Verify: the proposed changes are accurate to the call, the user approval gate appears before any write, the GDoc and ledger are updated correctly after approval.
 - **Files created:** `.cursor/rules/20-orchestrator.mdc`, `.cursor/rules/10-task-router.mdc`. Modified: archived old `update-customer-notes.md` playbook.
@@ -730,11 +728,10 @@ These triggers are **in scope for the v2 MVP** (Stage 1–2 and Stage 3 where no
 | `Extract Call Records for [Customer]` | Build/update **call-records** from per-call transcript files | 1 |
 | `Test Call Record Extraction for [Customer]` | Manual QA / coverage report for extraction | 1 |
 | `Run License Evidence Check for [Customer]` | SKU / entitlement evidence matrix; may **update** local **`[Customer]-AI-AcctSummary.md`** (**Wiz Commercials**) and **History Ledger** license columns; **wiz docs MCP** + optional cache tooling | 1 |
-| `Run Journey Timeline for [Customer]` | Build or refresh **`[Customer]-Journey-Timeline.md`** under **`AI_Insights/`** using **`docs/ai/playbooks/run-journey-timeline.md`** and **`.cursor/rules/22-journey-synthesizer.mdc`** (TASK-012). **Includes TASK-014 challenge governance** (Steps 5–8: lifecycle JSON, union + dates, stall/drift, review table). **`write_journey_timeline`** + optional **`update_challenge_state`** after approval. **Default UCN** also **must** call **`write_journey_timeline`** after **`update_challenge_state`** and/or **`write_doc`** so the sidecar stays aligned — see **`20-orchestrator.mdc`**. Run standalone for a **full** 13-step pass without UCN. Refs: **`challenge-lifecycle-model.md`**, **`health-score-model.md`**. | 2 |
-| `Run Account Summary for [Customer]` | Structured exec + account narrative via **`docs/ai/playbooks/run-account-summary.md`** and **`docs/ai/references/exec-summary-template.md`** (TASK-013). **Read-heavy:** optional **`sync_notes`** MCP or **`scripts/rsync-gdrive-notes.sh`**, then MCP reads such as **`discover_doc`**, **`read_doc`**, **`read_ledger`**, **`read_call_records`**, **`read_transcripts`**, optional **`read_audit_log`**; weighted context per **`docs/ai/references/customer-data-ingestion-weights.md`**. No mandatory writes; optional **`log_run`** only if the user asks for an audit trail entry. For a **short exec-only blurb**, output **§1** only (retired **`Run Exec Briefing`**). | 2 |
+| `Run Account Summary for [Customer]` | Structured exec + account narrative via **`docs/ai/playbooks/run-account-summary.md`** and **`docs/ai/references/exec-summary-template.md`** (TASK-013, expanded in TASK-047 to absorb the retired Stage-2 narrative sidecar). **Read-heavy:** optional **`sync_notes`** MCP or **`scripts/rsync-gdrive-notes.sh`**, then MCP reads such as **`discover_doc`**, **`read_doc`**, **`read_ledger`**, **`read_call_records`**, **`read_challenge_lifecycle`**, **`read_transcripts`**, optional **`read_audit_log`**; weighted context per **`docs/ai/references/customer-data-ingestion-weights.md`**. No mandatory writes; optional **`log_run`** only if the user asks for an audit trail entry. For a **short exec-only blurb**, skip the optional sections (Metadata, Health, Chronological call spine, Milestones, Challenge review) and output sections 2–3 + 7–11. | 2 |
 | `Run Tech Acct Plan for [Customer] [Domain]` | **Single-domain** advisor pass (used to validate SOC-first, then others as their `.mdc` ship) | 3 |
 
-**Customer-local MCP writes (MyNotes mirror, not GDoc):** Stage 1–2 tools that mutate files under **`MyNotes/Customers/<Customer>/`** include **`write_call_record`**, **`write_journey_timeline`** ( **`AI_Insights/<Customer>-Journey-Timeline.md`** ), and **`update_challenge_state`** ( **`AI_Insights/challenge-lifecycle.json`** ). Each requires the **Rule 3** approval gate in chat before the tool runs. Journey timeline markdown is UTF-8 with a configurable max body size (**`max_journey_timeline_bytes`** in **`prestonotes-mcp.yaml`**). Challenge transitions follow §7.4 states; the JSON file stores **`current_state`** and an append-only **`history`** (`state`, `at`, `evidence`) per challenge id.
+**Customer-local MCP writes (MyNotes mirror, not GDoc):** Stage 1–2 tools that mutate files under **`MyNotes/Customers/<Customer>/`** include **`write_call_record`** and **`update_challenge_state`** ( **`AI_Insights/challenge-lifecycle.json`** ). Each requires the **Rule 3** approval gate in chat before the tool runs. Challenge transitions follow §7.4 states; the JSON file stores **`current_state`** and an append-only **`history`** (`state`, `at`, `evidence`) per challenge id. The companion read tool is **`read_challenge_lifecycle`** (TASK-047), which mirrors the shape of `read_ledger` / `read_call_records`.
 
 ---
 
@@ -749,7 +746,7 @@ These triggers are **in scope for the v2 MVP** (Stage 1–2 and Stage 3 where no
 | `Run Logic Audit for [Customer]` | Read-only QA report — **deferred** (not TASK-007 MVP) |
 | `Run BVA Report for [Customer]` | Business value assessment — **deferred** (not TASK-007 MVP); explicitly out of MVP per product direction |
 | `Run Exec Briefing for [CustomerName]` | **Retired** — use **`Run Account Summary`** §1 only. |
-| `Run Challenge Review for [Customer]` | **Retired** — behavior lives under **`Run Journey Timeline`** Steps 5–8 and **UCN** Phase 0. |
+| `Run Challenge Review for [Customer]` | **Retired** — challenge governance (review table, 60-day stall rule, per-row `update_challenge_state` approvals) lives in **UCN** Phase 0 (`.cursor/rules/20-orchestrator.mdc`). A read-only **Challenge review** table is also an optional section of **`Run Account Summary`** (sourced from `read_challenge_lifecycle`). The former `Run Journey Timeline` home was itself retired by **TASK-047**. |
 | `Debug Pipeline for [CustomerName]` | **Retired** — ad-hoc **`read_doc`** / ledger checks when debugging UCN. |
 | `Run Full Account Rebuild for [Customer]` | Composed multi-step v1 workflow — **superseded** by orchestrator + explicit triggers when needed |
 | `Run Step 9 Post-Seed Synthesis` / `Polish Account Summary` (and related) | Heavy **replace_field_entries** passes — reference `run-seeded-notes-replay.md` in orig |

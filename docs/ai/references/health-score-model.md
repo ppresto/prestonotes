@@ -1,8 +1,8 @@
-# Account health score (Journey timeline)
+# Account health score
 
-Source: **`docs/project_spec.md` §9 TASK-012** (verbatim definitions below).
+Source: **`docs/project_spec.md` §9 TASK-012** (verbatim definitions below). The **Run Journey Timeline** playbook that originally owned this rubric was retired by **TASK-047**; the Health line now lives in the optional **Health** section of **`docs/ai/playbooks/run-account-summary.md`**.
 
-Use this rubric in **`Run Journey Timeline for [CustomerName]`** when you assign a single **Health:** line in the Journey Timeline artifact. Pick **one** band: 🟢 Green, 🟡 Yellow, 🔴 Red, or ⚪ Unknown. If bands conflict, apply **the most severe** band that is fully supported by evidence from call records (and optional ledger context).
+Use this rubric in **`Run Account Summary for [CustomerName]`** when you assign a single **Health:** line (see `docs/ai/references/exec-summary-template.md` §1). Pick **one** band: 🟢 Green, 🟡 Yellow, 🔴 Red, or ⚪ Unknown. If bands conflict, apply **the most severe** band that is fully supported by evidence from call records (and optional ledger context).
 
 ---
 

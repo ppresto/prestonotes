@@ -41,6 +41,4 @@ security:
   customer_name_pattern: "^[A-Za-z0-9_][A-Za-z0-9 _\\-]{0,63}$"
   rate_limit_per_minute: 30
   max_mutation_json_bytes: 524288
-  # write_journey_timeline: max UTF-8 bytes for markdown body (default 2 MiB if omitted)
-  max_journey_timeline_bytes: 2097152
   audit_tool_calls: true

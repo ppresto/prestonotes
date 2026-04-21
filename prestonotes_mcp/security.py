@@ -71,12 +71,6 @@ def check_call_record_json_size(payload: str) -> None:
         raise ValueError(f"record_json exceeds max size ({max_b} bytes)")
 
 
-def check_journey_timeline_size(content: str) -> None:
-    max_b = int(_security_cfg().get("max_journey_timeline_bytes", 2_097_152))
-    if len(content.encode("utf-8")) > max_b:
-        raise ValueError(f"journey timeline content exceeds max size ({max_b} bytes)")
-
-
 def _audit_path() -> Path:
     ctx = get_ctx()
     paths = ctx.config.get("paths", {})

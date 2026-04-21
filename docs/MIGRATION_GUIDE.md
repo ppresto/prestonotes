@@ -94,29 +94,24 @@ Per-call **`Transcripts/*.txt`** → **`call-records/*.json`** via playbook **`d
 
 **Stage 1 gate (TASK-009):** Before starting Stage 2 work, run **`docs/ai/playbooks/test-call-record-extraction.md`** (`Test Call Record Extraction for [Customer]`) on a real customer with per-call transcripts and confirm the coverage report in that playbook.
 
-## Journey timeline + challenge lifecycle (TASK-010)
+## Challenge lifecycle (TASK-010)
 
-These MCP tools write under the repo **`MyNotes/`** mirror (same customer root as call records and transcripts). They do **not** use the Google Docs API.
+This MCP tool writes under the repo **`MyNotes/`** mirror (same customer root as call records and transcripts). It does **not** use the Google Docs API.
 
 | Tool | On-disk target |
 |------|----------------|
-| **`write_journey_timeline(customer_name, content)`** | **`MyNotes/Customers/<Customer>/AI_Insights/<Customer>-Journey-Timeline.md`** — full markdown body (UTF-8). Creates **`AI_Insights/`** when missing. **`content`** is bounded by **`max_journey_timeline_bytes`** in **`prestonotes-mcp.yaml`** (default **2 MiB** in **`prestonotes-mcp.yaml.example`**). |
 | **`update_challenge_state(customer_name, challenge_id, new_state, evidence)`** | **`MyNotes/Customers/<Customer>/AI_Insights/challenge-lifecycle.json`** — merges append-only history per **`challenge_id`** (safe id: letters, digits, **`._-`**, no path segments). **`new_state`** must be one of **`identified`**, **`acknowledged`**, **`in_progress`**, **`resolved`**, **`reopened`**, **`stalled`** (see **`docs/project_spec.md`** §7.4). Each recorded transition includes a **`YYYY-MM-DD`** date (UTC calendar date from the server) and a non-empty **`evidence`** string. Illegal state jumps raise **`ValueError`** with allowed next states; repeating the current state is rejected. |
+| **`read_challenge_lifecycle(customer_name)`** | Same path. Returns `{"path": ..., "data": {...}}` when the JSON exists, or `{"error": "file not found", "path": ...}` when it does not. Mirrors the read surface of `read_ledger` / `read_call_records` / `read_doc`. |
 
-**Approval:** Server instructions and tool docstrings require **show plan → user approves in chat** before calling **`write_journey_timeline`** or **`update_challenge_state`** (same pattern as **`write_doc`** / **`write_call_record`**).
+**Approval:** Server instructions and tool docstrings require **show plan → user approves in chat** before calling **`update_challenge_state`** (same pattern as **`write_doc`** / **`write_call_record`**). `read_challenge_lifecycle` is read-only and needs no approval.
 
-## Journey synthesizer (TASK-012)
+## Account narrative lives in Run Account Summary (TASK-047)
 
-**Cursor** workflow for the **`Run Journey Timeline for [CustomerName]`** trigger (see **`docs/project_spec.md`** §11):
+**TASK-047 retired the Journey Timeline surface.** The `write_journey_timeline` MCP tool, the `run-journey-timeline.md` playbook, the `22-journey-synthesizer.mdc` rule, the `max_journey_timeline_bytes` config key, and the UCN "mandatory sidecar" contract have all been removed. Nothing downstream was reading `*-Journey-Timeline.md`, so deletion is safe.
 
-| Artifact | Role |
-|----------|------|
-| **`docs/ai/playbooks/run-journey-timeline.md`** | End-to-end procedure (TASK-012 steps 1–9 in §9); VP narrative + markdown sections for the timeline file |
-| **`.cursor/rules/22-journey-synthesizer.mdc`** | Rule (playbook + **`MyNotes/**`** globs); wires MCP reads (**`read_call_records`**, optional **`read_ledger`**) and approved writes (**`write_journey_timeline`**, **`update_challenge_state`**) |
-| **`docs/ai/references/challenge-lifecycle-model.md`** | Challenge lifecycle states (§7.4) and how call records inform transitions |
-| **`docs/ai/references/health-score-model.md`** | Account health 🟢🟡🔴⚪ rules (same wording as §9 TASK-012) |
+Existing `MyNotes/Customers/<Customer>/AI_Insights/<Customer>-Journey-Timeline.md` files are left in place on disk — no automation touches them anymore, and operators who care can delete manually.
 
-Complete the **Stage 1** extraction validation playbook (**`docs/ai/playbooks/test-call-record-extraction.md`**, TASK-009) on a customer before treating journey synthesis as production-ready for that account.
+The account narrative (Health line, chronological call spine, milestones, challenge review, stakeholder evolution with first-seen / last-seen, value realized, strategic position) now lives in **`Run Account Summary for [CustomerName]`** (**`docs/ai/playbooks/run-account-summary.md`**) as optional sections driven by `read_call_records`, `read_ledger`, and the new `read_challenge_lifecycle` MCP tool. UCN continues to persist `challenge-lifecycle.json`, the Google Doc, and the History Ledger; it no longer writes a narrative sidecar.
 
 ## Exec summary + run account summary (TASK-013)
 
@@ -129,15 +124,16 @@ Complete the **Stage 1** extraction validation playbook (**`docs/ai/playbooks/te
 
 **Writes:** This playbook does **not** require mutating customer notes. Optional **`log_run`** only when the user wants a run recorded. **`scripts/ci/required-paths.manifest`** lists both paths so repo integrity checks fail if either file is missing.
 
-## Journey timeline + challenge governance (TASK-012 + TASK-014)
+## Journey timeline + challenge governance (TASK-012 + TASK-014 → retired/redistributed by TASK-047)
 
-**Trigger:** **`Run Journey Timeline for [CustomerName]`** (see **`docs/project_spec.md`** §11). **TASK-014** (challenge review table, stall rules, **`update_challenge_state`** approvals) lives **inside** this playbook as **Steps 5–8**. Default **UCN** runs the same challenge governance in **Phase 0** before doc mutations.
+**Historical note.** The original Stage 2 shape shipped a dedicated **`Run Journey Timeline for [CustomerName]`** playbook (`docs/ai/playbooks/run-journey-timeline.md`) with **TASK-014** challenge governance (review table, 60-day stall rule, per-row `update_challenge_state` approvals) living **inside** it as Steps 5–8. **TASK-047 retired that surface** (see the section above). What each half of that work became:
 
-| Artifact | Role |
-|----------|------|
-| **`docs/ai/playbooks/run-journey-timeline.md`** | Index + call records → timeline synthesis → **Steps 5–8:** optional **`sync_notes`** → read **`challenge-lifecycle.json`** → union ids + dates → stall/drift → **TASK-014 review table** → assemble **`Journey-Timeline.md`** → approval gates → **`write_journey_timeline`** / **`update_challenge_state`** |
+| Former piece (retired) | Current home (after TASK-047) |
+|------------------------|-------------------------------|
+| `docs/ai/playbooks/run-journey-timeline.md` + `.cursor/rules/22-journey-synthesizer.mdc` + MCP `write_journey_timeline` + `*-Journey-Timeline.md` sidecar | Deleted. Narrative content (Health line, chronological call spine, milestones, stakeholder evolution) is now **optional sections** in `docs/ai/playbooks/run-account-summary.md` sourced from `read_call_records`, `read_ledger`, and the new read-only `read_challenge_lifecycle` MCP tool. |
+| **TASK-014** challenge governance (review table, stall rules, approved `update_challenge_state` rows) | Primary home is **UCN Phase 0** in `.cursor/rules/20-orchestrator.mdc` (Block A — Challenge status updates), executed during `Update Customer Notes`. A read-only **Challenge review** table also appears as an optional section of `Run Account Summary`, sourced from `challenge-lifecycle.json` (via `read_challenge_lifecycle`) with the same 60-day stall rule from `docs/ai/references/challenge-lifecycle-model.md`. |
 
-**Reads:** **`challenge-lifecycle.json`**, **`read_call_records`**, optional **`read_ledger`**. **Writes:** **`write_journey_timeline`** and **`update_challenge_state`** only after approval. **`scripts/ci/required-paths.manifest`** includes **`docs/ai/playbooks/run-journey-timeline.md`**.
+**Reads still in use:** `challenge-lifecycle.json` (via `read_challenge_lifecycle`), `read_call_records`, optional `read_ledger`. **Writes still in use:** `update_challenge_state` (approved, per-row, from UCN Phase 0). `write_journey_timeline` was deleted — do not invoke it from any playbook or rule. `scripts/ci/required-paths.manifest` no longer lists `docs/ai/playbooks/run-journey-timeline.md`.
 
 ## History Ledger v2 — 19 → 24 columns (TASK-011)
 

@@ -1,5 +1,5 @@
 ---
-description: Gated MCP playbook for Update Customer Notes — UCN defaults to built-in challenge governance + one combined approval; sync, load, extractor delta, advisors SOC→APP→VULN→ASM→AI, compile mutations, STOP, then writes including mandatory write_journey_timeline when lifecycle or GDoc updates ship.
+description: Gated MCP playbook for Update Customer Notes — UCN defaults to built-in challenge governance + one combined approval; sync, load, extractor delta, advisors SOC→APP→VULN→ASM→AI, compile mutations, STOP, then writes (update_challenge_state, write_doc, append_ledger_v2, optional log_run / sync_notes).
 globs:
   - "docs/ai/playbooks/update-customer-notes.md"
   - "docs/ai/references/customer-state-update-delta.md"
@@ -18,7 +18,7 @@ alwaysApply: false
 
 This is a **product-run playbook** for the **main Agent in this chat**; it does **not** replace **`.cursor/rules/workflow.mdc`** (repo planner, subagent **`/coder` `/tester` `/doc`** gates, or task-file approval).
 
-**TASK-044 override (test-only):** when the run is **`Run E2E Test Customer`** for customer **`_TEST_CUSTOMER`**, execute this pipeline end-to-end without approval pauses for write tools (including `update_challenge_state`, `write_doc`, `append_ledger_v2`, `write_call_record`, `write_journey_timeline`, `sync_notes`). Keep normal approval behavior for all other customers/runs. See `.cursor/rules/11-e2e-test-customer-trigger.mdc` and `docs/ai/playbooks/e2e-test-customer.md` for the canonical 10-step sequence.
+**`_TEST_CUSTOMER` E2E override (test-only):** when the run is **`Run E2E Test Customer`** for customer **`_TEST_CUSTOMER`**, execute this pipeline end-to-end without approval pauses for write tools (including `update_challenge_state`, `write_doc`, `append_ledger_v2`, `write_call_record`, `sync_notes`). Keep normal approval behavior for all other customers/runs. See `.cursor/rules/11-e2e-test-customer-trigger.mdc` and `docs/ai/playbooks/e2e-test-customer.md` for the canonical 10-step sequence.
 
 ## Built-in Challenge Review — Phase 0 (default)
 
@@ -26,13 +26,13 @@ This is a **product-run playbook** for the **main Agent in this chat**; it does 
 
 **When:** **Before pipeline Step 1**, unless **Scope — opt-out** applies.
 
-1. Implement the **Challenge governance** block from **`docs/ai/playbooks/run-journey-timeline.md` — Steps 5–8** (read **`challenge-lifecycle.json`**, merge ids + **last_updated** / state, stall/drift, **one TASK-014 review table**). Reuse data already loaded in orchestrator **Steps 2–3** where it is equivalent to those steps’ inputs; you must still emit the **same** review table before Block A. When UCN is the parent run, **do not** use a **second** STOP for this — lifecycle write proposals are folded into **Block A** below.
+1. Run challenge governance inline: read **`challenge-lifecycle.json`** via MCP **`read_challenge_lifecycle`**, merge ids + **last_updated** / state against call records, compute stall/drift per **`docs/ai/references/challenge-lifecycle-model.md`** (≥ 60 days since last transition on an unresolved state is a stall flag), and emit **one** review table with columns **`challenge_id | description | current_state | last_updated | evidence | stall / risk | recommended_action`**. Reuse data already loaded in orchestrator **Steps 2–3** where it is equivalent. When UCN is the parent run, **do not** use a **second** STOP for this — lifecycle write proposals are folded into **Block A** below.
 2. Build **Block A — Challenge status updates** (implementation: MCP **`update_challenge_state`** rows: `challenge_id`, `new_state`, `evidence` citing **`call_id`** or lifecycle rule). Only **legal single-step** transitions per **`prestonotes_mcp/journey.py`**. Rows may be **zero**.
 3. **Do not** call **`update_challenge_state`** until the combined approval step below.
 
 **Steps 1–7** — Same as the default pipeline, with these **additions**:
 
-- Treat **`MyNotes/Customers/[CustomerName]/AI_Insights/challenge-lifecycle.json`** (workspace read) as **+1** source when compiling **`challenge_tracker`** / exec narrative so **Block B** (mutation JSON) **does not contradict** Block A once both are approved.
+- Treat **`MyNotes/Customers/[CustomerName]/AI_Insights/challenge-lifecycle.json`** (read via MCP **`read_challenge_lifecycle`**) as **+1** source when compiling **`challenge_tracker`** / exec narrative so **Block B** (mutation JSON) **does not contradict** Block A once both are approved.
 - If the user will approve **Block B only**, Phase 0 still ran so the doc plan is **informed** by the review table; **skip executing** Block A in that case.
 
 **STOP — combined user review (default UCN)**
@@ -51,9 +51,10 @@ After Step 7, if Phase 0 was **skipped**: present **Block B** only (summary, mut
 
 1. **If Block A approved (in full or in part):** run **`update_challenge_state`** once per **approved** row **before** any **`write_doc`**.
 2. **If Block B approved:** run **`write_doc`** with MCP **`customer_name`** set to **`[CustomerName]`** whenever known (enables lifecycle ↔ Challenge Tracker parity checks in `update-gdoc-customer-notes.py`), then **`append_ledger_v2`** (or **`append_ledger`** if not migrated).
-3. **`write_journey_timeline` — mandatory (lifecycle ↔ sidecar sync):** If **any** approved **`update_challenge_state`** row was executed in step **1** **or** **Block B** was approved (so **`write_doc`** ran in step **2**), you **must** call **`write_journey_timeline`** before **`log_run`** / **`sync_notes`**. Re-read **`AI_Insights/challenge-lifecycle.json`** from the workspace **after** step **1** (when step **1** ran). Compose markdown that **does not contradict** persisted lifecycle: at minimum refresh **Health** (per **`health-score-model.md`**), **Challenge review (TASK-014)** / challenge journey section from Phase 0 + post-write JSON, and **Strategic position & next moves**; include a fuller spine when steps **2–7** context already supports it without another full playbook pass. **Do not** skip this step because the “story” barely changed — stale **`Journey-Timeline.md`** vs **`challenge-lifecycle.json`** is a defect. If corpus is empty, still write a short honest artifact (**⚪ Unknown** health, coverage gap stated).
-4. Optional **`log_run`**, then **`sync_notes`** (when local mirror / Drive policy expects it), same as the default path.
-5. If the user approved **Block B only**, **skip** step **1** entirely — still run steps **2**, **3** (mandatory after **`write_doc`**), **4**.
+3. Optional **`log_run`**, then **`sync_notes`** (when local mirror / Drive policy expects it), same as the default path.
+4. If the user approved **Block B only**, **skip** step **1** entirely — still run steps **2**, **3**.
+
+The narrative view of the account (Health line, call spine, milestones, challenge review, stakeholder evolution) now lives in **`Run Account Summary for [CustomerName]`** (**`docs/ai/playbooks/run-account-summary.md`**). UCN writes persisted state — **`challenge-lifecycle.json`**, the Google Doc, and the History Ledger — and nothing more.
 
 ---
 
@@ -74,9 +75,9 @@ Load **`.cursor/rules/ai_learnings.mdc`** and honor overrides (**`docs/project_s
 ## Approval (default behavior)
 
 - **Phase 0 + Steps 1–7:** Read-only MCP and reasoning only, except where **`.cursor/rules/21-extractor.mdc`** already requires approval before **`write_call_record`** / index updates.
-- **After step 7, before step 9:** **STOP.** **Default UCN:** use the **combined STOP** (Block A + Block B) above — **one** approval round. **Opt-out UCN:** use the **legacy STOP** (Block B only). Do **not** call **`write_doc`**, **`append_ledger`**, **`append_ledger_v2`**, **`write_journey_timeline`**, **`log_run`**, or **`sync_notes`** for mutation purposes until the user explicitly approves (same contract as **`.cursor/rules/core.mdc`**). **`update_challenge_state`** is gated the same way.
+- **After step 7, before step 9:** **STOP.** **Default UCN:** use the **combined STOP** (Block A + Block B) above — **one** approval round. **Opt-out UCN:** use the **legacy STOP** (Block B only). Do **not** call **`write_doc`**, **`append_ledger`**, **`append_ledger_v2`**, **`log_run`**, or **`sync_notes`** for mutation purposes until the user explicitly approves (same contract as **`.cursor/rules/core.mdc`**). **`update_challenge_state`** is gated the same way.
 
-**TASK-044 exception:** skip this approval stop during `_TEST_CUSTOMER` E2E runs.
+**`_TEST_CUSTOMER` E2E exception:** skip this approval stop during `_TEST_CUSTOMER` E2E runs.
 
 ## Steps (MCP and logic — **`docs/project_spec.md` §9 TASK-017**)
 
@@ -89,6 +90,6 @@ Load **`.cursor/rules/ai_learnings.mdc`** and honor overrides (**`docs/project_s
 6. **Advisors (strictly sequential)** — Feed the same delta object to each advisor in order: **SOC → APP → VULN → ASM → AI**. Wait for each advisor output before starting the next. **ASM** may use **`architecture_diagram_paths`** (images under **`MyNotes/Customers/<Customer>/`**) per **`26-domain-advisor-asm.mdc`**.
 7. **Compile** — Merge extractor output and all advisor outputs into **one** coherent proposed **Google Doc mutation** payload (schema per **`prestonotes_gdoc/config/doc-schema.yaml`** and **`docs/ai/references/customer-notes-mutation-rules.md`**). Prepare **`append_ledger_v2`** **`row_json`** when the ledger is on the **24-column** v2 model; otherwise follow **`core.mdc`** / project spec for **`append_ledger`** compatibility. **Lifecycle–tracker parity:** For every **`update_challenge_state`** row in Block A, include matching **`challenge_tracker`** `add_table_row` / `update_table_row` mutations in Block B (same evidence dates) and add **`[lifecycle_id:<challenge_id>]`** anchors per **`docs/ai/references/customer-notes-mutation-rules.md`**. If you are not confident enough to update the customer-facing table, **do not** persist lifecycle alone in the same approval—drop the lifecycle row or defer.
 8. **STOP — user review** — **Default UCN:** **combined STOP** (Block A + Block B); offer **Approve all (A then B), Block B only, Block A only, or reject / edit.** **Opt-out UCN:** legacy STOP (Block B only). **No mutating MCP tools** beyond what step 2 already allowed for call records.
-9. **Execute (only after explicit user approval)** — **If Block A approved** (default path): **`update_challenge_state`** (per row) **before** **`write_doc`**. **If Block B approved:** **`write_doc`** (pass **`customer_name`** to MCP when known), **`append_ledger_v2`** (or **`append_ledger`** if not migrated). **Then** **`write_journey_timeline`** — **mandatory** whenever step **9** executed ≥1 **`update_challenge_state`** **or** ran **`write_doc`** (see **Execute** section step **3** above). Optional **`log_run`**, **`sync_notes`**. **Opt-out:** no Block A unless separately approved; otherwise same order; **opt-out still requires** **`write_journey_timeline`** after **`write_doc`** when Block B approved.
+9. **Execute (only after explicit user approval)** — **If Block A approved** (default path): **`update_challenge_state`** (per row) **before** **`write_doc`**. **If Block B approved:** **`write_doc`** (pass **`customer_name`** to MCP when known), **`append_ledger_v2`** (or **`append_ledger`** if not migrated). Optional **`log_run`**, **`sync_notes`**. **Opt-out:** no Block A unless separately approved; otherwise same order.
 
 If any step is blocked (auth, missing customer folder, schema validation), stop with a clear fix instruction (including any **`run_in_terminal_to_fix`** hints from MCP — **`core.mdc`**).

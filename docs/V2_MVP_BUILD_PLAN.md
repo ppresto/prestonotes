@@ -130,11 +130,11 @@ Below: **TASK** → **what you’re building** → **you know it’s done when�
 
 | Task | What you’re building | Validate |
 |------|----------------------|----------|
-| **010** | `write_journey_timeline`, `update_challenge_state` | pytest |
+| **010** | `update_challenge_state` (and read companion `read_challenge_lifecycle` added by TASK-047) | pytest |
 | **011** | `append_ledger_v2` + migration helper | pytest + fixture ledger |
-| **012** | `22-journey-synthesizer` + **Run Journey Timeline** | Manual on 5+ call customer |
-| **013** | Exec summary template + **Run Account Summary** | Manual VP-readable output |
-| **014** | **Run Challenge Review** playbook | **Merged** into **`run-journey-timeline.md`** Steps 5–8 + **UCN** Phase 0 |
+| **012** | Stage-2 synthesizer rule + playbook — **retired by TASK-047**; narrative now lives in **Run Account Summary** | Manual on 5+ call customer |
+| **013** | Exec summary template + **Run Account Summary** (expanded by TASK-047 to carry the Stage-2 narrative) | Manual VP-readable output |
+| **014** | **Run Challenge Review** playbook | **Merged** into **UCN** Phase 0 (orchestrator) and into **Run Account Summary** as an optional section |
 
 ### Stage 3 — Advisors + orchestration (TASK-015–019)
 
@@ -195,7 +195,7 @@ When in doubt: **§9 task Test section is law**; this plan is navigation.
 
 ## 11. Phase 3 close-out — shipped artifacts vs manual validation
 
-**Stage 3 code/docs in-tree (TASK-015–019):** Domain advisor rules **`.cursor/rules/23-domain-advisor-soc.mdc`** through **`27-domain-advisor-ai.mdc`**, **`.cursor/rules/10-task-router.mdc`** and **`20-orchestrator.mdc`**, and playbooks under **`docs/ai/playbooks/`** ( **`run-journey-timeline.md`** now includes merged **TASK-014** challenge governance). Archived batch log **[`docs/tasks/archive/2026-04/PHASE3-PLAN.md`](tasks/archive/2026-04/PHASE3-PLAN.md)**. Standalone **`run-exec-briefing.md`** / **`debug-pipeline.md`** / **`run-challenge-review.md`** were **removed**; see **`docs/project_spec.md`** §11 / §12.
+**Stage 3 code/docs in-tree (TASK-015–019):** Domain advisor rules **`.cursor/rules/23-domain-advisor-soc.mdc`** through **`27-domain-advisor-ai.mdc`**, **`.cursor/rules/10-task-router.mdc`** and **`20-orchestrator.mdc`**, and playbooks under **`docs/ai/playbooks/`** (the **TASK-014** challenge governance now lives in **UCN Phase 0** and in the optional **Challenge review** section of **`run-account-summary.md`** per TASK-047). Archived batch log **[`docs/tasks/archive/2026-04/PHASE3-PLAN.md`](tasks/archive/2026-04/PHASE3-PLAN.md)**. Standalone **`run-exec-briefing.md`** / **`debug-pipeline.md`** / **`run-challenge-review.md`** / **`run-journey-timeline.md`** were **removed**; see **`docs/project_spec.md`** §11 / §12.
 
 **Manual validation (human, not automated):** When investigating UCN vs monolithic differences, use ad-hoc **`read_doc`** diffs, ledger rows, and audit log — no separate checklist playbook.
 

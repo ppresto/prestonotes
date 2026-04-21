@@ -1,4 +1,4 @@
-"""Journey timeline path + challenge lifecycle JSON (project_spec §4, §7.4)."""
+"""Challenge lifecycle JSON helpers (project_spec §4, §7.4)."""
 
 from __future__ import annotations
 
@@ -53,12 +53,6 @@ def validate_challenge_state(state: str) -> str:
     return s
 
 
-def journey_timeline_path(customer_name: str) -> Path:
-    name = validate_customer_name(customer_name)
-    ai = customer_dir(customer_name) / "AI_Insights"
-    return (ai / f"{name}-Journey-Timeline.md").resolve()
-
-
 def challenge_lifecycle_path(customer_name: str) -> Path:
     validate_customer_name(customer_name)
     ai = customer_dir(customer_name) / "AI_Insights"
@@ -67,14 +61,6 @@ def challenge_lifecycle_path(customer_name: str) -> Path:
 
 def utc_date_iso() -> str:
     return datetime.now(timezone.utc).date().isoformat()
-
-
-def write_journey_timeline_markdown(customer_name: str, content: str) -> Path:
-    """Write UTF-8 markdown; create AI_Insights if needed."""
-    path = journey_timeline_path(customer_name)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
-    return path
 
 
 def _load_lifecycle(path: Path) -> dict[str, Any]:

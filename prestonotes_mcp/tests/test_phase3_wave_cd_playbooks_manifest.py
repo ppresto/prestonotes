@@ -8,7 +8,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 def test_wave_cd_playbooks_tracked() -> None:
     manifest = (REPO_ROOT / "scripts/ci/required-paths.manifest").read_text(encoding="utf-8")
     for rel in (
-        "docs/ai/playbooks/run-journey-timeline.md",
         "docs/ai/playbooks/refresh-wiz-doc-cache.md",
         "docs/ai/playbooks/bootstrap-customer.md",
     ):

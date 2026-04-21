@@ -1,6 +1,6 @@
 # Challenge lifecycle model
 
-Canonical states and diagram: **`docs/project_spec.md` §7.4**. Persistence and MCP behavior: **`prestonotes_mcp/journey.py`**, tools **`update_challenge_state`** / **`write_journey_timeline`** in **`prestonotes_mcp/server.py`**.
+Canonical states and diagram: **`docs/project_spec.md` §7.4**. Persistence and MCP behavior: **`prestonotes_mcp/journey.py`**, tools **`update_challenge_state`** (write) and **`read_challenge_lifecycle`** (read) in **`prestonotes_mcp/server.py`**.
 
 ---
 

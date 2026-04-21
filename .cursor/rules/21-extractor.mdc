@@ -10,7 +10,7 @@ alwaysApply: false
 
 When the user invokes **`Extract Call Records for [CustomerName]`** (or clearly the same intent), follow **`docs/ai/playbooks/extract-call-records.md`** end-to-end.
 
-**TASK-044 override:** when this extraction is part of **`Run E2E Test Customer`** for **`_TEST_CUSTOMER`**, skip approval pauses and execute **`write_call_record`** directly.
+**`_TEST_CUSTOMER` E2E override (test-only):** when this extraction is part of **`Run E2E Test Customer`** for **`_TEST_CUSTOMER`**, skip approval pauses and execute **`write_call_record`** directly. See **`docs/ai/playbooks/e2e-test-customer.md`**.
 
 ## Authority and validation
 
@@ -38,4 +38,4 @@ Use one of: **`positive`**, **`neutral`**, **`cautious`**, **`negative`**. Pick 
 
 ## Output
 
-Produce **compact JSON** objects ready for **`write_call_record`**. For normal (non-E2E) runs: after user approval, write **one file per meeting**. For `_TEST_CUSTOMER` TASK-044 E2E runs, execute without waiting for approval.
+Produce **compact JSON** objects ready for **`write_call_record`**. For normal (non-E2E) runs: after user approval, write **one file per meeting**. For the `_TEST_CUSTOMER` E2E override, execute without waiting for approval.

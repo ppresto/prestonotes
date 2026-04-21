@@ -79,6 +79,6 @@ Customer-notes runs should append a line to **`./MyNotes/pnotes_agent_log.md`** 
 - **Daily Activity:** only **prepend**; respect staleness and duplicate-detection rules in **`daily-activity-ai-prepend.md`**.
 
 
-### TASK-044 _TEST_CUSTOMER E2E override
+### `_TEST_CUSTOMER` E2E override
 
-For the dedicated **`Run E2E Test Customer`** flow on customer **`_TEST_CUSTOMER`**, approval pauses for mutation tools are bypassed. Execute writes directly in-order for the test harness, per `docs/ai/playbooks/e2e-test-customer.md` and `.cursor/rules/11-e2e-test-customer-trigger.mdc`. This override is test-only and must not be applied to non-test customers.
+For the dedicated **`Run E2E Test Customer`** flow on customer **`_TEST_CUSTOMER`**, approval pauses for customer-data write tools are bypassed. Execute writes directly in order, per `docs/ai/playbooks/e2e-test-customer.md` and `.cursor/rules/11-e2e-test-customer-trigger.mdc`. This override is test-only and must not be applied to non-test customers.

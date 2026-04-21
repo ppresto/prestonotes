@@ -2,7 +2,7 @@
 
 Triggers: `Update Customer Notes for [CustomerName]` · `UCN for [CustomerName]` · informal **`UCN`** when the customer is already set in the thread.
 
-**Default (orchestrator):** Built-in **challenge governance** first (TASK-014 review table + optional persisted challenge status updates you approve), then the multi-advisor pipeline and **one** combined approval — **`.cursor/rules/20-orchestrator.mdc`**. On execute, **`write_journey_timeline`** is **mandatory** whenever lifecycle rows are persisted **and/or** the Google Doc is updated, so **`Journey-Timeline.md`** stays aligned with **`challenge-lifecycle.json`**. Use **`Run Journey Timeline for [CustomerName]`** when you want a **full** 13-step journey refresh without UCN.
+**Default (orchestrator):** Built-in **challenge governance** first (review table + optional persisted challenge status updates you approve), then the multi-advisor pipeline and **one** combined approval — **`.cursor/rules/20-orchestrator.mdc`**. On execute, UCN writes persisted state only: **`update_challenge_state`** (approved rows), **`write_doc`**, **`append_ledger_v2`**, optional **`log_run`** / **`sync_notes`**. The human-readable account narrative (Health line, call spine, milestones, challenge review, stakeholder evolution) now lives in **`Run Account Summary for [CustomerName]`** (**`docs/ai/playbooks/run-account-summary.md`**).
 
 Aliases (same as default): `Update Customer Notes with Challenge Review first for [CustomerName]` · `Lifecycle-first Update Customer Notes for [CustomerName]`
 

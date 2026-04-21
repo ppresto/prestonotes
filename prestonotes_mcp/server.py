@@ -30,12 +30,11 @@ from prestonotes_mcp.config import (
     repo_root_from_env_or_file,
 )
 from prestonotes_mcp.exec_helper import repo_root, run_shell_script, run_uv_script
-from prestonotes_mcp.journey import append_challenge_transition, write_journey_timeline_markdown
+from prestonotes_mcp.journey import append_challenge_transition, challenge_lifecycle_path
 from prestonotes_mcp.ledger_v2 import append_ledger_v2_row, validate_ledger_v2_row
 from prestonotes_mcp.runtime import AppContext, init_ctx
 from prestonotes_mcp.security import (
     check_call_record_json_size,
-    check_journey_timeline_size,
     check_mutation_json_size,
     customer_dir,
     tool_scope,
@@ -45,8 +44,8 @@ from prestonotes_mcp.security import (
 mcp = FastMCP(
     "prestonotes",
     instructions=(
-        "prestoNotes MCP v2: customer notes, Google Docs, ledger, sync, call records, journey. "
-        "For writes (write_doc, write_call_record, write_journey_timeline, update_challenge_state, "
+        "prestoNotes MCP v2: customer notes, Google Docs, ledger, sync, call records, lifecycle. "
+        "For writes (write_doc, write_call_record, update_challenge_state, "
         "append_ledger_v2, bootstrap_customer with dry_run=false), sync_notes, sync_transcripts: "
         "show the user the plan first and obtain approval in chat before calling. "
         "Mutation path: approved mutation JSON → write_doc (prestonotes_gdoc/update-gdoc-customer-notes.py). "
@@ -677,18 +676,32 @@ def read_call_records(
 
 
 # ---------------------------------------------------------------------------
-# Journey + challenge lifecycle (§4 AI_Insights, §7.4)
+# Challenge lifecycle (§4 AI_Insights, §7.4)
 # ---------------------------------------------------------------------------
 
 
 @mcp.tool
-def write_journey_timeline(customer_name: str, content: str) -> str:
-    """Write markdown to AI_Insights/<Customer>-Journey-Timeline.md (UTF-8). Mutates customer data — get user approval in chat before calling."""
-    with tool_scope("write_journey_timeline", customer_name=customer_name):
+def read_challenge_lifecycle(customer_name: str) -> str:
+    """Read AI_Insights/challenge-lifecycle.json for a customer (§7.4 shape).
+
+    Returns a JSON text payload with ``path`` and parsed ``data`` when the file exists, or
+    ``{"error": "file not found", "path": ...}`` when it does not. The schema is unchanged from
+    §7.4 — see ``prestonotes_mcp/journey.py`` for write-side validation.
+    """
+    with tool_scope("read_challenge_lifecycle", customer_name=customer_name):
         validate_customer_name(customer_name)
-        check_journey_timeline_size(content)
-        path = write_journey_timeline_markdown(customer_name, content)
-        return json.dumps({"ok": True, "path": str(path)})
+        path = challenge_lifecycle_path(customer_name)
+        if not path.is_file():
+            return json.dumps({"error": "file not found", "path": str(path)})
+        raw = path.read_text(encoding="utf-8")
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            return json.dumps(
+                {"error": f"invalid JSON: {exc}", "path": str(path)},
+                ensure_ascii=False,
+            )
+        return json.dumps({"path": str(path), "data": data}, ensure_ascii=False)
 
 
 @mcp.tool

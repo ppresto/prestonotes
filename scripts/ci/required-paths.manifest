@@ -28,7 +28,6 @@ docs/ai/playbooks/run-account-summary.md
 docs/ai/playbooks/update-customer-notes.md
 docs/ai/playbooks/run-license-evidence-check.md
 docs/ai/playbooks/extract-call-records.md
-docs/ai/playbooks/run-journey-timeline.md
 docs/ai/playbooks/test-call-record-extraction.md
 docs/ai/playbooks/e2e-test-customer.md
 docs/ai/playbooks/load-product-intelligence.md
@@ -81,7 +80,6 @@ docs/tasks/archive/2026-04/PHASE3-PLAN.md
 .cursor/rules/15-user-preferences.mdc
 .cursor/rules/ai_learnings.mdc
 .cursor/rules/21-extractor.mdc
-.cursor/rules/22-journey-synthesizer.mdc
 .cursor/rules/23-domain-advisor-soc.mdc
 .cursor/rules/24-domain-advisor-app.mdc
 .cursor/rules/25-domain-advisor-vuln.mdc

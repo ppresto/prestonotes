@@ -4,7 +4,7 @@ globs: ["*"]
 alwaysApply: true
 ---
 
-# E2E `_TEST_CUSTOMER` trigger (TASK-044)
+# `_TEST_CUSTOMER` E2E trigger
 
 ## Triggers
 
@@ -33,10 +33,19 @@ Follow `docs/ai/playbooks/e2e-test-customer.md` exactly:
 
 ## Hard rules (any violation is a defect — stop, fix, re-run)
 
-1. **Do not skip steps.** All 10 steps must run. The chat-driven steps (2, 4, 5, 6, 8, 9, 10) invoke real playbooks under the TASK-044 approval override; do not answer in-chat with "simulated" or "prepared" outputs that were never produced by the underlying MCP tools.
-2. **Do not stop for approval.** The TASK-044 approval bypass in `20-orchestrator.mdc`, `21-extractor.mdc`, and `core.mdc` applies. Execute mutation tools (`write_doc`, `append_ledger_v2`, `update_challenge_state`, `write_call_record`, `write_journey_timeline`, `sync_notes`) directly in order.
+1. **Do not skip steps.** All 10 steps must run. The chat-driven steps (2, 4, 5, 6, 8, 9, 10) invoke real playbooks under the `_TEST_CUSTOMER` E2E override; do not answer in-chat with "simulated" or "prepared" outputs that were never produced by the underlying MCP tools.
+2. **Do not stop for approval.** The `_TEST_CUSTOMER` E2E override in `20-orchestrator.mdc`, `21-extractor.mdc`, and `core.mdc` applies. Execute customer-data write tools (`write_doc`, `append_ledger_v2`, `update_challenge_state`, `write_call_record`, `sync_notes`) directly in order.
 3. **Do not substitute session context for artifacts.** If a step's output depends on a file that a prior step was supposed to produce, re-read the file from disk or MCP — do not claim "from context" that the file exists without checking.
-4. **Do not reorder.** `v1` must come before round-1 playbooks. Round-1 UCN must complete before `v2`. `v2` must come before round-2 Extract / UCN.
-5. **Shell steps use `./scripts/e2e-test-customer.sh` only.** The old harness scripts (`e2e-test-customer-prep.sh`, `e2e-reset-test-customer-drive.sh`, `refresh_test_customer.py`, etc.) were removed in TASK-044 Phase 1; never attempt to invoke them.
+4. **Do not reorder.** The shell seed at step 3 must complete before the chat playbooks at steps 4–6. Step 6 (first UCN) must complete before the shell merge at step 7. The shell merge at step 7 must complete before the extraction and UCN at steps 8–9.
+5. **Shell steps use `./scripts/e2e-test-customer.sh` only.** Older harness scripts that predate `e2e-test-customer.sh` are not part of this flow; never attempt to invoke them.
 6. **On failure, stop and fix in the repo.** If a step fails or produces unexpected output, stop, diagnose, and land the fix in the script / playbook / rule. Never paper over the issue inside a chat response. Once fixed, resume from the failing step (or re-run from step 1 if state was corrupted).
 7. **Surface progress after each step.** Print a brief status line stating which step just completed and what runs next, so the operator can follow along.
+
+## Artifact hygiene
+
+Customer artifacts (the Google Doc, History Ledger, `challenge-lifecycle.json`, Account Summary, call records) must be indistinguishable from a real-customer run.
+
+- **Do not** mention any `TASK-NNN` identifier, `round 1`, `round 2`, `v1 corpus`, `v2 corpus`, `phase`, `E2E`, `harness`, `fixture`, or any other test-only vocabulary in artifact content.
+- **Section dates** in any artifact (Daily Activity, call spine, milestones, ledger rows, challenge history) must be **call dates** or **milestone dates** — never the run date.
+- A section explicitly named **Metadata** may carry the run date labeled as `Generated: YYYY-MM-DD`; no other field should carry the run date.
+- If a chat-facing progress line cites the E2E flow (e.g. "step 6 of 10"), that line is operator-facing and does not enter any persisted artifact.
