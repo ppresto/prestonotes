@@ -1,0 +1,79 @@
+{
+  "source_name": "blog_product",
+  "seed_url": "https://www.wiz.io/blog/tag/product",
+  "last_scanned_at": "2026-03-02T17:52:04Z",
+  "discovered_urls": [
+    {
+      "url": "https://www.wiz.io/blog/ai-endpoint-visibility-ai-security",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/forrester-wave-cnapp-2026",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/hosted-technologies-inventory",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/introducing-wiz-service-catalog",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/kenna-sunset-and-the-shift-to-exposure-management",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/preparing-for-post-quantum-cryptography",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/validated-external-risk-issues-zero-day-soc-alerts",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-exposure-management-now-generally-available",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-notion-mcp-agents-integration",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-runtime-sensor-for-your-windows-environment",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-secops-ai-agent",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wizos-secured-image-adoption-with-ai",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    }
+  ]
+}

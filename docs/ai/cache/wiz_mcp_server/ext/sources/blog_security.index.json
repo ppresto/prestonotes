@@ -1,0 +1,79 @@
+{
+  "source_name": "blog_security",
+  "seed_url": "https://www.wiz.io/blog/tag/security",
+  "last_scanned_at": "2026-03-02T17:52:04Z",
+  "discovered_urls": [
+    {
+      "url": "https://www.wiz.io/blog/ai-as-heart-of-security",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/ciso-budget-planning-2026",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/critical-vulnerability-in-react-cve-2025-55182",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/mongobleed-cve-2025-14847-exploited-in-the-wild-mongodb",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/recent-oauth-attacks-detection-strategies",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/securing-critical-infrastructure-in-cloud-era",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/shai-hulud-2-0-aftermath-ongoing-supply-chain-attack",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/shai-hulud-2-0-ongoing-supply-chain-attack",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/snipping-the-long-tail-of-shai-hulud-2-0",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/top-aws-re-invent-announcements-for-security-teams-in-2025",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/top-wiz-research-blogs-2025",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-supports-oracle-cloud-identity",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    }
+  ]
+}

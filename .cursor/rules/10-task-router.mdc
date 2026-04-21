@@ -1,5 +1,5 @@
 ---
-description: Routes Update Customer Notes trigger to the multi-advisor orchestrator (.cursor/rules/20-orchestrator.mdc); documents monolithic playbook fallback.
+description: Routes UCN / Update Customer Notes (including shorthand and opt-out) to the multi-advisor orchestrator (.cursor/rules/20-orchestrator.mdc); documents monolithic playbook fallback.
 globs:
   - "docs/ai/playbooks/update-customer-notes.md"
   - "MyNotes/**"
@@ -10,19 +10,21 @@ alwaysApply: false
 ## When this rule applies
 
 - The user opens or references **`docs/ai/playbooks/update-customer-notes.md`**, or
-- The user (or chat) clearly invokes **`Update Customer Notes for [CustomerName]`** (any reasonable casing/spacing for the customer token).
+- The user (or chat) clearly invokes **`Update Customer Notes for [CustomerName]`**, **`UCN for [CustomerName]`**, or informal **`UCN`** / **`ucn`** when the customer is already fixed in context (any reasonable casing/spacing for the customer token), or
+- The user invokes an **alias** trigger (same **`[CustomerName]`** token): **`Update Customer Notes with Challenge Review first for [CustomerName]`** or **`Lifecycle-first Update Customer Notes for [CustomerName]`** (same as default UCN — see **`.cursor/rules/20-orchestrator.mdc`**), or
+- The user invokes an **opt-out** trigger: **`Update Customer Notes (no challenge review) for [CustomerName]`**, **`UCN without challenge review for [CustomerName]`**, or **`Light UCN for [CustomerName]`**.
 
 Repo-wide planner/orchestrator behavior stays in **`.cursor/rules/workflow.mdc`** (main Agent). This file only **routes product workflows**; it does **not** redefine subagent delegation or task-plan approval.
 
 ## Preferred path: multi-advisor orchestrator
 
-When the user wants the **full Stage 3 pipeline** (sync → structured context → extractor delta → **sequential** domain advisors **SOC → APP → VULN → ASM → AI** → compiled mutations → **human approval** → MCP writes), follow **`.cursor/rules/20-orchestrator.mdc`** end-to-end for **`Update Customer Notes for [CustomerName]`**.
+When the user wants the **full Stage 3 pipeline**, follow **`.cursor/rules/20-orchestrator.mdc`** end-to-end. **Default UCN** includes **Phase 0** (Challenge Review through the review table + **Block A** proposals, no writes until approval) → sync and steps **1–7** (structured context through compile) → **one combined STOP** (Block A + Block B) → execute **A** (if approved) then **B** (if approved). **Opt-out** UCN skips Phase 0 and uses a **legacy** single STOP (Block B only), per **`20-orchestrator.mdc`**.
 
 Treat **`[CustomerName]`** as the single customer for the session (**`docs/project_spec.md` §2 Rule 4**). If missing, ask once before deep reads.
 
 ## Fallback: monolithic playbook
 
-**`docs/ai/playbooks/update-customer-notes.md`** remains a **supported, documented fallback** (orchestrator vs monolithic checks: **`docs/ai/playbooks/debug-pipeline.md`**). Use it when:
+**`docs/ai/playbooks/update-customer-notes.md`** remains a **supported, documented fallback** when you need the **legacy monolithic** step list. Use it when:
 
 - The user explicitly asks for the **legacy / single-pass** playbook, or
 - They need only a subset of steps from that doc without advisor fan-out.

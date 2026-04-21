@@ -1,16 +1,24 @@
 # Playbook: Update Customer Notes
 
-Trigger: `Update Customer Notes for [CustomerName]`
+Triggers: `Update Customer Notes for [CustomerName]` · `UCN for [CustomerName]` · informal **`UCN`** when the customer is already set in the thread.
+
+**Default (orchestrator):** Built-in **challenge governance** first (TASK-014 review table + optional persisted challenge status updates you approve), then the multi-advisor pipeline and **one** combined approval — **`.cursor/rules/20-orchestrator.mdc`**. On execute, **`write_journey_timeline`** is **mandatory** whenever lifecycle rows are persisted **and/or** the Google Doc is updated, so **`Journey-Timeline.md`** stays aligned with **`challenge-lifecycle.json`**. Use **`Run Journey Timeline for [CustomerName]`** when you want a **full** 13-step journey refresh without UCN.
+
+Aliases (same as default): `Update Customer Notes with Challenge Review first for [CustomerName]` · `Lifecycle-first Update Customer Notes for [CustomerName]`
+
+**Opt-out (faster, doc-only approval):** `Update Customer Notes (no challenge review) for [CustomerName]` · `UCN without challenge review for [CustomerName]` · `Light UCN for [CustomerName]`
 
 Purpose: the **single source of truth** workflow for maintaining a customer's account story. Reads all transcripts, notes, the live Google Doc (both tabs), the History Ledger, and the audit log. Proposes targeted updates. After user approval, writes to the Google Doc, appends a History Ledger row, and logs to the audit file.
 
-**Routing (Stage 3):** For **`Update Customer Notes for [CustomerName]`**, prefer **`.cursor/rules/20-orchestrator.mdc`** (via **`.cursor/rules/10-task-router.mdc`**) when you want the **multi-advisor** flow (extractor delta → SOC → APP → VULN → ASM → AI → compiled mutations → approval → writes). This playbook remains the **monolithic, step-by-step fallback** until **TASK-019** validates the orchestrator path end-to-end.
+**Routing (Stage 3):** Prefer **`.cursor/rules/20-orchestrator.mdc`** (via **`.cursor/rules/10-task-router.mdc`**) for the **multi-advisor** flow (Phase 0 challenge review + Block A proposals → sync → load → extractor delta → SOC → APP → VULN → ASM → AI → compile → **one** combined STOP → ordered writes). This playbook remains the **monolithic, step-by-step fallback** until **TASK-019** validates the orchestrator path end-to-end.
 
 > **v2 (TASK-007):** In Cursor, prefer **prestonotes** MCP tools where they map 1:1 — `check_google_auth`, `sync_notes`, `discover_doc`, `read_doc`, `write_doc` (after user approval; use `dry_run=true` to preview), `append_ledger`, `log_run`. The bash / `uv run prestonotes_gdoc/...` blocks below are the **terminal equivalent** when not using MCP.
 
 Operating persona: **Wiz cybersecurity Solutions Engineer (post-sale, value-realization focused)**. Updates must prioritize customer business/security outcomes, measurable blockers to value realization, operational adoption and expansion readiness, and executive signal quality over transcript volume.
 
 Primary analysis lens: `prestonotes_gdoc/config/prompts/010-wiz-solution-lens.md`
+
+> **Fixture customer:** **`_TEST_CUSTOMER`** is a first-class customer name for MCP + scripts (leading underscore is valid). In zsh/bash, quote Drive paths: `scripts/rsync-gdrive-notes.sh "_TEST_CUSTOMER"`.
 
 ---
 
@@ -47,6 +55,12 @@ Do **not** remove or rename the three H3 headings. If a customer doc predates th
 ## Communication Rule
 
 At every step, tell the user what you are doing in plain English. Start each step with: `"Step X of 11 — [what I'm doing]"`. Do not skip steps. Do not reorder steps. Follow the format rules in `15-user-preferences.mdc`.
+
+## End-of-run chat format
+
+- Follow **`.cursor/rules/15-user-preferences.mdc`** for the final response.
+- After multi-step work, include **`### Activity recap`** with: what changed, what was skipped, and why.
+- Always state approval/write status clearly (no writes run, dry-run only, or approved writes executed).
 
 ---
 
@@ -93,6 +107,25 @@ If the customer folder is missing, run `./scripts/rsync-gdrive-notes.sh "[Custom
 Check `./MyNotes/Internal/AI_Insights/Product-Intelligence.md`. If missing or `last_updated` is older than 7 days, run `Load Product Intelligence` first.
 
 [STOP — tell user: "Setup checks passed. Starting Update Customer Notes for [CustomerName]. I have 11 steps."]
+
+---
+
+## Source bundle and fallback order (TASK-038 required)
+
+Use this exact read order for context assembly:
+
+1. `read_doc` result (current Google Doc truth for Account Summary + Account Metadata tabs).
+2. Last-month transcript set (default lookback 1 month) via `read_transcripts` or bounded reads from `MyNotes/Customers/[CustomerName]/Transcripts/*.txt`.
+3. `MyNotes/Customers/[CustomerName]/[CustomerName] Notes.md` mirror for local comparison and Daily Activity date slicing.
+4. `MyNotes/Customers/[CustomerName]/AI_Insights/[CustomerName]-AI-AcctSummary.md` (if present; optional but strongly preferred).
+5. `MyNotes/Customers/[CustomerName]/AI_Insights/[CustomerName]-History-Ledger.md` and audit log files for continuity + prior decisions.
+
+Fallback behavior when files are missing:
+
+- If `read_doc` fails, stop and resolve doc identity/auth first (do not continue with partial write planning).
+- If no in-window transcripts exist, continue with doc + AI_Insights + notes, but mark transcript-dependent claims as `no recent transcript evidence`.
+- If `*-AI-AcctSummary.md` is missing, continue and note that strategic narrative continuity may be sparse.
+- If ledger/audit files are missing, continue and explicitly state reduced historical confidence.
 
 ---
 
@@ -242,6 +275,24 @@ When you **do** append to the exec summary, target the correct field so new text
 
 Run the quality gate before showing to user.
 
+### Sparse vs rich account strategy (required)
+
+- **Sparse account (limited recent evidence):**
+  - prioritize correctness over volume; only propose high-confidence updates backed by current doc/transcript evidence
+  - explicitly use `no_evidence` outcomes where required by schema instead of filling with generic statements
+  - keep Daily Activity additions limited to meetings with usable transcript content
+- **Rich account (broad recent evidence):**
+  - include trend lines across recent calls (what improved, what regressed, what is unchanged)
+  - include value articulation tied to delivered outcomes and supporting evidence tags
+  - include concrete next steps for SE execution (owner + near-term action)
+
+### Quality bar checklist (required before Step 9)
+
+- Trends are stated when evidence spans multiple recent calls.
+- Value realized is explicit, dated, and evidence-tagged when available.
+- Next steps for SE are concrete (owner/action/timebox) and not generic.
+- Any unsupported area uses explicit `no_evidence` language instead of invented detail.
+
 **Tell user:** "Step 8 of 11 — I built the change plan. [N] proposed changes, [N] sections marked no new evidence, [N] Daily Activity meeting recap(s) to prepend."
 
 ### Step 9 of 11 — Show proposed changes and wait for approval
@@ -279,7 +330,7 @@ After a successful Google Doc write:
 
 1. **Read or create the ledger file:**
    - Path: `./MyNotes/Customers/[CustomerName]/AI_Insights/[CustomerName]-History-Ledger.md`
-   - If the file does not exist, create it with YAML frontmatter (`customer_name`, `last_ai_update`, `ledger_version: 1`, `schema_version: 2`) and the standard column headers from **`.cursor/rules/core.mdc`** (History Ledger schema).
+   - If the file does not exist, treat as first-run/no-history and continue. Do **not** handcraft markdown tables in the playbook flow.
 
 2. **Build one new ledger row** using the post-write doc state and evidence from this run:
    - `Date`: today's date
@@ -303,14 +354,13 @@ After a successful Google Doc write:
    - `Wiz License Evidence Quality`: per evidence hierarchy (Definitive > Strong > Indicative > Unknown)
    - Leave any column **empty** when data is not available. Do not fabricate values.
 
-3. **Append the row** (append-only — never edit prior rows).
+3. **Append the row** with MCP **`append_ledger_v2`** (append-only — never edit prior rows).  
+   - If the file is missing, this tool creates an empty v2 ledger scaffold first, then appends the row.
 
-4. **Update `last_ai_update`** in the YAML frontmatter.
-
-5. **Mirror** the updated ledger to Google Drive:
+4. **Mirror** the updated ledger to Google Drive:
    - `$GDRIVE_BASE_PATH/Customers/[CustomerName]/AI_Insights/[CustomerName]-History-Ledger.md`
 
-6. **Cross-reference in audit log:** The audit log entry from the write step should note "Ledger row appended: [date]" so the two files link to each other.
+5. **Cross-reference in audit log:** The audit log entry from the write step should note "Ledger row appended: [date]" so the two files link to each other.
 
 **Tell user:** "Step 11 of 11 — Done. Ledger row appended for [date]. Files synced to Google Drive."
 

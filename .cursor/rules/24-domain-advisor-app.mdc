@@ -20,6 +20,12 @@ Use when the **orchestrator** (or user) assigns the **APP** pass after SOC: anal
 - Use a **separate** MCP server for Wiz docs (**`wiz-local`** or user-configured name).
 - Invoke its document search tool (**name varies by server** — e.g. **`wiz_search_wiz_docs`**). No secrets in prompts or rules.
 
+### Retrieval hybrid (prestonotes vs wiz-local)
+
+- **`wiz_knowledge_search`**: local Chroma over cached markdown; **`include_staleness=true`** when freshness matters.
+- **wiz-local**: live **`wiz_search_wiz_docs`** / WIN APIs for authoritative docs.
+- Prefer **vector first**; if weak or **stale**, targeted **wiz-local**, update cache (**`docs/ai/playbooks/refresh-wiz-doc-cache.md`**), then **`refresh_wiz_vector_index`** after approval.
+
 ## Domain scope (APP only)
 
 Own **secure SDLC**, **code security**, **secrets in code**, **dependency / supply-chain risk**, **container/K8s application images**, **IaC misconfigurations from a developer workflow lens**, and **developer-centric remediation** — not SOC detection operations, classic enterprise VM program management, pure attack-surface **external** exposure mapping (ASM), or ML model governance (AI advisor).

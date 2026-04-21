@@ -10,3 +10,52 @@ alwaysApply: true
 - **Dates:** When the user or environment provides an authoritative “today,” use that calendar year consistently (avoid defaulting to an outdated year).
 - **Markdown:** Prefer readable tables and clear headings; keep playbook steps numbered and copy-pasteable where shell is shown.
 - **Scope:** Implement what was asked; avoid drive-by refactors and unrelated files unless the user expands scope.
+
+## How to talk (ported from v1 `15-user-preferences`)
+
+Write for a smart **16-year-old**: **short** sentences, **simple** words, not long stacked clauses. Explain ideas in small steps. Skip jargon unless you need one term—then define it in one line.
+
+## Answer structure (default — so you can skim)
+
+Use this for **any** substantive reply (rough guide: more than **~4 short paragraphs** of explanation, **or** multiple topics/decisions, **or** a long list of file changes). **Trivial** one-line answers can skip the opening/closing wrappers.
+
+1. **Start with a short answer** — Before tables, long quotes, or deep walkthroughs, give **2–5 sentences** (or a **tiny numbered list**, max 5 items) that states the **bottom line**: what you concluded, what changed, yes/no, what the user should do next. No burying the lede: the first screen should already answer the question.
+2. **Then the details** — Headings, code citations, step-by-step, evidence. This is where the user goes when they want depth.
+3. **End with a closing summary** — After the detail, add **`### Short summary`** with **3–6 bullets**: outcomes, key paths or tools, optional “if you only read one section.” For **playbook / MCP runs**, **`### Activity recap`** counts as this closing summary (do not duplicate the same bullets twice).
+
+**Why:** You read the top for the verdict, scroll the middle when debugging, read the bottom to remember what landed without re-reading everything.
+
+## Response format for playbook / MCP task runs
+
+When running multi-step customer or cache work (any playbook-style flow):
+
+1. **Steps:** Start substantive steps with: `Step X of Y — [one plain sentence what you are doing]`.
+2. **Before writes:** Before mutating a Google Doc or customer files, say what will change in a **short bullet list** and wait for approval where **Rule 3** applies.
+3. **After finishing:** Close with:
+   - **What changed:** plain list (files, doc sections, MCP tools run).
+   - **What we skipped and why:** plain list (even if empty).
+4. **Activity recap (required for long playbook/MCP replies):** After detailed technical prose, add a compact recap so the user can scan quickly:
+   - **`### Activity recap`**: **3–6 bullets**, plain words, **tools/files actually touched** (e.g. `sync_notes`, `mcp-materialize`, path under `MyNotes/`). This **is** the **`### Short summary`** for those runs (see **Answer structure** above).
+   - Same recap style for doc-agent deliverables (README, tutorials): lead with **who it is for** + **3 bullets** of outcomes, then deeper sections.
+
+## Forbidden words in user-facing chat (unless defined first)
+
+Prefer plain alternatives (from v1; still applies):
+
+| Instead of | Say |
+| :--- | :--- |
+| mutation | change or update |
+| synthesis pass | reading through the notes |
+| ingestion | loading or reading |
+| LLM-bridged | AI-generated |
+| dedupe / deduplication | avoiding duplicates |
+| planner | plan |
+| guardrail | rule |
+| canonicalize | clean up or standardize |
+| emit | output or produce |
+| preflight | setup checks |
+| orchestration | running steps in order |
+
+## If the user asks “what’s happening?” or “what did you do?”
+
+Answer in **numbered steps**, not one long paragraph. Example: (1) Synced notes. (2) Read last month of transcripts. (3) Proposed 3 doc changes. (4) Waiting for approval before `write_doc`.

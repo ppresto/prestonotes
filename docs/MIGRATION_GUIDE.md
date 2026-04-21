@@ -88,7 +88,9 @@ Guardrails merged into **`.cursor/rules/core.mdc`** (Customer notes section); **
 
 ## Extract call records (TASK-008)
 
-Per-call **`Transcripts/*.txt`** → **`call-records/*.json`** + **`transcript-index.json`** via playbook **`docs/ai/playbooks/extract-call-records.md`** and rule **`.cursor/rules/21-extractor.mdc`**, using MCP **`write_call_record`** / **`update_transcript_index`**. Taxonomy: **`docs/ai/references/call-type-taxonomy.md`**.
+Per-call **`Transcripts/*.txt`** → **`call-records/*.json`** via playbook **`docs/ai/playbooks/extract-call-records.md`** and rule **`.cursor/rules/21-extractor.mdc`**, using MCP **`write_call_record`**. Taxonomy: **`docs/ai/references/call-type-taxonomy.md`**.
+
+**TASK-046 — transcript-index retired:** the aggregate **`transcript-index.json`** and the `update_transcript_index` / `read_transcript_index` MCP tools were removed end-to-end. **`read_call_records`** enumerates validated §7.1 records directly (sorted by `(date, call_id)`) and is the sole listing API.
 
 **Stage 1 gate (TASK-009):** Before starting Stage 2 work, run **`docs/ai/playbooks/test-call-record-extraction.md`** (`Test Call Record Extraction for [Customer]`) on a real customer with per-call transcripts and confirm the coverage report in that playbook.
 
@@ -110,7 +112,7 @@ These MCP tools write under the repo **`MyNotes/`** mirror (same customer root a
 | Artifact | Role |
 |----------|------|
 | **`docs/ai/playbooks/run-journey-timeline.md`** | End-to-end procedure (TASK-012 steps 1–9 in §9); VP narrative + markdown sections for the timeline file |
-| **`.cursor/rules/22-journey-synthesizer.mdc`** | Rule (playbook + **`MyNotes/**`** globs); wires MCP reads (**`read_transcript_index`**, **`read_call_records`**, optional **`read_ledger`**) and approved writes (**`write_journey_timeline`**, **`update_challenge_state`**) |
+| **`.cursor/rules/22-journey-synthesizer.mdc`** | Rule (playbook + **`MyNotes/**`** globs); wires MCP reads (**`read_call_records`**, optional **`read_ledger`**) and approved writes (**`write_journey_timeline`**, **`update_challenge_state`**) |
 | **`docs/ai/references/challenge-lifecycle-model.md`** | Challenge lifecycle states (§7.4) and how call records inform transitions |
 | **`docs/ai/references/health-score-model.md`** | Account health 🟢🟡🔴⚪ rules (same wording as §9 TASK-012) |
 
@@ -127,15 +129,15 @@ Complete the **Stage 1** extraction validation playbook (**`docs/ai/playbooks/te
 
 **Writes:** This playbook does **not** require mutating customer notes. Optional **`log_run`** only when the user wants a run recorded. **`scripts/ci/required-paths.manifest`** lists both paths so repo integrity checks fail if either file is missing.
 
-## Challenge review playbook (TASK-014)
+## Journey timeline + challenge governance (TASK-012 + TASK-014)
 
-**Trigger:** **`Run Challenge Review for [CustomerName]`** (see **`docs/project_spec.md`** §11).
+**Trigger:** **`Run Journey Timeline for [CustomerName]`** (see **`docs/project_spec.md`** §11). **TASK-014** (challenge review table, stall rules, **`update_challenge_state`** approvals) lives **inside** this playbook as **Steps 5–8**. Default **UCN** runs the same challenge governance in **Phase 0** before doc mutations.
 
 | Artifact | Role |
 |----------|------|
-| **`docs/ai/playbooks/run-challenge-review.md`** | Eight-step procedure: optional **`sync_notes`** → read **`MyNotes/Customers/<Customer>/AI_Insights/challenge-lifecycle.json`** → union challenge ids with **§7.1** call records → dates / stall rules → recommended actions → optional ledger context → present table → **`update_challenge_state`** only after **explicit approval** per change |
+| **`docs/ai/playbooks/run-journey-timeline.md`** | Index + call records → timeline synthesis → **Steps 5–8:** optional **`sync_notes`** → read **`challenge-lifecycle.json`** → union ids + dates → stall/drift → **TASK-014 review table** → assemble **`Journey-Timeline.md`** → approval gates → **`write_journey_timeline`** / **`update_challenge_state`** |
 
-**Reads:** **`challenge-lifecycle.json`**, **`read_call_records`**, optional **`read_ledger`**. **Writes:** None required; lifecycle updates use the same approval pattern as **`write_journey_timeline`** / **`update_challenge_state`** elsewhere. **`scripts/ci/required-paths.manifest`** includes **`docs/ai/playbooks/run-challenge-review.md`** so **`bash scripts/ci/check-repo-integrity.sh`** fails if the playbook is missing.
+**Reads:** **`challenge-lifecycle.json`**, **`read_call_records`**, optional **`read_ledger`**. **Writes:** **`write_journey_timeline`** and **`update_challenge_state`** only after approval. **`scripts/ci/required-paths.manifest`** includes **`docs/ai/playbooks/run-journey-timeline.md`**.
 
 ## History Ledger v2 — 19 → 24 columns (TASK-011)
 
@@ -158,6 +160,10 @@ uv run python -m prestonotes_mcp.tools.migrate_ledger --fixture ./path/to/Acme-H
 **`--dry-run`** prints the full migrated markdown to **stdout** and does not write the file. For **`--customer`**, the CLI resolves **`PRESTONOTES_REPO_ROOT`** (from the environment, e.g. **`setEnv.sh`** / Cursor **`mcp.env`**) or falls back to the **current working directory** as the repo root.
 
 **`append_ledger`** (v1 / GDoc subprocess path) remains for backward compatibility until each customer’s ledger is migrated; prefer **`append_ledger_v2`** for new rows once the table is v2. Optional: when **`GDRIVE_BASE_PATH`** is set and the mirrored **`Customers/<Customer>/AI_Insights/`** parent exists, **`append_ledger_v2`** also copies the updated ledger there (same pattern as **`append_ledger`**).
+
+### Lazy ledger file (TASK-023)
+
+If **`AI_Insights/<Customer>-History-Ledger.md`** is missing, the first successful **`append_ledger_v2`** creates **`AI_Insights/`** (if needed) and writes an empty **v2** ledger (YAML, section prose, 24-column header + separator), then appends the row. **`read_ledger`** returns **`{"empty": true, "path": ..., "message": ...}`** when **`AI_Insights/`** exists but no ledger file is present yet (it still errors if **`AI_Insights/`** itself is missing). The `_TEST_CUSTOMER` E2E reset flow (TASK-044) exercises the lazy-create path by hard-deleting the customer folder and re-bootstrapping via the bootstrap playbook; no stand-alone ledger-reset script is required.
 
 ## Ruff and `prestonotes_gdoc/`
 

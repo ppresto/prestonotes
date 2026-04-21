@@ -20,6 +20,12 @@ Use when the **orchestrator** (or an explicit user request) assigns the **SOC** 
 - Use a **separate** MCP server configured in Cursor for Wiz docs (commonly **`wiz-local`** or a user-named server).
 - Call that server’s **product / doc search** tool (e.g. v1-style **`wiz_search_wiz_docs`** — **exact name is server-specific**; use the tool list from your MCP config). **Do not** embed API keys or secrets in rules or chat output.
 
+### Retrieval hybrid (prestonotes vs wiz-local)
+
+- **`wiz_knowledge_search`** (prestonotes MCP): semantic search over local Chroma from cached markdown; use **`include_staleness=true`** when freshness matters.
+- **wiz-local** (**`wiz_search_wiz_docs`**, WIN APIs): live official docs and API-backed facts.
+- Prefer **vector first** for breadth across the corpus; if hits are weak or chunks are flagged **stale**, run **targeted wiz-local** searches, keep the disk cache + manifest current (**`docs/ai/playbooks/refresh-wiz-doc-cache.md`**), then the operator may **`refresh_wiz_vector_index`** (after chat approval) to re-embed.
+
 ## Domain scope (SOC only)
 
 Own gaps and challenges tied to **threat detection**, **incident response**, **security operations**, **runtime / workload threat coverage**, **SIEM/SOAR adjacency**, **detection engineering**, and **cloud security monitoring** — not AppSec, VM, ASM-only topology, or AI/ML safety (other advisors own those).

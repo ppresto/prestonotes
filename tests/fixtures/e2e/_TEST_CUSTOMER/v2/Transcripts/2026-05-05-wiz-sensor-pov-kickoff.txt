@@ -1,0 +1,9 @@
+MEETING: _TEST_CUSTOMER — Wiz Sensor POV kickoff
+DATE: 2026-05-05T17:30:00.000Z
+ID: test-uuid-20260505-sensor-pov
+========================================
+Speaker: Jane Smith: We want a timeboxed Sensor POV on Azure production — success means runtime coverage parity with Cloud findings for our top ten toxic combinations.
+Speaker: John Doe: Budget is approved for the POV window only; if we hit the metrics, we move Sensor to procurement like we did for Cloud.
+Speaker: John Doe: My sponsorship is active, but Jane is still transitioning out, so keep champion transition in progress until interim owners complete handoff.
+Speaker: Jane Smith: Daily Activity should capture this as the Sensor POV kickoff with success metrics and ownership actions.
+Speaker: SE: I will track Sensor as POV/evaluation in Deal Stage Tracker, keep champion transition in progress, and capture the success criteria in Daily Activity prep for the next UCN pass.

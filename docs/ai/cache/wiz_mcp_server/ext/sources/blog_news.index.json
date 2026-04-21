@@ -1,0 +1,79 @@
+{
+  "source_name": "blog_news",
+  "seed_url": "https://www.wiz.io/blog/tag/news",
+  "last_scanned_at": "2026-03-02T17:52:04Z",
+  "discovered_urls": [
+    {
+      "url": "https://www.wiz.io/blog/ai-powered-wiz-forensics",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/aws-re-invent-2025",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/forrester-wave-cnapp-2026",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/introducing-win-partner-index",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/introducing-wiz-partner-alliance",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/introducing-wizextend",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-2025-customers-choice-gartner-cnapp",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-plugin-for-jetbrains-ide-available",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-runtime-sensor-for-your-windows-environment",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-spotify-backstage",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-supports-oracle-cloud-identity",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-zeroday-cloud-hacking-competition-behind-the-scenes",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    }
+  ]
+}

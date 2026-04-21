@@ -13,7 +13,7 @@ alwaysApply: true
 |----------|--------|------------------|
 | **coder** | `/coder` or "use the coder subagent …" | TDD implementation from the active task file |
 | **tester** | `/tester` or "use the tester subagent …" | `test.sh` / `lint.sh` and bounded repair |
-| **doc** | `/doc` or "use the doc subagent …" | README and docs after tester succeeds |
+| **doc** | `/doc` or "use the doc subagent …" | README and docs after tester succeeds; follow **`.cursor/rules/15-user-preferences.mdc`** (**Activity recap**, plain language, forbidden-jargon table) on every doc deliverable |
 
 Subagents have **isolated context**; include the **full task file path**, one-line goal, and required return shape (**Output Contract**) in each delegation prompt.
 

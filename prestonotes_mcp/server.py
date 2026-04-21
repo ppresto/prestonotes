@@ -16,8 +16,6 @@ from fastmcp import FastMCP
 from prestonotes_mcp.call_records import (
     call_records_path,
     read_call_record_files,
-    rebuild_transcript_index,
-    transcript_index_path,
     validate_call_id,
     validate_call_record_object,
     validate_call_type_filter,
@@ -58,7 +56,11 @@ mcp = FastMCP(
         "If any Google tool returns run_in_terminal_to_fix, show that exact command to the user first "
         "(from their .cursor/mcp.env: GCLOUD_AUTH_LOGIN_COMMAND or GCLOUD_ACCOUNT) so they can "
         "authenticate in Terminal, then retry. "
-        "Use one customer per chat session."
+        "Use one customer per chat session. "
+        "wiz_knowledge_search queries a local Chroma index of cached Wiz product markdown (build with "
+        "prestonotes_mcp.ingestion.build_vector_db) for RAG-style answers. "
+        "refresh_wiz_vector_index (dry_run default) plans a local vector rebuild from disk cache — "
+        "does not call wiz-local MCP; get approval before dry_run=false."
     ),
 )
 
@@ -309,7 +311,17 @@ def read_ledger(customer_name: str, max_rows: int = 10) -> str:
             return json.dumps({"error": "AI_Insights not found", "path": str(ai)})
         ledgers = sorted(ai.glob("*-History-Ledger.md"))
         if not ledgers:
-            return json.dumps({"error": "no ledger file", "path": str(ai)})
+            expected = ai / f"{customer_name}-History-Ledger.md"
+            return json.dumps(
+                {
+                    "empty": True,
+                    "path": str(expected),
+                    "message": (
+                        "No History Ledger file yet under AI_Insights; the first successful "
+                        "append_ledger_v2 creates it."
+                    ),
+                }
+            )
         p = ledgers[0]
         text = p.read_text(encoding="utf-8", errors="replace")
         max_chars = 200_000
@@ -344,6 +356,84 @@ def check_product_intelligence() -> str:
         age = (datetime.now().date() - dt).days
         return json.dumps(
             {"fresh": age <= max_age, "age_days": age, "last_updated": m.group(1), "path": str(p)}
+        )
+
+
+@mcp.tool
+def wiz_knowledge_search(query: str, max_results: int = 5, include_staleness: bool = False) -> str:
+    """Semantic search over cached Wiz product docs (Chroma under .vector_db/wiz_chroma, Gemini embeddings)."""
+    with tool_scope(
+        "wiz_knowledge_search",
+        query=(query or "")[:500],
+        max_results=max_results,
+        include_staleness=include_staleness,
+    ):
+        from prestonotes_mcp.ingestion.wiz_rag import query_wiz_knowledge
+        from prestonotes_mcp.runtime import get_ctx
+
+        ctx = get_ctx()
+        payload = query_wiz_knowledge(
+            ctx.repo_root,
+            query,
+            max_results,
+            ctx.config,
+            include_staleness=include_staleness,
+        )
+        return json.dumps(payload, ensure_ascii=False)
+
+
+@mcp.tool
+def refresh_wiz_vector_index(dry_run: bool = True, reset: bool = False) -> str:
+    """Plan or run a local Chroma rebuild from on-disk Wiz markdown under docs/ai/cache/.
+
+    Does **not** call **wiz-local** MCP or refresh WIN snapshots — only re-embeds what is already
+    on disk (see playbook **docs/ai/playbooks/load-product-intelligence.md**). Use **dry_run=true**
+    (default) to preview the **uv** command. Set **dry_run=false** only after explicit user approval
+    in chat (can take minutes and rewrites the vector index).
+    """
+    with tool_scope("refresh_wiz_vector_index", dry_run=dry_run, reset=reset):
+        from prestonotes_mcp.runtime import get_ctx
+
+        ctx = get_ctx()
+        root = ctx.repo_root
+        cmd = [
+            "uv",
+            "run",
+            "python",
+            "-m",
+            "prestonotes_mcp.ingestion.build_vector_db",
+            "--repo-root",
+            str(root),
+        ]
+        if reset:
+            cmd.append("--reset")
+        if dry_run:
+            return json.dumps(
+                {
+                    "dry_run": True,
+                    "command": cmd,
+                    "cwd": str(root),
+                    "note": "Re-reads markdown from rag ingest roots in prestonotes-mcp.yaml; "
+                    "run wiz-local + cache playbooks first if WIN snapshots are missing.",
+                },
+                ensure_ascii=False,
+            )
+        proc = subprocess.run(
+            cmd,
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=3600,
+            env=os.environ.copy(),
+        )
+        tail = ((proc.stdout or "") + (proc.stderr or ""))[-16000:]
+        return json.dumps(
+            {
+                "dry_run": False,
+                "exit_code": proc.returncode,
+                "output_tail": tail,
+            },
+            ensure_ascii=False,
         )
 
 
@@ -395,8 +485,13 @@ def write_doc(
     doc_id: str,
     mutations_json: str,
     dry_run: bool = False,
+    customer_name: str | None = None,
 ) -> str:
-    """Apply an approved mutation JSON plan to a Google Doc. Modifies external state — get user approval in chat first. Use dry_run=true to preview."""
+    """Apply an approved mutation JSON plan to a Google Doc. Modifies external state — get user approval in chat first. Use dry_run=true to preview.
+
+    When ``customer_name`` is set, runs lifecycle ↔ Challenge Tracker parity checks against
+    ``MyNotes/Customers/<name>/AI_Insights/challenge-lifecycle.json`` (see mutation rules).
+    """
     with tool_scope("write_doc", doc_id=doc_id, dry_run=dry_run):
         check_mutation_json_size(mutations_json)
         doc_id = (doc_id or "").strip()
@@ -415,6 +510,9 @@ def write_doc(
         args = ["write", "--doc-id", doc_id, "--config", cfg, "--mutations", str(mut_path)]
         if dry_run:
             args.append("--dry-run")
+        cn = (customer_name or "").strip()
+        if cn:
+            args.extend(["--customer-name", cn])
         proc = run_uv_script("prestonotes_gdoc/update-gdoc-customer-notes.py", *args)
         out = (proc.stdout or "") + (proc.stderr or "")
         try:
@@ -470,7 +568,7 @@ def append_ledger(customer_name: str, doc_id: str, applied_json_path: str) -> st
 
 @mcp.tool
 def append_ledger_v2(customer_name: str, row_json: str) -> str:
-    """Append one v2 History Ledger row (24 columns: legacy + call_type, challenges, value_realized, key_stakeholders). Mutates customer data — get user approval in chat first. Requires a migrated ledger; if still 19 columns, error directs to python -m prestonotes_mcp.tools.migrate_ledger."""
+    """Append one v2 History Ledger row (24 columns: legacy + call_type, challenges, value_realized, key_stakeholders). Mutates customer data — get user approval in chat first. Creates an empty v2 ledger if the file is missing; if the file exists but the standard table is still 19 columns, the error directs to python -m prestonotes_mcp.tools.migrate_ledger."""
     with tool_scope("append_ledger_v2", customer_name=customer_name):
         validate_customer_name(customer_name)
         if len(row_json) > 400_000:
@@ -576,29 +674,6 @@ def read_call_records(
         ct = validate_call_type_filter(call_type)
         records = read_call_record_files(customer_name, sd, ct)
         return json.dumps({"records": records, "count": len(records)}, ensure_ascii=False)
-
-
-@mcp.tool
-def update_transcript_index(customer_name: str) -> str:
-    """Rebuild transcript-index.json by scanning call-records/*.json (project_spec §7.2)."""
-    with tool_scope("update_transcript_index", customer_name=customer_name):
-        validate_customer_name(customer_name)
-        idx = rebuild_transcript_index(customer_name)
-        p = transcript_index_path(customer_name)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(idx, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        return json.dumps(idx, ensure_ascii=False)
-
-
-@mcp.tool
-def read_transcript_index(customer_name: str) -> str:
-    """Read MyNotes/Customers/<name>/transcript-index.json."""
-    with tool_scope("read_transcript_index", customer_name=customer_name):
-        validate_customer_name(customer_name)
-        p = transcript_index_path(customer_name)
-        if not p.is_file():
-            return json.dumps({"error": "file not found", "path": str(p)})
-        return p.read_text(encoding="utf-8", errors="replace")
 
 
 # ---------------------------------------------------------------------------

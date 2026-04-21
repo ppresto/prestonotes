@@ -45,6 +45,8 @@ LEDGER_V2_EXTRA_COLUMNS: Final[list[str]] = [
 LEDGER_V2_ALL: Final[list[str]] = [*LEDGER_BASE_COLUMNS, *LEDGER_V2_EXTRA_COLUMNS]
 
 _STANDARD_SECTION = "## Standard ledger row"
+_STANDARD_SECTION_HEADING = "## Standard ledger row (required columns — core rules)"
+_STANDARD_SECTION_PROSE = "Append-only. One row per run; **do not edit prior rows**."
 _MIGRATE_HINT = "Ledger standard table is not v2 (24 columns). Run: python -m prestonotes_mcp.tools.migrate_ledger"
 
 
@@ -172,6 +174,41 @@ def migrate_standard_table_to_v2(content: str) -> str:
     return "".join(out_lines)
 
 
+def empty_v2_ledger_markdown(customer_name: str) -> str:
+    """YAML + title + standard section prose + 24-column table header and separator only (no data rows)."""
+    name = validate_customer_name(customer_name)
+    front = f"""---
+customer_name: {name}
+last_ai_update: {_today_iso()}
+ledger_version: 1
+schema_version: 2
+---
+
+# {name} — History Ledger
+
+{_STANDARD_SECTION_HEADING}
+
+{_STANDARD_SECTION_PROSE}
+
+"""
+    header = _format_table_row(list(LEDGER_V2_ALL))
+    sep = _format_table_row([":---"] * len(LEDGER_V2_ALL))
+    return front + header + "\n" + sep + "\n"
+
+
+def ensure_v2_ledger_stub(customer_name: str) -> Path:
+    """Create AI_Insights/ if needed; write empty v2 ledger if missing; never overwrite an existing file."""
+    validate_customer_name(customer_name)
+    cdir = customer_dir(customer_name)
+    ai = cdir / "AI_Insights"
+    ai.mkdir(parents=True, exist_ok=True)
+    ledger = ai / f"{customer_name}-History-Ledger.md"
+    if ledger.is_file():
+        return ledger
+    ledger.write_text(empty_v2_ledger_markdown(customer_name), encoding="utf-8")
+    return ledger
+
+
 def validate_ledger_v2_row(row: dict[str, str]) -> None:
     if not isinstance(row, dict):
         raise TypeError("row must be a dict")
@@ -224,7 +261,7 @@ def append_ledger_v2_row(customer_name: str, row: dict[str, str]) -> Path:
     cdir = customer_dir(customer_name)
     ledger = cdir / "AI_Insights" / f"{customer_name}-History-Ledger.md"
     if not ledger.is_file():
-        raise FileNotFoundError(f"Ledger not found: {ledger}")
+        ensure_v2_ledger_stub(customer_name)
 
     existing = ledger.read_text(encoding="utf-8")
     n = detect_standard_table_column_count(existing)

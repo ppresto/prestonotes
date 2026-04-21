@@ -1,0 +1,101 @@
+{
+  "last_updated": "2026-02-25",
+  "source": "user-Wiz MCP Server win_apis category discovery",
+  "categories": {
+    "app-endpoints": [
+      "app-endpoint-tutorial",
+      "app-endpoints-report-tutorial"
+    ],
+    "attack-surface-findings": [],
+    "audit-logs": [
+      "audit-logs-tutorial"
+    ],
+    "ccf": [
+      "cloud-config-tutorial",
+      "create-ccr-findings-report-tutorial"
+    ],
+    "cloud-resource-inventory": [
+      "inventory-tutorial",
+      "cloud-resources-report-tutorial"
+    ],
+    "compliance-assessment": [
+      "compliance-assessment-report-tutorial"
+    ],
+    "data-findings": [
+      "create-data-findings-report-tutorial"
+    ],
+    "enrichment": [
+      "data-finding-schema",
+      "vuln-scan-schema-v2",
+      "sca-app-vuln-findings-schema",
+      "enrichment-tutorial-v2",
+      "sast-app-vuln-findings-schema-v2",
+      "dast-vuln-findings-schema-v2",
+      "runtime-events-schema",
+      "ai-red-teaming-schema",
+      "external-source-assets-schema",
+      "third-party-security-graph-enrichment-tutorial",
+      "tags-schema"
+    ],
+    "excessive-access": [
+      "create-excessive-access-report-tutorial"
+    ],
+    "exposed-resources": [
+      "network-exposure-tutorial",
+      "network-exp-report-tutorial"
+    ],
+    "hosted-tech": [
+      "pull-hosted-tech-tutorial",
+      "create-hosted-tech-report-tutorial"
+    ],
+    "iac-findings": [
+      "get-iac-findings-tutorial",
+      "create-iac-findings-report-tutorial"
+    ],
+    "issues": [
+      "update-issue-tutorial",
+      "issues-report-tutorial",
+      "issues-tutorial"
+    ],
+    "projects": [
+      "projects-tutorial"
+    ],
+    "reference": [
+      "custom-column",
+      "sec-graph-obj-normalization",
+      "issues-risks",
+      "audit-log-actions"
+    ],
+    "reports": [],
+    "secret-findings": [
+      "create-secret-findings-report-tutorial",
+      "secret-findings-tutorial"
+    ],
+    "threats-and-detections": [
+      "detections-tutorial"
+    ],
+    "users": [
+      "service-accounts-tutorial",
+      "user-management-tutorial",
+      "user-roles-tutorial"
+    ],
+    "version-control-repositories": [
+      "pull-repositories-tutorial"
+    ],
+    "vulnerabilities": [
+      "vuln-report-tutorial",
+      "vuln-best-practices",
+      "pull-vuln-tutorial",
+      "ignore-vuln-tutorial"
+    ],
+    "webhook": [
+      "threats-webhook",
+      "detections-webhook",
+      "issues-webhook"
+    ],
+    "wiz-cli": [
+      "wiz-cli-versioning",
+      "set-up-wiz-cli"
+    ]
+  }
+}

@@ -102,6 +102,28 @@ For `company_overview` only, if transcripts/notes do not provide enough signal, 
 
 ---
 
+## Challenge lifecycle ↔ Challenge Tracker parity (mandatory for UCN)
+
+The append-only JSON journal under **`MyNotes/Customers/<Customer>/AI_Insights/challenge-lifecycle.json`** and the Google Doc **Challenge Tracker** table are **two views of the same journey**. If you have enough evidence to change one, you must keep the other aligned in the **same approved `write_doc` batch** (or explicitly document why the table row is intentionally unchanged).
+
+### Anchor convention (machine-checkable)
+
+For every persisted lifecycle **`challenge_id`**, ensure the corresponding tracker row includes this exact token (challenge cell and/or **Notes & References**):
+
+`[lifecycle_id:<challenge_id>]`
+
+Example: `[lifecycle_id:splunk-renewal-planning-q2]` at the end of **Notes & References** after human-readable notes.
+
+When **`write_doc`** is called with MCP argument **`customer_name`** (forwarded as **`--customer-name`** to `prestonotes_gdoc/update-gdoc-customer-notes.py`):
+
+- If the lifecycle file has ids but **no** row contains `[lifecycle_id:` → the writer prints a **stderr warning** (migration / legacy docs).
+- If **any** anchor exists → **every** lifecycle id must have a matching anchor or the write **fails** with `LIFECYCLE_PARITY_FAIL` (prevents partial sync).
+- Emergency bypass: **`--skip-lifecycle-parity-check`** on the write CLI (MCP: omit `customer_name` or add a future MCP flag if needed).
+
+**Orchestrator expectation:** Default UCN runs pass **`customer_name`** into **`write_doc`** whenever the customer is known so drift is caught before the Doc goes stale again.
+
+---
+
 ## Challenge Decision Model
 
 Use this model whenever proposing `challenge_tracker` changes:

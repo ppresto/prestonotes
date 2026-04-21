@@ -4,12 +4,19 @@ Trigger: `Run License Evidence Check for [CustomerName]`
 
 Purpose: create a reusable, evidence-scored commercial entitlement check that can be consumed by Update Customer Notes, Run Account Summary, Tech Acct Plan, and recommendation tasks.
 
+> **Fixture customer:** **`_TEST_CUSTOMER`** is a first-class customer name for MCP + scripts (leading underscore is valid). In zsh/bash, quote Drive paths: `scripts/rsync-gdrive-notes.sh "_TEST_CUSTOMER"`.
+
 > **v2 (TASK-007):** `wiz_search_wiz_docs` refers to your **Wiz product-docs MCP** in Cursor (name may differ). If unavailable, mark licensing claims **provisional**. Cache upserts use **`python3 ./scripts/wiz_doc_cache_manager.py`** (ported); create `docs/ai/cache/wiz_mcp_server/` as needed or skip upserts and tell the user.
 
 ---
 
 ## Communication Rule
 At every step, tell the user what you are doing in plain English. Follow the format rules in `15-user-preferences.mdc`.
+
+## End-of-run chat format
+- Follow **`.cursor/rules/15-user-preferences.mdc`**.
+- After multi-step work, include **`### Activity recap`** with verified evidence updates, provisional items, and next actions.
+- State whether any customer file updates were applied or deferred.
 
 ---
 

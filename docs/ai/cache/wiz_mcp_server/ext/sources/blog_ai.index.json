@@ -1,0 +1,79 @@
+{
+  "source_name": "blog_ai",
+  "seed_url": "https://www.wiz.io/blog/tag/ai",
+  "last_scanned_at": "2026-03-02T17:52:04Z",
+  "discovered_urls": [
+    {
+      "url": "https://www.wiz.io/blog/agentic-browser-security-2025-year-end-review",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/ai-agents-vs-humans-who-wins-at-web-hacking-in-2026",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/ai-as-heart-of-security",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/ai-attack-surface",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/ai-endpoint-visibility-ai-security",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/exposed-moltbook-database-reveals-millions-of-api-keys",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/infosys-mcp",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/the-emerging-use-of-malware-invoking-ai",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-ai-agents",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-ai-spm-secures-ai-agents",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-notion-mcp-agents-integration",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/blog/wiz-zeroday-cloud-hacking-competition-behind-the-scenes",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    }
+  ]
+}

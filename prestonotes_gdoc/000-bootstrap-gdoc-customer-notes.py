@@ -434,15 +434,21 @@ def main() -> int:
 
     created_subfolders: list[str] = []
     if cfg.create_ai_insights:
-        ai = find_folders(token, customer["id"], "AI_Insights")
-        if not ai:
-            ensure_folder(token, customer["id"], "AI_Insights", cfg.dry_run)
-            created_subfolders.append("AI_Insights")
+        if cfg.dry_run:
+            created_subfolders.append("AI_Insights (planned)")
+        else:
+            ai = find_folders(token, customer["id"], "AI_Insights")
+            if not ai:
+                ensure_folder(token, customer["id"], "AI_Insights", cfg.dry_run)
+                created_subfolders.append("AI_Insights")
     if cfg.create_transcripts:
-        tx = find_folders(token, customer["id"], "Transcripts")
-        if not tx:
-            ensure_folder(token, customer["id"], "Transcripts", cfg.dry_run)
-            created_subfolders.append("Transcripts")
+        if cfg.dry_run:
+            created_subfolders.append("Transcripts (planned)")
+        else:
+            tx = find_folders(token, customer["id"], "Transcripts")
+            if not tx:
+                ensure_folder(token, customer["id"], "Transcripts", cfg.dry_run)
+                created_subfolders.append("Transcripts")
 
     notes_doc, created_doc = ensure_notes_doc(
         token=token,

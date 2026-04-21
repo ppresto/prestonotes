@@ -19,6 +19,12 @@ Use when the **orchestrator** (or user) assigns the **ASM** pass: analyze **`Cus
 
 - **Separate** Wiz docs MCP (**`wiz-local`** or equivalent). Use its **search** tool; tool names are **not** hardcoded here. **No secrets.**
 
+### Retrieval hybrid (prestonotes vs wiz-local)
+
+- **`wiz_knowledge_search`**: local Chroma from cache; **`include_staleness=true`** when needed.
+- **wiz-local**: live searches for current exposure / inventory language.
+- Prefer **vector first**; if weak or **stale**, **wiz-local** + **`docs/ai/playbooks/refresh-wiz-doc-cache.md`**, then **`refresh_wiz_vector_index`** after approval.
+
 ## Domain scope (ASM only)
 
 Own **external / Internet exposure**, **asset inventory and unknowns**, **cloud resource attack paths**, **topology-driven coverage gaps**, and **ASM** SKU positioning — complementing but not duplicating **APP** (code-centric) or **VULN** (enterprise VM process) unless the gap is clearly exposure/inventory-first.

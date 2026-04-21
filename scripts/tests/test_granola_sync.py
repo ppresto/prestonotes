@@ -49,6 +49,77 @@ def _minimal_cache(
     return {"state": inner}
 
 
+def test_sync_v6_cache_object_wrapper_writes_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """cache-v6 stores ``cache`` as a JSON object (not a string), same shape as legacy ``state``."""
+    inner = _minimal_cache()["state"]
+    cache = tmp_path / "cache-v6.json"
+    cache.write_text(json.dumps({"cache": inner}), encoding="utf-8")
+    mynotes = tmp_path / "MyNotes"
+    monkeypatch.delenv("GRANOLA_DEFAULT_CUSTOMER", raising=False)
+
+    r = g.sync_granola_to_mynotes(
+        cache_path=cache,
+        customers_base=mynotes,
+        dry_run=False,
+        emit_notes_without_transcript=False,
+        default_customer=None,
+    )
+    assert len(r["written"]) == 1
+    assert Path(r["written"][0]["path"]).is_file()
+
+
+def test_parse_transcript_json_string_payload() -> None:
+    """Caches may store the segment array as a JSON string (v6-style)."""
+    payload = json.dumps(
+        [{"text": "Line one", "source": "mic"}, {"text": "Line two", "source": "sys"}]
+    )
+    assert "Line one" in g.parse_transcript_segments(payload)
+    assert "Line two" in g.parse_transcript_segments(payload)
+
+
+def test_sync_transcript_value_as_json_string_writes_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    doc = _minimal_cache()["state"]
+    mid = "meet-aaa"
+    segs = doc["transcripts"][mid]
+    doc["transcripts"][mid] = json.dumps(segs)
+    cache = tmp_path / "cache.json"
+    cache.write_text(json.dumps({"state": doc}), encoding="utf-8")
+    mynotes = tmp_path / "MyNotes"
+    monkeypatch.delenv("GRANOLA_DEFAULT_CUSTOMER", raising=False)
+
+    r = g.sync_granola_to_mynotes(
+        cache_path=cache,
+        customers_base=mynotes,
+        dry_run=False,
+        emit_notes_without_transcript=False,
+        default_customer=None,
+    )
+    assert len(r["written"]) == 1
+
+
+def test_sync_v6_cache_object_nested_state_writes_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``cache`` may wrap the same ``{state: …}`` envelope as the legacy string payload."""
+    cache = tmp_path / "cache-v6.json"
+    cache.write_text(json.dumps({"cache": _minimal_cache()}), encoding="utf-8")
+    mynotes = tmp_path / "MyNotes"
+    monkeypatch.delenv("GRANOLA_DEFAULT_CUSTOMER", raising=False)
+
+    r = g.sync_granola_to_mynotes(
+        cache_path=cache,
+        customers_base=mynotes,
+        dry_run=False,
+        emit_notes_without_transcript=False,
+        default_customer=None,
+    )
+    assert len(r["written"]) == 1
+
+
 def test_sync_writes_one_file_per_meeting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     cache = tmp_path / "cache-v4.json"
     cache.write_text(json.dumps(_minimal_cache()), encoding="utf-8")
@@ -63,6 +134,7 @@ def test_sync_writes_one_file_per_meeting(tmp_path: Path, monkeypatch: pytest.Mo
         default_customer=None,
     )
     assert len(r["written"]) == 1
+    assert r["written"][0].get("is_new") is True
     p = Path(r["written"][0]["path"])
     assert p.is_file()
     body = p.read_text(encoding="utf-8")
@@ -89,7 +161,7 @@ def test_idempotent_second_run_no_duplicate_files(
     first = list(tdir.glob("*.txt"))
     assert len(first) == 1
 
-    g.sync_granola_to_mynotes(
+    r2 = g.sync_granola_to_mynotes(
         cache_path=cache,
         customers_base=mynotes,
         dry_run=False,
@@ -99,6 +171,7 @@ def test_idempotent_second_run_no_duplicate_files(
     second = list(tdir.glob("*.txt"))
     assert len(second) == 1
     assert second[0] == first[0]
+    assert r2["written"][0].get("is_new") is False
 
 
 def test_internal_folder_routes_to_internal_customer(
@@ -120,6 +193,35 @@ def test_internal_folder_routes_to_internal_customer(
     )
     assert len(r["written"]) == 1
     assert "Customers/Internal/Transcripts" in r["written"][0]["path"].replace("\\", "/")
+
+
+def test_fixture_customer_name_with_leading_underscore(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cache = tmp_path / "cache-v4.json"
+    cache.write_text(
+        json.dumps(
+            _minimal_cache(
+                meeting_id="meet-fixture",
+                title="Weekly Sync",
+                folder_name="_TEST_CUSTOMER",
+                transcript_lines=[("Alice", "Fixture customer transcript line.")],
+            )
+        ),
+        encoding="utf-8",
+    )
+    mynotes = tmp_path / "MyNotes"
+    monkeypatch.delenv("GRANOLA_DEFAULT_CUSTOMER", raising=False)
+
+    r = g.sync_granola_to_mynotes(
+        cache_path=cache,
+        customers_base=mynotes,
+        dry_run=False,
+        emit_notes_without_transcript=False,
+        default_customer=None,
+    )
+    assert len(r["written"]) == 1
+    assert "Customers/_TEST_CUSTOMER/Transcripts" in r["written"][0]["path"].replace("\\", "/")
 
 
 def test_collision_distinct_meetings_same_title_day(
@@ -158,6 +260,41 @@ def test_collision_distinct_meetings_same_title_day(
     assert len(paths) == 2
 
 
+def test_cli_notify_writes_log_and_stdout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    cache = tmp_path / "cache-v4.json"
+    cache.write_text(json.dumps(_minimal_cache()), encoding="utf-8")
+    mynotes = tmp_path / "MyNotes"
+    log_dir = tmp_path / "logs"
+    monkeypatch.setenv("GDRIVE_BASE_PATH", str(mynotes))
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--no-human-summary",
+            "--stdout-format",
+            "notify",
+            "--log-dir",
+            str(log_dir),
+            "--cache",
+            str(cache),
+            "--customers-base",
+            str(mynotes),
+        ],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "Granola sync" in proc.stdout
+    assert "Discovery Call" in proc.stdout
+    assert (log_dir / "granola-sync.log").is_file()
+    assert "Discovery Call" in (log_dir / "granola-sync.log").read_text(encoding="utf-8")
+    assert "[NEW]" in (log_dir / "granola-sync.log").read_text(encoding="utf-8")
+    last = json.loads((log_dir / "granola-sync-last.json").read_text(encoding="utf-8"))
+    assert last["written"] and last["written"][0].get("is_new") is True
+
+
 def test_cli_json_exit_zero(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     cache = tmp_path / "cache-v4.json"
     cache.write_text(json.dumps(_minimal_cache()), encoding="utf-8")
@@ -167,6 +304,7 @@ def test_cli_json_exit_zero(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
         [
             sys.executable,
             str(SCRIPT),
+            "--no-human-summary",
             "--cache",
             str(cache),
             "--customers-base",
@@ -185,3 +323,24 @@ def test_cli_json_exit_zero(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
 def test_main_missing_gdrive(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("GDRIVE_BASE_PATH", raising=False)
     assert g.main(argv=[]) == 1
+
+
+def test_default_cache_candidates_prefers_newest_version(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HOME", str(tmp_path))
+    granola = tmp_path / "Library/Application Support/Granola"
+    granola.mkdir(parents=True)
+    (granola / "cache-v3.json").write_text("{}", encoding="utf-8")
+    (granola / "cache-v5.json").write_text("{}", encoding="utf-8")
+    names = [p.name for p in g.default_cache_candidates()]
+    assert names == ["cache-v5.json", "cache-v3.json"]
+
+
+def test_default_cache_candidates_legacy_paths_when_no_granola_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HOME", str(tmp_path))
+    cands = g.default_cache_candidates()
+    assert [p.name for p in cands] == ["cache-v4.json", "cache-v3.json"]
+    assert str(cands[0]).endswith("Library/Application Support/Granola/cache-v4.json")

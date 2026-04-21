@@ -1,0 +1,50 @@
+---
+url: https://www.wiz.io/customers/fox
+source_name: customers
+fetched_at: 2026-03-02T17:52:04Z
+published_at: 
+extraction_mode: static_fetch
+content_hash: 556ed6bbd589
+---
+
+# Fox democratizes security with Wiz | Wiz
+
+Challenge
+FOX wanted to move away from cloud security tooling that overwhelmed environment owners with noisy alerts. The team spent a lot of time chasing down alerts that didn’t make a significant improvement in reducing risk.
+FOX is consistently innovating to provide its audience with the best experience possible. Despite this rapid pace of change, FOX needs to ensure its content is protected.
+FOX wanted to gain comprehensive visibility into the vulnerabilities within its distributed cloud environment, coupled with an effective mechanism to fix deviations from its security policies.
+Solution
+Wiz prioritizes risks and helps optimize team members’ time with actionable risk context, improving trust within the teams who are responsible for responding to security data.
+Wiz empowers FOX developers to fix security problems in their own environments, democratizing security throughout the organization and arming over 150 team members with tools to embed security into their day-to-day processes while respecting fast-paced workflows.
+Wiz provides FOX with high-level visibility into its cloud posture while helping teams at the ground level to act on relevant insights that contribute towards a better security posture in their day to day.
+Staying head of cybersecurity challenges
+When you’re in the business of delivering live news, sports, and entertainment you need to be ready for anything. That’s why, as one of the largest media companies in the world, FOX couples its mission to produce and deliver iconic television content to fans with the right team and technology to understand emerging risks before they become problems.
+“FOX is an entrepreneurial company that is moving very fast towards the future,” explains Melody Hildebrandt, FOX’s Chief Information Security Officer. “But it also has a long history, a lot of intellectual property, and a lot of iconic events that we are the stewards of delivering and protecting. Wiz came into the picture to allow us to feel secure and confident in how fast we’re moving, even as our cybersecurity challenges keep changing.”
+Wiz came into the picture to allow us to feel secure and confident in how fast we’re moving, even as our cybersecurity challenges keep changing.
+Melody Hildebrandt
+CISO, Fox
+Empowering teams to focus on what matters most  to them every day
+As an early adopter of the cloud, FOX had a cloud security strategy in place long before turning to Wiz. The company’s long and deep relationship with AWS allowed it to pioneer many workloads in the cloud while leaving behind what were considered hard problems on-premises. Being a cloud-first organization has empowered FOX with the agility needed to continuously innovate in order to better serve its customers. But from a security perspective, being a pioneer of technical capabilities and moving fast also comes with a trade-off, explains Hildebrandt.
+“Continuous innovation means we’re often outpacing current defense mechanisms and potentially introducing new classes of risks to our environment. It came to a point where our previous security alert system provided low-value alerts that were dubious, not actionable, and simply overwhelming. We ended up losing the trust of the teams who are responsible for responding to that data. That's when we knew we had to do something different,” she recalls.
+While using a legacy agent-based tool, FOX repeatedly ran into issues of over-alerting that didn’t provide enough context in order to drive action. So when assessing how to fix the issue, it was a priority for FOX to make every engagement with environment owners high fidelity, worth that person’s time, and actionable. To that end, the company looked for a technology solution that can provide full visibility into the resources and issues in its cloud environments while also identifying and correlating issues to give just enough context for a developer to know exactly how to prioritize and resolve risks.
+“As we were introduced to Wiz, one of the most impressive things was that within a day of deployment it worked across our entire environment and showed us a set of critical findings that everyone should prioritize immediately,” shares Hildebrandt. “Wiz strikes the right balance between providing high-level visibility into our whole cloud posture and giving engineers the hands-on capabilities to resolve issues on the ground.”
+As we were introduced to Wiz, one of the most impressive things was that within a day of deployment it worked across our entire environment and showed us a set of critical findings that everyone should prioritize immediately. Wiz strikes the right balance between providing high-level visibility into our whole cloud posture and giving engineers the hands-on capabilities to resolve issues on the ground.
+Melody Hildebrant
+CISO, Fox
+Democratizing security across the organization
+As a product, Wiz helps FOX act on its vision to democratize security by pairing high-quality signals with an easily understandable platform that empowers teams to fix problems in their day-to-day workflow, even if their core jobs are not cybersecurity. The FOX management team has a central view of the disparate cloud environments across the company. Meanwhile, multiple teams across the brands and subsidiaries under the FOX umbrella also use Wiz to detect and fix risks in their own environments as they work to bring content to the screens of millions of viewers each day.
+Using Wiz as a tool for security democratization also means that FOX is effectively spreading out the impact of its cybersecurity team without overloading its members. “Pairing engineers who understand the risks with the tools to remediate them is incredibly powerful,” says Hildebrandt. “There are 10X as many environment owners, developers, and engineers using Wiz than there are security team members at FOX. This helps us to ensure that the products shipped across over thousands of technologists across the company have security baked in, which is beyond the impact that a small and mighty cybersecurity team can have alone,” she adds.
+Pairing engineers who understand the risks with the tools to remediate them is incredibly powerful. There are 10X as many environment owners, developers, and engineers using Wiz than there are security team members at FOX. This helps us to ensure that the products shipped across over 1,000 technologists across the company have security baked in, which is beyond the impact that a small and mighty cybersecurity team can have alone.
+Melody Hildebrant
+CISO, Fox
+Stepping up as a team, come what may
+Moments of crisis, such as the recent discovery of a supply chain vulnerability in FOX’s environment, reinforce the value of the company’s approach to security.  Having Wiz deployed during this crisis meant that FOX was able to use it as a source of truth of what potential exposures the company had and how fast they were being remediated.
+“Every team in our war room had Wiz open on their screens,” Hildebrandt recalls. “Its software discovery capability helped us to isolate the instances that mattered because we could immediately see what software was running that could have the vulnerable component. This enabled us to gain a sense of what our exposure was, so that we could create a burndown list of remediation and start acting straight away.”
+Wiz's software discovery capability helped us to isolate the instances that mattered because we could immediately see what software was running that could have the vulnerable component. This enabled us to gain a sense of what our exposure was, so that we could create a burndown list of remediation and start acting straight away.
+Melody Hildebrant
+CISO, Fox
+Additionally, because the tool was used not only by the cybersecurity team but by 10x that number of people across the organization, FOX had extra hands on deck to help respond to the incident. “In a time of crisis there is potentially the risk of having such a large list of things to do that you don’t know where to begin. That’s where our democratized approach to security paid off, because everyone with access to Wiz already knew how to log into the system, see what software was vulnerable in their own environments, and take action to begin remediating the problem,” explains Hildebrandt.
+Building a lean and collaborative security organization
+Next, FOX is looking at leveraging Wiz in pre-production to continue moving fast while fixing potential issues early on. The company is bridging the cognitive dissonance between taking a strong security approach and shipping features quickly by bringing everyone on board with its security strategy and creating a common understanding of the cloud and its risk landscapes across teams. One way to do this is by promoting a close collaboration culture that empowers everyone to play a role.
+This collaboration has helped build working relationships between security and development, and puts FOX in a position to further shift left and leverage Wiz earlier in the development pipeline. “Having Wiz in the hands of so many engineers gives us an opportunity to move even further upstream in their processes,” says Hildebrandt. “This learning is already happening, and I'm excited about formalizing that into actual CI/CD.”
+“One cool thing about Wiz is that its vocabulary, interface, and the way it aggregates concepts into human readable formats makes it possible for many different teams and types of people to use it. The same cannot be said for many security technologies. This democratization of knowledge and tools can’t be overstated in terms of how it will allow us to scale in the future,” she concludes.

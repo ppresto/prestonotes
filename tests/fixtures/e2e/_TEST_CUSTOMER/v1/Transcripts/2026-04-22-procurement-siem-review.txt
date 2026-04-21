@@ -1,0 +1,8 @@
+MEETING: _TEST_CUSTOMER — Procurement & SIEM routing readout
+DATE: 2026-04-22T16:00:00.000Z
+ID: test-uuid-20260422-procurement
+========================================
+Speaker: John Doe: Finance signed off on revisiting the Splunk connector in Q2 — not a PO today, but we can run a scoped evaluation and pricing refresh.
+Speaker: Jane Smith: Good — we already proved the post-kubelet noisy finding class is contained; graph prioritization stayed stable after the last patch cycle.
+Speaker: SE: I'll capture evaluation gates and keep interim SIEM routing documented until Splunk lands or you choose to defer again.
+Speaker: John Doe: Keep 100% Azure and Okta for SSO as the guardrail; procurement wants the Wiz Score at 92% narrative in the Q2 business case.

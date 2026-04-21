@@ -1,5 +1,5 @@
 ---
-description: Synthesize account journey from call records + index into Journey-Timeline.md; use with run-journey-timeline playbook.
+description: Synthesize account journey from call records into Journey-Timeline.md; use with run-journey-timeline playbook.
 globs:
   - "MyNotes/**"
   - "docs/ai/playbooks/run-journey-timeline.md"
@@ -23,8 +23,7 @@ When the user invokes **`Run Journey Timeline for [CustomerName]`** (or clearly 
 
 **Read (default path):**
 
-- **`read_transcript_index(customer_name)`** — load **`transcript-index.json`** (call list, `record_file` pointers, coverage).
-- **`read_call_records(customer_name, since_date?, call_type?)`** — full §7.1 JSON for synthesis (omit filters to load the full set needed for the timeline, unless the user scopes a date range).
+- **`read_call_records(customer_name, since_date?, call_type?)`** — full §7.1 JSON for synthesis (omit filters to load the full set needed for the timeline, unless the user scopes a date range). Records are returned sorted by `(date, call_id)`.
 - **`read_ledger(customer_name, max_rows?)`** — optional color on commercial motion, historical themes, or ledger-stated challenges (file can be large; rely on playbook guidance).
 
 **Write (approval required — Rule 3):**
@@ -36,6 +35,6 @@ When the user invokes **`Run Journey Timeline for [CustomerName]`** (or clearly 
 
 ## Discipline
 
-- Prefer **call records + index** over bulk **`read_transcripts`**; load **at most one** raw **`.txt`** when a verbatim boundary quote is required (**Rule 2**).
+- Prefer **call records** over bulk **`read_transcripts`**; load **at most one** raw **`.txt`** when a verbatim boundary quote is required (**Rule 2**).
 - Never fabricate milestones or challenge transitions; if data is thin, say so in the artifact and reflect **⚪ Unknown** health per **`health-score-model.md`**.
 - After approved writes, you may **`log_run`** a short note (optional; separate approval if your session treats it as a mutating follow-up).

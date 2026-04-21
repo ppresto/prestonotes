@@ -1,0 +1,9 @@
+MEETING: _TEST_CUSTOMER — Wiz Cloud enterprise close
+DATE: 2026-04-28T15:00:00.000Z
+ID: test-uuid-20260428-cloud-close
+========================================
+Speaker: John Doe: Procurement executed the Wiz Cloud enterprise SKU — PO is signed, effective this quarter; finance wants the deal stage updated for our internal renewal tracker.
+Speaker: Jane Smith: Great — we will onboard the remaining child tenants under the same Okta hub and keep graph-first triage as the operating model.
+Speaker: John Doe: Splunk is still blocked by budget, but we did get approval to run the Q2 evaluation path, so track that as in progress instead of stalled.
+Speaker: Jane Smith: The kubelet-noise issue from earlier is resolved after the patch cycle and should stay marked resolved.
+Speaker: SE: I will reflect Cloud as purchased in account metadata, move Cloud to purchased in Deal Stage Tracker, and keep the Splunk renewal challenge separate from the budget-freeze blocker.

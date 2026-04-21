@@ -24,7 +24,7 @@ Ship the three legacy scripts so the **local `MyNotes/` tree** (under the repo o
 
 - **`scripts/rsync-gdrive-notes.sh`** — Pull from **`GDRIVE_BASE_PATH`** into **`$PRESTONOTES_REPO_ROOT/MyNotes/`**; optional customer folder; **`--dry-run`** (rsync `-n`, skips PDF OCR); no `.venv` activation; portable **`stat`**; optional MarkItDown via **`uv run markitdown`** or **`markitdown`** on `PATH`; fails fast if Drive mount path missing.
 - **`scripts/restart-google-drive.sh`** — macOS Drive app restart (ported).
-- **`scripts/syncNotesToMarkdown.js`** — Google Apps Script: **`MYNOTES_ROOT_FOLDER_ID`** from Script Properties (no hardcoded folder ID in repo); **`biome.json`** excludes this file from Biome (not Node).
+- **`scripts/syncNotesToMarkdown.js`** — Google Apps Script: **`MYNOTES_ROOT_FOLDER_ID`** from Script Properties (no hardcoded folder ID in repo); not executed as Node in this repo. *(Historically **`biome.json`** excluded this file when Biome was present; **Biome was removed** in 2026-04 Phase 3 close-out.)*
 - **`scripts/README.md`** — Operator docs for all three.
 - **`scripts/tests/test_rsync_gdrive_notes.py`** — Dry-run + real rsync against tmp fixtures (skip if no `rsync`).
 - **`prestonotes_mcp/tests/test_server_write_tools.py`** — **`repo_ctx_gdrive`** + **`test_sync_notes_runs_rsync_for_customer`** (skip if no `rsync`).

@@ -36,6 +36,10 @@ Structured discover/read/write for Customer Notes uses **`prestonotes_gdoc/`** (
 
 When loading context for a customer, follow weighting and folder roles in **`docs/ai/references/customer-data-ingestion-weights.md`**. Prefer **per-call** files under **`Transcripts/*.txt`** and MCP **`read_transcripts`**; use **`_MASTER_*`** transcripts only when bounded and intentional (see that reference).
 
+### End-of-run chat format (customer-note flows)
+
+For multi-step customer-note playbooks, end the user-facing response with **`### Activity recap`** that states: completed steps, skipped/deferred work, and approval/write status. Follow **`.cursor/rules/15-user-preferences.mdc`**.
+
 ### Canonical field ownership (Customer Notes)
 
 Only **AI-owned** fields may be written from automation unless the user explicitly overrides:
@@ -54,15 +58,16 @@ Only **AI-owned** fields may be written from automation unless the user explicit
 
 ### Mutations and diffs
 
-Proposed doc edits must follow **`docs/ai/references/customer-notes-mutation-rules.md`**: structured mutation JSON, section keys from **`prestonotes_gdoc/config/doc-schema.yaml`**, show a clear diff/plan, **stop for approval** before **`write_doc`** (use **`dry_run`** first when available).
+Proposed doc edits must follow **`docs/ai/references/customer-notes-mutation-rules.md`**: structured mutation JSON, section keys from **`prestonotes_gdoc/config/doc-schema.yaml`**, show a clear diff/plan, **stop for approval** before **`write_doc`** (use **`dry_run`** first when available). For Customer Notes writes where the customer folder is known, pass **`customer_name`** into MCP **`write_doc`** so **`challenge-lifecycle.json`** and the **Challenge Tracker** table are parity-checked (see **`docs/ai/references/customer-notes-mutation-rules.md`** — `[lifecycle_id:…]` anchors).
 
 ### History Ledger (`*-History-Ledger.md`)
 
-Append **one row per successful write run**; never rewrite prior rows. Table columns (19) must match:
+Append **one row per successful write run**; never rewrite prior rows.
 
-`Date`, `Account Health`, `Wiz Score`, `Sentiment`, `Coverage`, `Open Challenges`, `Aging Blockers`, `Resolved Issues`, `New Blockers`, `Goals Changed`, `Tools Changed`, `Stakeholder Shifts`, `Value Realized`, `Next Critical Event`, `Key Drivers`, `Wiz Licensed Products`, `Wiz License Purchase Dates`, `Wiz License Expiration/Renewal`, `Wiz License Evidence Quality`
-
-(Aligned with **`LEDGER_REQUIRED_COLUMNS`** in **`prestonotes_gdoc/update-gdoc-customer-notes.py`**.)
+- Missing ledger file on first run is valid. Treat this as **no history yet**, not an error.
+- Prefer MCP **`append_ledger_v2`** for writes. If the ledger file is missing, the v2 tool creates an empty v2 ledger then appends the first row.
+- If **`read_ledger`** returns `{"empty": true, ...}`, continue the workflow using transcript/doc evidence and create history on the first approved write.
+- Keep values evidence-backed; leave cells empty instead of fabricating.
 
 ### Audit log
 
@@ -72,3 +77,8 @@ Customer-notes runs should append a line to **`./MyNotes/pnotes_agent_log.md`** 
 
 - **Ledger** rows: evidence-backed; leave cells empty rather than inventing.
 - **Daily Activity:** only **prepend**; respect staleness and duplicate-detection rules in **`daily-activity-ai-prepend.md`**.
+
+
+### TASK-044 _TEST_CUSTOMER E2E override
+
+For the dedicated **`Run E2E Test Customer`** flow on customer **`_TEST_CUSTOMER`**, approval pauses for mutation tools are bypassed. Execute writes directly in-order for the test harness, per `docs/ai/playbooks/e2e-test-customer.md` and `.cursor/rules/11-e2e-test-customer-trigger.mdc`. This override is test-only and must not be applied to non-test customers.

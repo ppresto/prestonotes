@@ -35,7 +35,7 @@ If you only complete Stage 1, you already have a valuable subsystem; Stages 2–
 flowchart TB
   subgraph stage1 [Stage 1 — Foundation]
     A[Granola / per-call .txt] --> B[Extractor + MCP call records]
-    B --> C[transcript-index.json]
+    B --> C[call-records/*.json]
   end
   subgraph stage2 [Stage 2 — Journey]
     C --> D[Journey timeline + ledger v2]
@@ -119,7 +119,7 @@ Below: **TASK** → **what you’re building** → **you know it’s done when�
 | **001** | Repo layout: `prestonotes_mcp/`, **`prestonotes_gdoc/`** placeholder (README), `docs/MIGRATION_GUIDE.md`, CI-ish scripts, `pyproject` 2.x | `python -c "import prestonotes_mcp"`; `scripts/ci/check-repo-integrity.sh` passes |
 | **002** | MCP **read** tools + resources (`discover_doc`, `read_doc`, …); **no** `run_pipeline` | Server starts; pytest read-tools; needs **`prestonotes_gdoc/`** populated or merge TASK-002+003 |
 | **003** | MCP **write/sync** + port v1 GDoc stack **into `prestonotes_gdoc/`** for `write_doc`, `append_ledger`, bootstrap | pytest write tools; `dry_run` only in CI for destructive ops |
-| **004** | **New** tools: `write_call_record`, `read_call_records`, `update_transcript_index`, `read_transcript_index` | pytest round-trip record + index |
+| **004** | **New** tools: `write_call_record`, `read_call_records` (the index tools `update_transcript_index` / `read_transcript_index` were retired in TASK-046) | pytest round-trip record |
 | **005** | `granola-sync.py` + per-call `Transcripts/*.txt` story | pytest idempotency + routing; doc split path in MIGRATION_GUIDE if needed |
 | **006** | rsync / Drive / markdown export scripts | `rsync-gdrive-notes.sh --dry-run` works |
 | **007** | Core `.mdc` rules + **MVP playbooks:** `load-customer-context` + **`update-customer-notes`** + **`run-license-evidence-check`**; **not** BVA / logic-audit (deferred) | Manual: Load Customer Context + **Update Customer Notes** (plan/approval gate) + **Run License Evidence Check** on **`TestCo`** (or document wiz/cache blockers) |
@@ -134,7 +134,7 @@ Below: **TASK** → **what you’re building** → **you know it’s done when�
 | **011** | `append_ledger_v2` + migration helper | pytest + fixture ledger |
 | **012** | `22-journey-synthesizer` + **Run Journey Timeline** | Manual on 5+ call customer |
 | **013** | Exec summary template + **Run Account Summary** | Manual VP-readable output |
-| **014** | **Run Challenge Review** playbook | Manual challenge table |
+| **014** | **Run Challenge Review** playbook | **Merged** into **`run-journey-timeline.md`** Steps 5–8 + **UCN** Phase 0 |
 
 ### Stage 3 — Advisors + orchestration (TASK-015–019)
 
@@ -143,8 +143,8 @@ Below: **TASK** → **what you’re building** → **you know it’s done when�
 | **015** | **SOC** advisor `.mdc` (wiz-local search) | Manual JSON recommendations |
 | **016** | **APP, VULN, ASM, AI** advisors | Manual; ASM uses diagrams if present |
 | **017** | **20-orchestrator** + task router; **Update Customer Notes** | Manual full pipeline + approval gate |
-| **018** | **Run Exec Briefing** | One page, no jargon |
-| **019** | **debug-pipeline** + Stage 3 signoff vs v1 quality | Manual comparison + logic audit |
+| **018** | **Run Exec Briefing** | **Retired** — use **Account Summary §1** only |
+| **019** | **debug-pipeline** | **Retired** — ad-hoc UCN regression |
 
 ### Stage 4 — After MVP (optional)
 
@@ -174,9 +174,9 @@ Below: **TASK** → **what you’re building** → **you know it’s done when�
 
 ---
 
-## 9. Optional: migration mode rule
+## 9. Migration mode rule (retired)
 
-If you add **`.cursor/rules/99-migration-mode.mdc`**, use it only until **TASK-019** is done; then archive it (BUILD_ADVISORY Part 4). Content can match the block in [`examples/BUILD_ADVISORY.md`](../examples/BUILD_ADVISORY.md) Part 4.
+**`.cursor/rules/99-migration-mode.mdc`** was used during the v1→v2 port through **TASK-019**, then **archived** (Phase 3 Wave G). Read-only copy: **[`docs/archive/cursor-rules-retired/99-migration-mode.mdc`](archive/cursor-rules-retired/99-migration-mode.mdc)**. Do not move it back into **`.cursor/rules/`** without an explicit decision.
 
 ---
 
@@ -195,10 +195,10 @@ When in doubt: **§9 task Test section is law**; this plan is navigation.
 
 ## 11. Phase 3 close-out — shipped artifacts vs manual validation
 
-**Stage 3 code/docs in-tree (TASK-015–019):** Domain advisor rules **`.cursor/rules/23-domain-advisor-soc.mdc`** through **`27-domain-advisor-ai.mdc`**, **`.cursor/rules/10-task-router.mdc`** and **`20-orchestrator.mdc`**, playbook updates (including **`docs/ai/playbooks/run-exec-briefing.md`** and **`docs/ai/playbooks/debug-pipeline.md`**), and the batch log **[`docs/tasks/active/PHASE3-PLAN.md`](tasks/active/PHASE3-PLAN.md)**. CI manifests list required paths as implemented.
+**Stage 3 code/docs in-tree (TASK-015–019):** Domain advisor rules **`.cursor/rules/23-domain-advisor-soc.mdc`** through **`27-domain-advisor-ai.mdc`**, **`.cursor/rules/10-task-router.mdc`** and **`20-orchestrator.mdc`**, and playbooks under **`docs/ai/playbooks/`** ( **`run-journey-timeline.md`** now includes merged **TASK-014** challenge governance). Archived batch log **[`docs/tasks/archive/2026-04/PHASE3-PLAN.md`](tasks/archive/2026-04/PHASE3-PLAN.md)**. Standalone **`run-exec-briefing.md`** / **`debug-pipeline.md`** / **`run-challenge-review.md`** were **removed**; see **`docs/project_spec.md`** §11 / §12.
 
-**Manual validation (human, not automated):** Completing the numbered checklist in **`docs/ai/playbooks/debug-pipeline.md`** for **`Debug Pipeline for [CustomerName]`** is still **operator-owned** signoff — compare orchestrator vs monolithic **`update-customer-notes.md`**, **`read_doc`** diffs, ledger/audit evidence, and quality vs expectations.
+**Manual validation (human, not automated):** When investigating UCN vs monolithic differences, use ad-hoc **`read_doc`** diffs, ledger rows, and audit log — no separate checklist playbook.
 
-**`.cursor/rules/99-migration-mode.mdc`:** Remains in the repo until Phase 3 **close-out** explicitly retires or archives it (see **`workflow.mdc`** / Part 4 in **[`examples/BUILD_ADVISORY.md`](../examples/BUILD_ADVISORY.md)**). Do **not** treat “playbook landed” as automatic removal.
+**`.cursor/rules/99-migration-mode.mdc`:** **Retired** at Phase 3 Wave G — copy under **[`docs/archive/cursor-rules-retired/`](archive/cursor-rules-retired/)**; not loaded by Cursor.
 
 **Python vs Node housekeeping:** Skim **[`docs/tasks/INDEX.md` — Phase 3 close-out cleanup](tasks/INDEX.md#phase-3-close-out-cleanup-after-task-019)**. **Biome / root npm were removed** (they only covered a few JSON files; CI does not need **`npm ci`** for **`pre-commit`**). Reintroduce a JS toolchain only if the product adds real JS/TS.

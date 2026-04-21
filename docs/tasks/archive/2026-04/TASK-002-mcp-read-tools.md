@@ -25,7 +25,7 @@ Write/sync tools and **`run_pipeline`** are **not** registered (TASK-003+).
 | `uv run pre-commit run --all-files` | pass |
 | `python -m prestonotes_mcp` bootstrap | covered by `test_main_does_not_block` (patches `mcp.run`) |
 
-**Key files:** `prestonotes_mcp/server.py`, `config.py`, `exec_helper.py`, `runtime.py`, `security.py`, `__main__.py`, `prestonotes-mcp.yaml.example`, `.env.example`, `prestonotes_mcp/tests/`, `prestonotes_gdoc/` tree, `biome.json` (scoped lint), `.yamllint` ignores for vendor + gdoc YAML.
+**Key files:** `prestonotes_mcp/server.py`, `config.py`, `exec_helper.py`, `runtime.py`, `security.py`, `__main__.py`, `prestonotes-mcp.yaml.example`, `.env.example`, `prestonotes_mcp/tests/`, `prestonotes_gdoc/` tree, `.yamllint` ignores for vendor + gdoc YAML. *(At completion the repo also had **`biome.json`** for scoped JSON lint; **Biome and root npm were removed** in 2026-04 Phase 3 close-out — see **`docs/tasks/INDEX.md`**.)*
 
 ---
 

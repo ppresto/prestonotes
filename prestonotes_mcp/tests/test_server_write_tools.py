@@ -122,3 +122,47 @@ def test_sync_notes_runs_rsync_for_customer(repo_ctx_gdrive: Path) -> None:
     local = repo_ctx_gdrive / "MyNotes" / "Customers" / "Acme" / "note.txt"
     assert local.is_file()
     assert local.read_text(encoding="utf-8") == "from-drive"
+
+
+@pytest.mark.skipif(not shutil.which("rsync"), reason="rsync not installed")
+def test_sync_notes_runs_rsync_for_leading_underscore_customer(repo_ctx_gdrive: Path) -> None:
+    from prestonotes_mcp.server import sync_notes
+
+    gdrive_customer = repo_ctx_gdrive / "gdrive_mynotes" / "Customers" / "_TEST_CUSTOMER"
+    gdrive_customer.mkdir(parents=True, exist_ok=True)
+    (gdrive_customer / "note.txt").write_text("from-drive-underscore", encoding="utf-8")
+
+    out = sync_notes("_TEST_CUSTOMER")
+    data = json.loads(out)
+    assert data.get("exit_code") == 0, data.get("output")
+    local = repo_ctx_gdrive / "MyNotes" / "Customers" / "_TEST_CUSTOMER" / "note.txt"
+    assert local.is_file()
+    assert local.read_text(encoding="utf-8") == "from-drive-underscore"
+
+
+@pytest.mark.skipif(not shutil.which("rsync"), reason="rsync not installed")
+def test_sync_notes_preserves_local_only_test_customer_artifacts(repo_ctx_gdrive: Path) -> None:
+    """rsync uses --delete; _TEST_CUSTOMER should keep repo-local fixture transcripts/records safe."""
+    from prestonotes_mcp.server import sync_notes
+
+    gdrive_customer = repo_ctx_gdrive / "gdrive_mynotes" / "Customers" / "_TEST_CUSTOMER"
+    gdrive_customer.mkdir(parents=True, exist_ok=True)
+    (gdrive_customer / "note.txt").write_text("from-drive-underscore", encoding="utf-8")
+
+    local_customer = repo_ctx_gdrive / "MyNotes" / "Customers" / "_TEST_CUSTOMER"
+    transcripts = local_customer / "Transcripts"
+    transcripts.mkdir(parents=True, exist_ok=True)
+    tx = transcripts / "2026-04-20-fixture-call.txt"
+    tx.write_text("fixture transcript\n", encoding="utf-8")
+
+    cr = local_customer / "call-records"
+    cr.mkdir(parents=True, exist_ok=True)
+    rec = cr / "2026-04-20-fixture-call.json"
+    rec.write_text('{"call_id":"2026-04-20-fixture-call"}\n', encoding="utf-8")
+
+    out = sync_notes("_TEST_CUSTOMER")
+    data = json.loads(out)
+    assert data.get("exit_code") == 0, data.get("output")
+
+    assert tx.is_file()
+    assert rec.is_file()

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import importlib.util
 import json
 import os
 import re
@@ -4592,6 +4593,31 @@ def cmd_read(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_lifecycle_tracker_parity_gate(customer_name: str, section_map: SectionMap) -> None:
+    """Warn or raise if challenge-lifecycle.json is out of sync with Challenge Tracker rows."""
+    repo_root = Path(os.environ.get("PRESTONOTES_REPO_ROOT", "")).resolve()
+    if not os.environ.get("PRESTONOTES_REPO_ROOT"):
+        repo_root = Path.cwd().resolve()
+    parity_path = Path(__file__).resolve().parent / "challenge_lifecycle_parity.py"
+    spec = importlib.util.spec_from_file_location("_pn_parity", parity_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load parity module from {parity_path}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    sec_tr = section_map.get("challenge_tracker")
+    rows = list(sec_tr.rows) if sec_tr and sec_tr.rows else []
+    warns, errs = mod.check_tracker_lifecycle_parity(repo_root, customer_name, rows)
+    for w in warns:
+        print(w, file=sys.stderr)
+    if errs:
+        raise RuntimeError(
+            "\n".join(errs)
+            + "\n\nFix: include matching [lifecycle_id:<id>] anchors in Challenge Tracker text "
+            "(challenge cell and/or Notes & References) for every id in challenge-lifecycle.json, "
+            "or pass --skip-lifecycle-parity-check for an emergency write."
+        )
+
+
 def cmd_write(args: argparse.Namespace) -> int:
     token = get_access_token()
     config = load_config(args.config)
@@ -4756,6 +4782,9 @@ def cmd_write(args: argparse.Namespace) -> int:
         section_map, section_configs, applied, skipped
     )
     run_titles = [str(m.get("new_value", "")).strip() for m in runlog_mutations if str(m.get("new_value", "")).strip()]
+
+    if getattr(args, "customer_name", None) and not getattr(args, "skip_lifecycle_parity_check", False):
+        _run_lifecycle_tracker_parity_gate(args.customer_name, section_map)
 
     print(f"Mutations: {len(applied)} applied, {len(skipped)} skipped")
     if auto_generated:
@@ -5102,6 +5131,19 @@ def main() -> int:
         "--max-evidence-date",
         default=None,
         help="Optional evidence cutoff date (YYYY-MM-DD). Mutations with newer evidence dates are skipped.",
+    )
+    p_write.add_argument(
+        "--customer-name",
+        default=None,
+        help=(
+            "Customer folder name (e.g. _TEST_CUSTOMER). When set, runs challenge-lifecycle.json vs "
+            "Challenge Tracker parity checks (see docs/ai/references/customer-notes-mutation-rules.md)."
+        ),
+    )
+    p_write.add_argument(
+        "--skip-lifecycle-parity-check",
+        action="store_true",
+        help="Disable lifecycle ↔ Challenge Tracker parity checks for this write.",
     )
 
     # ledger-append

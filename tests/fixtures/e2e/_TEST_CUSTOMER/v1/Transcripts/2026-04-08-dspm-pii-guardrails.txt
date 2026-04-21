@@ -1,0 +1,13 @@
+MEETING: _TEST_CUSTOMER — DSPM guardrails after acquisition onboarding
+DATE: 2026-04-08T15:40:00.000Z
+ID: test-uuid-20260408-dspm
+========================================
+Speaker: SE: Checking in on the AcmeCorp acquisition onboarding — last time you said you got visibility fast.
+Speaker: John Doe: Huge progress. Jane and her team finally unblocked the sensor deployment.
+Speaker: Jane Smith: We plugged in the cloud connector and got 100% visibility into their environments in 15 minutes without deploying a single agent. We actually caught an unencrypted S3 bucket full of PII exposed via an overprivileged IAM role. Wiz DSPM and CIEM paid for itself right there.
+Speaker: John Doe: Executive readout is simple: the Wiz Score jumped to 92% and we're staying disciplined on toxic combos.
+Speaker: Jane Smith: Graph-first triage is still the story — we used to drown in 10,000 CVSS criticals. By using the Wiz Security Graph, we prioritized down to just 12 toxic combinations.
+Speaker: SE: Any new identity wrinkles in the acquired org?
+Speaker: Jane Smith: We're standardizing on Okta for SSO across the board; child tenants are messy but we're forcing joins through the hub.
+Speaker: John Doe: Jane is unfortunately leaving the company next week, so we're sequencing knowledge transfer with the new platform owner.
+Speaker: SE: Let's capture the top 5 misconfigurations you want fixed before her last day.

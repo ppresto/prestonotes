@@ -1,0 +1,49 @@
+{
+  "source_name": "customers",
+  "seed_url": "https://www.wiz.io/customers",
+  "last_scanned_at": "2026-03-02T17:52:04Z",
+  "discovered_urls": [
+    {
+      "url": "https://www.wiz.io/customers/aon",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/customers/bridgewater",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/customers/fox",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/customers/genpact",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/customers/niwc-pac-sbs",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/customers/pros",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    },
+    {
+      "url": "https://www.wiz.io/customers/thoughtworks",
+      "title": null,
+      "published_at": "",
+      "first_seen_at": "2026-03-02T17:52:04Z"
+    }
+  ]
+}

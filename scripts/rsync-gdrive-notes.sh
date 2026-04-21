@@ -53,6 +53,16 @@ RSYNC_EXCLUDES=(
   --exclude='_seed_from_*/'
 )
 
+# `_TEST_CUSTOMER` is a committed E2E fixture customer in many dev setups. Google Drive may lag
+# behind the repo's local per-call transcripts / call records. Without these excludes,
+# `rsync --delete` would remove locally-added fixture files that are not yet on Drive.
+if [[ "${CUSTOMER_NAME:-}" == "_TEST_CUSTOMER" ]]; then
+  RSYNC_EXCLUDES+=(
+    --exclude='Transcripts/[0-9][0-9][0-9][0-9]-*.txt'
+    --exclude='call-records/*.json'
+  )
+fi
+
 RSYNC_INCLUDES=(
   --include='*/'
   --include='*.md'

@@ -19,6 +19,12 @@ Use when the **orchestrator** (or user) assigns the **VULN** pass: analyze **`Cu
 
 - **Separate** Wiz docs MCP (**`wiz-local`** or user-named); use its search tool (**exact tool name from MCP registration**). Generic phrasing only — **no API keys**.
 
+### Retrieval hybrid (prestonotes vs wiz-local)
+
+- **`wiz_knowledge_search`**: local Chroma; **`include_staleness=true`** when dates matter.
+- **wiz-local**: live doc search / WIN APIs.
+- Prefer **vector first**; if weak or **stale**, **wiz-local** + cache playbook, then **`refresh_wiz_vector_index`** after approval.
+
 ## Domain scope (VULN only)
 
 Own **vulnerability management program**, **patch / remediation SLAs**, **prioritization** (business context + exposure), **scanner consolidation**, **CSPM-adjacent findings framed as risk reduction workflows**, and **reporting to leadership** — not SOC IR runbooks (SOC), not developer PR blocking semantics unless framed as **VM policy** (overlap minimal; prefer APP for dev-gate language).

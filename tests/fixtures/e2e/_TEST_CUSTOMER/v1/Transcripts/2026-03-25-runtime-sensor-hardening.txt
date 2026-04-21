@@ -1,0 +1,12 @@
+MEETING: _TEST_CUSTOMER — Runtime sensor hardening (Azure)
+DATE: 2026-03-25T16:30:00.000Z
+ID: test-uuid-20260325-sensor
+========================================
+Speaker: SE: Quick working session — we left the QBR with the team at 900/1000 workloads scanned and the Wiz Score jumped to 92%.
+Speaker: Jane Smith: Confirmed — we're still 100% Azure and standardizing on Okta for SSO across the board.
+Speaker: John Doe: Jane is handing off her runbooks this week because Jane is unfortunately leaving the company next week for a new opportunity.
+Speaker: SE: Understood. Any regressions after the DaemonSet rollout?
+Speaker: Jane Smith: One noisy finding class spiked after a kubelet upgrade, but graph prioritization still keeps us sane.
+Speaker: Jane Smith: We used to drown in 10,000 CVSS criticals. By using the Wiz Security Graph, we prioritized down to just 12 toxic combinations.
+Speaker: John Doe: The SOC budget was just frozen for Q1, so we can't buy the Splunk integration we talked about — we're routing high-signal detections to the existing SIEM queue for now.
+Speaker: SE: Good interim plan. Let's capture the top 3 routing rules you want before Jane's last day.

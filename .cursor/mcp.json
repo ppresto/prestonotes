@@ -9,6 +9,17 @@
 				"PRESTONOTES_REPO_ROOT": "${workspaceFolder}"
 			},
 			"envFile": "${workspaceFolder}/.cursor/mcp.env"
+		},
+		"wiz-local": {
+			"type": "stdio",
+			"timeout": 60,
+			"command": "${workspaceFolder}/wiz-mcp/run-wiz-mcp-for-cursor.sh",
+			"args": [],
+			"envFile": "${workspaceFolder}/.cursor/mcp.env"
+		},
+		"wiz-remote": {
+			"timeout": 60,
+			"url": "https://mcp.demo.wiz.io"
 		}
 	}
 }

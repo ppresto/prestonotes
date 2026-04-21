@@ -71,6 +71,29 @@ def test_migrate_19_to_24_columns() -> None:
     assert cells[-5:] == ["", "", "", "", ""]
 
 
+def test_append_creates_ledger_when_missing(
+    repo_ctx: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    customer = "LazyCo"
+    cdir = repo_ctx / "MyNotes" / "Customers" / customer
+    cdir.mkdir(parents=True)
+
+    monkeypatch.setattr("prestonotes_mcp.ledger_v2._today_iso", lambda: "2099-05-01")
+
+    row = _row_values("new")
+    path = append_ledger_v2_row(customer, row)
+    ledger = cdir / "AI_Insights" / f"{customer}-History-Ledger.md"
+    assert path == ledger
+    assert ledger.is_file()
+    text = ledger.read_text(encoding="utf-8")
+    assert detect_standard_table_column_count(text) == 24
+    assert "## Standard ledger row (required columns — core rules)" in text
+    assert "Append-only. One row per run; **do not edit prior rows**." in text
+    assert "last_ai_update: 2099-05-01" in text
+    for v in row.values():
+        assert v in text
+
+
 def test_append_after_migrate(repo_ctx: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     customer = "Acme"
     ai = repo_ctx / "MyNotes" / "Customers" / customer / "AI_Insights"

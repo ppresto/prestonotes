@@ -6,13 +6,30 @@ Trigger:
 
 Purpose: produce a **structured exec + account narrative** in chat using `docs/ai/references/exec-summary-template.md`. This playbook is **read-heavy** — it does not require writes to customer notes. Optionally append a short **`log_run`** entry only if the user asks you to record the run in the audit trail.
 
+> **Fixture customer:** **`_TEST_CUSTOMER`** is a first-class customer name for MCP + scripts (leading underscore is valid). In zsh/bash, quote Drive paths: `scripts/rsync-gdrive-notes.sh "_TEST_CUSTOMER"`.
+
 > **Source hygiene:** Prefer **per-call** `Transcripts/*.txt` when present; **`read_transcripts`** MCP is the primary way to pull transcript text. **`_MASTER_TRANSCRIPT_*.txt`** is a legacy fallback. Call **`sync_notes`** MCP (optional customer scope) **or** `./scripts/rsync-gdrive-notes.sh` from repo root before deep reads.
+
+---
+
+## Persisting the AI Account Summary artifact (TASK-037 approach B)
+
+- Canonical file path: `MyNotes/Customers/[CustomerName]/AI_Insights/[CustomerName]-AI-AcctSummary.md`.
+- Current MVP behavior: this playbook generates the summary in chat; there is no dedicated MCP write tool for this artifact yet.
+- When the user wants the file saved, instruct a manual save flow: copy final markdown output, create/update the file at the canonical path, then run `sync_notes` or `scripts/rsync-gdrive-notes.sh "[CustomerName]"` so the mirror and Drive stay aligned.
+- Keep section headings aligned with `docs/ai/references/exec-summary-template.md`; use `docs/examples/Dayforce-AI-AcctSummary.md` as a shape example when available.
 
 ---
 
 ## Communication Rule
 
 At every step, tell the user what you are doing in plain English. Start each step with: `"Step X of 8 — [what I'm doing]"`. Follow the format rules in `.cursor/rules/15-user-preferences.mdc`.
+
+## End-of-run chat format
+
+- Follow **`.cursor/rules/15-user-preferences.mdc`**.
+- After multi-step work, finish with **`### Activity recap`** listing completed reads, unresolved gaps, and optional follow-ups.
+- Explicitly state whether the summary stayed in chat only or was manually saved to file.
 
 ---
 
@@ -35,13 +52,12 @@ At every step, tell the user what you are doing in plain English. Start each ste
 
 ---
 
-## Step 3 of 8 — Read structured notes and index
+## Step 3 of 8 — Read structured notes
 
 1. **`read_doc`** MCP with the `doc_id` from Step 2 (`include_internal` per user preference; default true for internal prep).
-2. **`read_transcript_index`** MCP for `[CustomerName]` — understand which calls exist and ordering before pulling full transcripts or call records.
-3. Optionally **`read_audit_log`** if recent human or automation runs matter for "what changed since last summary."
+2. Optionally **`read_audit_log`** if recent human or automation runs matter for "what changed since last summary."
 
-**Tell user:** "Step 3 of 8 — Read doc export and transcript index for [CustomerName]."
+**Tell user:** "Step 3 of 8 — Read doc export for [CustomerName]."
 
 ---
 

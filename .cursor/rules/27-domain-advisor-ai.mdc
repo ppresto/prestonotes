@@ -19,6 +19,12 @@ Use when the **orchestrator** (or user) assigns the **AI** pass (after ASM in th
 
 - **Separate** Wiz documentation MCP (**`wiz-local`** or user-configured). Call its search tool using the **registered tool name** from Cursor MCP settings. **No hardcoded credentials.**
 
+### Retrieval hybrid (prestonotes vs wiz-local)
+
+- **`wiz_knowledge_search`**: local Chroma; **`include_staleness=true`** when freshness matters.
+- **wiz-local**: live **`wiz_search_wiz_docs`** for current AI-SPM / governance docs.
+- Prefer **vector first**; if weak or **stale**, **wiz-local** + cache playbook, then **`refresh_wiz_vector_index`** after approval.
+
 ## Domain scope (AI only)
 
 Own **AI adoption risk**, **sensitive data in AI workflows**, **AI-SPM / shadow AI**, **model and agent governance**, **prompt injection / abuse cases** where Wiz product positioning applies, and **compliance framing for AI usage** — not generic SOC-only detection (SOC), not code-quality SAST defaults (APP), not classic CVE backlog SLAs (VULN), not Internet-wide asset inventory (ASM) unless tied to **AI services exposure**.

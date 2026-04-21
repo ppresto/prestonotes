@@ -1,0 +1,4166 @@
+# Entity Types and Native Types (Wiz Normalization)
+*Wiz simplifies the terminology used by various cloud service providers by normalizing their terms on the Security Graph. This approach makes it easier to manage and understand resources across different platforms.*
+
+Category: reference
+
+{/* DO NOT ADD OR REMOVE FROM THIS PAGE, SINCE IT IS UPDATED VIA CODE */}
+
+<Autogencallout />
+
+Wiz simplifies the terminology used by various cloud service providers by normalizing their terms on the Security Graph. This approach makes it easier to manage and understand resources across different platforms. For example, a virtual machine in Wiz terminology could represent several types of instances across cloud providers:
+
+- **Entity Type**: This is Wiz's generalized category for a resource, which helps unify similar resources under a common term. For instance, the entity type "Virtual Machine" in Wiz could refer to:
+  - EC2 Instance in AWS
+  - Compute Virtual Machine in Azure
+  - Compute Instance in GCP or OCI
+  - ECS Instance in Alibaba Cloud
+
+- **Native Type**: This refers to the specific name given to a resource by the cloud service provider. For example, the native type "AWS IAM Access Key" falls under the entity type "Access Key" in Wiz.
+
+## Cloud Resource entity types
+
+<Link id="cloud-resource-native-types" />
+
+You can only use the entity types listed below when retrieving cloud resources via a report or API. These types represent various cloud components and services across different platforms:
+
+<Expandable title="See list">
+
+- AI_GUARDRAIL
+- API_GATEWAY
+- AI_DATASET
+- AI_DEPLOYMENT
+- AI_EXTENSION
+- AI_MODEL
+- AI_PIPELINE
+- AI_SERVICE
+- BACKUP_SERVICE
+- BUCKET
+- CDN
+- CICD_SERVICE
+- CALL_CENTER_SERVICE
+- CLOUD_LOG_CONFIGURATION
+- CLOUD_ORGANIZATION
+- COMMUNICATION_SERVICE
+- COMPUTE_INSTANCE_CONFIGURATION
+- COMPUTE_INSTANCE_GROUP
+- CONTAINER
+- CONTAINER_GROUP
+- CONTAINER_IMAGE
+- CONTAINER_REGISTRY
+- CONTAINER_REPOSITORY
+- CONTAINER_SERVICE
+- DB_SERVER
+- DNS_PRIVATE_RESOLVER
+- DNS_ZONE
+- DATA_NETWORK_POLICY
+- DATA_PROCEDURE
+- DATA_WORKFLOW
+- DATA_WORKLOAD
+- DATABASE
+- DATASET_CONFIGURATION
+- DEVELOPMENT_SERVICE
+- EMAIL_SERVICE
+- ENCRYPTION_KEY
+- FILE_SYSTEM_SERVICE
+- FIREWALL
+- FIREWALL_CONFIGURATION
+- GATEWAY
+- GOVERNANCE_POLICY
+- GOVERNANCE_POLICY_GROUP
+- HYBRID_STORAGE_SERVICE
+- IP_ADDRESS_GROUP
+- IP_ADDRESS_POOL
+- KUBERNETES_CLUSTER
+- LOAD_BALANCER
+- MANAGED_CERTIFICATE
+- MANAGED_JUMP_SERVER
+- MANAGEMENT_SERVICE
+- MAP_REDUCE_CLUSTER
+- MEDIA_SERVICE
+- MESSAGING_SERVICE
+- METADATA_REPOSITORY
+- MONITOR_ALERT
+- MONITOR_SERVICE
+- NAT
+- NETWORK_APPLIANCE
+- NETWORK_INTERFACE
+- PRIVATE_ENDPOINT
+- PRIVATE_LINK
+- PROXY
+- RAW_ACCESS_POLICY
+- RESOURCE_GROUP
+- ROUTE_TABLE
+- SCHEMA_CONFIGURATION
+- SEARCH_INDEX
+- SECRET
+- SECRET_CONTAINER
+- SERVERLESS
+- SERVERLESS_PACKAGE
+- SERVICE_BLUEPRINT
+- SERVICE_CONFIGURATION
+- SERVICE_QUOTA
+- SIMULATION_SERVICE
+- SNAPSHOT
+- STORAGE_ACCOUNT
+- SUBNET
+- SUBSCRIPTION
+- SWITCH
+- TARGET_GROUP
+- TELECOM_NETWORK
+- VIRTUAL_DESKTOP
+- VIRTUAL_MACHINE
+- VIRTUAL_MACHINE_IMAGE
+- VIRTUAL_NETWORK
+- VIRTUAL_WORKSPACE
+- VIRTUAL_WORKSTATION
+- VOLUME
+- WEB_SERVICE
+- COLLABORATION_WORKSPACE
+- SERVICE_ACCOUNT
+- USER_ACCOUNT
+
+</Expandable>
+
+In Wiz, the cloud service providers' names (EC2, compute instance, etc.) are referred to as "native types". The following Security Graph objects represent the listed native types.
+
+## All native types
+
+Jump to a section:
+
+- [A-C](#a-c)
+- [D-I](#d-i)
+- [J-L](#j-l)
+- [M-R](#m-r)
+- [S-Z](#s-z)
+
+## A-C
+
+### Access Key 
+- AWS IAM Access Key
+- Alibaba RAM Access Key
+- Azure Application Certificate
+- Azure Application Secret
+- Azure Microsoft Entra ID Federated Credential
+- Databricks Personal Access Token
+- GCP API Key
+- GCP OAuth 2.0 Client ID
+- GCP Service Account Key
+- IBM API Key
+- Linode Object Storage Bucket Key
+- Linode Token
+- OCI API Key
+- OCI Auth Token
+- OCI Customer Secret Key
+- Okta API Token
+
+### Access Role 
+- AWS Lightsail Bucket Role
+- AWS SSO Role
+- Azure Key Vault Role
+- Azure Microsoft Entra ID Role
+- Azure RoleDefinition App Role
+- Azure RoleDefinition BuiltIn Role
+- Azure RoleDefinition Custom Role
+- Azure RoleDefinition Microsoft Entra ID BuiltIn Role
+- Azure RoleDefinition Microsoft Entra ID Custom Role
+- AzureDevOps Extension Role
+- AzureDevOps Role
+- BitbucketCloud Bitbucket Cloud Role
+- BitbucketCloud Project Role
+- BitbucketCloud Repository Role
+- BitbucketDataCenter Data Center Server Role
+- BitbucketDataCenter Project Role
+- BitbucketDataCenter Repository Role
+- Databricks Role
+- GCP Access Role
+- GCP Google Workspace Access Role
+- GitHub Custom Organization Role
+- GitHub Custom Repository Role
+- GitHub Fine Grained Token Role
+- GitHub Managed Organization Role
+- GitHub Managed Repository Role
+- GitLab Managed Group Role
+- GitLab Managed Project Role
+- IBM Role
+- Kubernetes Kubernetes Cluster Role
+- Kubernetes Kubernetes Role
+- Kubernetes Kubernetes from Cloud Role
+- Kubernetes Kubernetes to Cloud Role
+- MongoDBAtlas Database Role
+- MongoDBAtlas Role
+- OCI Access Role
+- Okta Application Role
+- OpenAI Managed Organization Role
+- OpenAI Managed Project Role
+- Snowflake Data Share Role
+- Snowflake Role
+
+### Access Role Binding 
+- AWS IAM Principal Policy Account Level Access Role Binding
+- AWS IAM Principal Policy Resource Level Access Role Binding
+- AWS IAM Resource Policy Resource Level Access Role Binding
+- AWS IAM Resource Policy Resource Level Access Role Binding Delegation
+- AWS IAM Resource Policy Resource Level Access Role Binding Same Account Not Delegation
+- AWS IAM Resource Policy Resource Level Access Role Binding Without Inheritance
+- AWS S3 ACL
+- AWS SSO to Role Binding
+- Azure Application Role Binding
+- Azure Azure to AWS Binding
+- Azure Binding
+- Azure Eligible Binding
+- Azure KeyVault Access Policy Entry
+- Azure Microsoft Entra ID Binding
+- Azure Microsoft Entra ID Eligible Binding
+- Azure Microsoft Entra ID Scheduled Binding
+- AzureDevOps Extension Role Binding
+- AzureDevOps Role Binding
+- BitbucketCloud Role Binding
+- BitbucketDataCenter Role Binding
+- Databricks Binding
+- GCP Access Role Binding
+- GCP Google Workspace Access Role Binding
+- GitHub Role Binding
+- GitLab Role Binding
+- Kubernetes Kubernetes Cluster Role Binding
+- Kubernetes Kubernetes Role Binding
+- Kubernetes Kubernetes from Cloud Access Binding
+- Kubernetes Kubernetes from Cloud Role Binding
+- Kubernetes Kubernetes to Cloud Association
+- Kubernetes Kubernetes to Cloud Role Binding
+- Kubernetes Kubernetes to GCP Workload Identity Federation
+- MongoDBAtlas Database Role Binding
+- MongoDBAtlas Organization Role Binding
+- MongoDBAtlas Project Role Binding
+- OCI Access Role Binding
+- Okta Application Role Binding
+- Okta SAML Role Binding
+- Okta Sign In Role Binding
+- OpenAI Role Binding
+- Snowflake Binding
+- Snowflake Data Share
+
+### Access Role Permission 
+- AWS Permission
+- Alibaba Permission
+- Azure Delegated Permission Scope Admin Consent
+- Azure Delegated Permission Scope User Consent
+- Azure Key Vault Permission
+- Azure Microsoft Entra ID Permission
+- Azure Permission
+- Azure Role Claim
+- AzureDevOps Extension Scope
+- AzureDevOps Permission
+- BitbucketCloud Permission
+- BitbucketDataCenter Permission
+- Databricks Permission
+- Firemon Permission
+- GCP Google Workspace Permission
+- GCP Permission
+- GitHub Permission
+- GitLab Permission
+- IBM Permission
+- Kubernetes Kubernetes Permission
+- Linode Permission
+- MongoDBAtlas Permission
+- OCI Permission
+- Okta Oauth Scope
+- Okta Permission
+- Okta Role Claim
+- OpenAI Permission
+- Snowflake Permission
+- vSphere Permission
+
+### AI Agent 
+- AWS Bedrock Agent
+- AWS Lex V2 Bot
+- Azure AI Foundry Agent
+- Azure OpenAI Assistant
+- GCP Dialogflow CX Agent
+- GCP Vertex AI Agent
+- Hosted AI Agent
+- OpenAI Assistant
+
+### AI Dataset 
+- AWS Bedrock Knowledge base
+- AWS Bedrock Model Customization Dataset
+- AWS Bedrock Model Invocation Logs Dataset
+- AWS Lex V2 Test Set
+- AWS Lookout for Equipment Dataset
+- AWS Q Business Index
+- Azure Machine Learning Studio Data Store
+- Azure OpenAI File
+- Azure OpenAI Vector Store
+- Databricks Dataset
+- GCP Vertex AI Application Data Store
+- GCP Vertex AI Dataset
+- GCP Vertex AI RAG Corpus
+- OpenAI File
+- OpenAI Vector Store
+
+### AI Extension 
+- AWS Textract Adapter
+- AWS Transcribe Custom Vocabulary
+- AWS Transcribe Medical Vocabulary
+- OpenAI Action
+
+### AI Guardrail 
+- AWS Bedrock Guardrail
+- Azure OpenAI Content Filter
+- GCP Model Armor
+
+### AI Model 
+- AWS Bedrock Custom Model
+- AWS Bedrock Foundation Model
+- AWS Bedrock Imported Model
+- AWS Bedrock Inference Profile
+- AWS Comprehend Document Classifier Version
+- AWS Comprehend Entity Recognizer Version
+- AWS Lookout for Equipment Model
+- AWS SageMaker Model
+- Azure AI Foundry Model
+- Azure Machine Learning Model Version
+- Azure OpenAI Foundation Model (Azure)
+- Azure OpenAI Model (Azure)
+- Databricks Model Version
+- GCP Vertex AI Custom Model
+- GCP Vertex AI Foundation Model
+- Hosted AI Model
+- OpenAI Model
+- OpenAI OpenAI Custom Model
+- OpenAI OpenAI Foundation Model
+
+### AI Pipeline 
+- AWS Bedrock Model Customization Job
+- AWS Bedrock Model Import Job
+- AWS Comprehend Document Classification Job
+- AWS Comprehend Entity Recognition Job
+- AWS Comprehend Events Detection Job
+- AWS Comprehend Flywheel
+- AWS Comprehend Key Phrases Detection Job
+- AWS Comprehend PII Entities Detection Job
+- AWS Comprehend Primary Language Detection Job
+- AWS Comprehend Sentiment Detection Job
+- AWS Comprehend Targeted Sentiment Detection Job
+- AWS Comprehend Topics Detection Job
+- AWS HealthScribe Job
+- AWS Lookout for Equipment Inference Schedule
+- AWS Rekognition Stream Processor
+- AWS SageMaker Batch Transform Job
+- AWS SageMaker Training Job
+- AWS Transcribe Call Analytics Job
+- AWS Transcribe Medical Transcription Job
+- AWS Transcribe Transcription Job
+- Azure Machine Learning Studio Job
+- Azure OpenAI Fine Tuning Job
+- Databricks Run
+- GCP Vertex AI Batch Prediction Job
+- GCP Vertex AI Custom Job
+- GCP Vertex AI Hyperparameter Tuning Job
+- GCP Vertex AI Pipeline Run
+- GCP Vertex AI Training
+- OpenAI Fine Tuning Job
+
+### AI Service 
+- AWS Bedrock Provisioned Throughput
+- AWS Fraud Detector
+- AWS Q Business Application
+- AWS SageMaker Endpoint
+- AWS Transcribe Language Model
+- Azure AI Foundry Model Deployment
+- Azure AI Foundry Project
+- Azure AI Foundry | Open AI Deployment
+- Azure Machine Learning Batch Deployment
+- Azure Machine Learning Online Deployment
+- Databricks Serving Endpoint
+- GCP Document AI Processor
+- GCP Vertex AI Application
+- GCP Vertex AI Endpoint
+- OpenAI CustomGPT
+
+### AI Tool 
+- AWS Bedrock AI Tool
+- Azure OpenAI Tool
+- GCP Dialogflow CX Agent Tool
+- Hosted AI Tool
+- OpenAI Tool
+
+### API Gateway 
+- AWS API Gateway
+- AWS API Gateway V2
+- Azure API Management
+- GCP API Gateway Gateway
+- GCP Service Management
+- OCI API Gateway
+
+### Artifact Registry 
+- AWS CodeArtifact Domain
+
+### Artifact Repository 
+- AWS CodeArtifact Repository
+
+### Authentication Policy 
+- Azure Conditional Access Policy
+- OCI Identity Provider Policy
+- Okta Authentication Policies
+- Okta Continuous Access Policy
+- Okta Entity Risk Policy
+- Okta Global Session Policy
+- Okta Identity Providers Routing Rule
+- Okta MFA Enrollment Policy
+- Okta Password Policy
+- Okta Profile Enrollment Policy
+
+### Backup Service 
+- AWS Backup Vault
+- AWS Recycle Bin Retention Rule
+- Azure Backup Vault
+- Azure Recovery Services Vault
+- GCP GKE Backup Plan
+- GCP GKE Restore Plan
+- GCP NetApp Backup Vault
+
+### Bucket 
+- AWS Directory Bucket
+- AWS Elemental MediaStore Container
+- AWS Lightsail Bucket
+- AWS S3 Bucket
+- AWS S3 Glacier Vault
+- Alibaba OSS Bucket
+- Azure Blob Storage Container
+- Databricks Volume
+- GCP Bucket
+- GCP Logging Bucket
+- Linode Object Storage Bucket
+- OCI Bucket
+
+### Call Center Service 
+- AWS Chime Voice Connector
+- AWS Connect Instance
+- AWS Voice ID Domain
+
+### CDN 
+- AWS CloudFront Distribution
+- Azure CDN Profile
+- Azure Front Door Classic
+- Azure Front Door Standard/Premium
+
+### Cicd Service 
+- AWS CodeBuild Project
+- AWS CodeConnections Host
+- AWS CodeDeploy Application
+- AWS CodeDeploy Deployment Group
+- AWS CodePipeline Pipeline
+
+### Ci Job 
+- GitHub Actions Job
+
+### Ci Runner 
+- AzureDevOps Agent
+- GitHub Runner
+- GitLab Runner
+
+### Ci Runner Config 
+- AzureDevOps Agent Configuration
+- GitHub Runner Configuration
+- GitLab Runner Configuration
+
+### Ci Workflow 
+- GitHub Actions Action
+- GitHub Actions Workflow
+
+### Cloud Log Configuration 
+- AWS Bedrock Model invocation logging
+- AWS CloudTrail
+- AWS CloudWatch Contributor Insights Rule
+- AWS CloudWatch Log Group
+- AWS RDS Event Subscription
+- AWS Route53 Resolver Query Logging Configuration
+- AWS Transit Gateway Flow Log
+- AWS VPC Flow Log
+- Alibaba ActionTrail
+- Alibaba VPC Flow Log
+- Azure Diagnostic Settings
+- Azure Log Analytics Dedicated Cluster
+- Azure Log Analytics Workspace
+- Azure NSG Flow Log
+- GCP Logging Log-based Metric
+- GCP Logging Sink
+- GCP Subnet Flow Log
+- IBM Flow Log Collector
+- IBM Logging Instance
+- OCI Log
+- OCI Log Group
+
+### Cloud Organization 
+- AWS IAM Identity Center
+- AWS Organization
+- AWS Organizational Unit
+- Alibaba Folder
+- Alibaba Resource Directory
+- Azure Management Group
+- Azure Microsoft Entra ID Tenant
+- AzureDevOps Organization
+- AzureDevOps Project
+- AzureDevOps Project Collection
+- BitbucketCloud Project
+- BitbucketCloud Workspace
+- BitbucketDataCenter Project
+- BitbucketDataCenter Server
+- Databricks Account
+- GCP Folder
+- GCP Organization
+- GCP Workspace Organization
+- GitHub Organization
+- GitLab Group
+- GitLab Subgroup
+- IBM Account Group
+- IBM Enterprise
+- MongoDBAtlas Organization
+- OCI Domain
+- OCI Tenancy
+- Okta Organization
+- OpenAI Organization
+- OpenStack Domain
+- Snowflake Organization
+- TencentCloud Organization
+- Wiz Tenant
+- vSphere vCenter Server
+
+### Code Snippet 
+- GitHub Gist
+
+### Collaboration Workspace 
+- Microsoft365 SharePoint Personal Site
+- Microsoft365 SharePoint Site
+
+### Compute Instance Configuration 
+- AWS Batch Job Definition
+- AWS EC2 Launch Template Version
+- Azure Virtual Desktop Workspace
+- GCP Compute Instance Template
+- GCP Vertex AI Colab Enterprise Runtime Template
+- GCP Workstation Configuration
+
+### Compute Instance Group 
+- AWS AppStream 2.0 Fleet
+- AWS Auto Scaling Group
+- AWS Databricks Synthetic Instance Group
+- AWS ECS Service
+- AWS Elastic Map Reduce Synthetic Instance Group
+- AWS Gitlab Autoscaler Synthetic Instance Group
+- AWS Spot Fleet Request
+- AWS Spotinst Synthetic Instance Group
+- AWS Synthetic Instance Group By Tags
+- Azure Availability Set
+- Azure Batch Pool
+- Azure Compute Virtual Machine Scale Set
+- Azure Container Apps Revision
+- Azure Databricks Cluster
+- Azure Managed DevOps Pool
+- Azure Synthetic Instance Group By Tags
+- Azure Virtual Desktop Host Pool
+- GCP Compute Instance Group
+- GCP Synthetic Instance Group By Tags
+- GCP Unmanaged Compute Instance Group
+- GCP Workstation Cluster
+- OCI Cloud VM Cluster
+- OCI Synthetic Instance Group By Tags
+
+### Config Map 
+- Kubernetes Kubernetes Config Map
+
+### Container 
+- AWS ECS Container
+- Azure ACA Container
+- Azure ACI Container
+- Hosted Container
+- Kubernetes Kubernetes Container
+
+### Container Group 
+- AWS ECS Task
+- Azure Container Apps Replica
+- Azure Container Instance Group
+
+### Container Image 
+- AWS ECR Image
+- Azure Container Image
+- Base Image
+- Docker Hub Container Image
+- Docker Image
+- GCP Artifact Registry Docker Image
+- GCP GCR Container Image
+- GHCR Container Image
+- Hosted Container Image
+- JFrog Artifactory Container Image
+- Sonatype Nexus Container Image
+
+### Container Registry 
+- AWS Elastic Container Registry (ECR)
+- AWS Public Elastic Container Registry (Public ECR)
+- Azure Container Registry (ACR)
+- Docker Hub Organization
+- GCP GCR Registry
+- GCP Google Artifact Registry (GAR)
+- GitHub Container Registry
+- Hosted Container Registry
+- JFrog Artifactory Repository
+- Sonatype Nexus Docker Repository
+
+### Container Repository 
+- AWS Private ECR Repository
+- AWS Public ECR Repository
+- Azure Container Repository
+- Docker Hub Repository
+- GCP GCR Repository
+- GCP Google Artifact Registry (GAR) Repository
+- GHCR Container Repository
+- Hosted Container Repository
+- JFrog Artifactory Container Package
+- Sonatype Nexus Docker Asset
+
+### Container Service 
+- AWS ECS Cluster
+- AWS Lightsail Container Service
+- Azure Container App
+- Azure Service Fabric Cluster
+- GCP Cloud Run Job
+- GCP Cloud Run Service
+
+### Controller Revision 
+- Kubernetes Kubernetes Controller Revision
+
+## D-I
+
+### Daemon Set 
+- Kubernetes Kubernetes Daemon Set
+
+### Database 
+- AWS DocumentDB Cluster
+- AWS DynamoDB Table
+- AWS ElastiCache (Memcached) Cluster
+- AWS ElastiCache (Redis OSS) Cluster
+- AWS ElastiCache (Valkey) Cluster
+- AWS Elastic DocumentDB Cluster
+- AWS Glue Database
+- AWS Keyspaces Table
+- AWS MemoryDB Cluster
+- AWS Neptune Cluster
+- AWS RDS Aurora MySQL Cluster
+- AWS RDS Aurora PostgreSQL Cluster
+- AWS RDS MSSQL Server Cluster
+- AWS RDS MySQL Cluster
+- AWS RDS PostgreSQL Cluster
+- AWS Timestream InfluxDB DB Cluster
+- AWS Timestream Table
+- Alibaba ApsaraDB RDS MariaDB TX Database
+- Alibaba ApsaraDB RDS Microsoft SQL Server Database
+- Alibaba ApsaraDB RDS MySQL Database
+- Alibaba ApsaraDB RDS PostgreSQL Database
+- Azure Cosmos DB Cassandra Keyspace
+- Azure Cosmos DB MongoDB Collection
+- Azure Cosmos DB SQL Database
+- Azure Cosmos DB for PostgreSQL Node
+- Azure Data Explorer (Kusto) Database Instance
+- Azure Database for MySQL (Database)
+- Azure Database for MySQL Flexible (Database)
+- Azure Database for PostgreSQL (Database)
+- Azure Database for PostgreSQL Flexible (Database)
+- Azure MariaDB Database
+- Azure Redis Database
+- Azure Redis Enterprise Database
+- Azure SQL Database
+- Azure SQL Managed Instance Database
+- Azure Synapse Dedicated SQL Pool
+- Databricks Schema
+- GCP AlloyDB Cluster
+- GCP Bigtable table
+- GCP Cloud SQL Database
+- GCP Datastore Database
+- GCP Firestore Database
+- GCP Spanner Database
+- GenericDB MSSQL Database
+- GenericDB MongoDB Database
+- GenericDB MySQL Database
+- GenericDB Oracle Database
+- GenericDB Postgres Database
+- MongoDBAtlas Database
+- OCI NoSQL Database Table
+- OpenStack Database
+- Snowflake Schema
+
+### Database Table 
+- Snowflake Table
+- Snowflake View
+
+### Dataset Configuration 
+- AWS Q Business Data Source
+- AWS QuickSight Data Source
+- AWS QuickSight Dataset
+
+### Data Network Policy 
+- Snowflake Network Policy
+
+### Data Procedure 
+- Snowflake Stored Procedure
+
+### Data Workflow 
+- AWS AppFlow Flow
+- AWS DataSync Task
+- AWS EventBridge Pipe
+- AWS OpenSearch Ingestion Pipline
+- AWS SSM Document
+- AWS SSM Inventory Resource Data Sync
+- AWS Snow Family Job
+- AWS Transfer Family Server
+- Azure Batch Account
+- GCP BigQuery Data Transfer Configuration
+- GCP BigQuery Migration Assessment
+- GCP BigQuery SQL Translation
+- GCP Composer Environment
+- GCP Sensitive Data Protection Discovery Scan Configuration
+- GCP Sensitive Data Protection Inspection Job Trigger
+- GCP Storage Transfer Job
+
+### Data Workload 
+- AWS Apache Airflow Environment
+- AWS Batch Compute Environment
+- AWS DMS Replication Instance
+- AWS Elemental MediaConnect Flow
+- AWS Entity Resolution Matching Workflow
+- AWS GameLift Fleet
+- AWS GameLift Game Server Group
+- AWS Glue Crawler
+- AWS Glue DataBrew Job
+- AWS Glue DataBrew Project
+- AWS Glue Development Endpoint
+- AWS Glue Job
+- AWS HealthImaging Datastore
+- AWS IoT Analytics Dataset
+- AWS IoT FleetWise Campaign
+- AWS Kinesis Data Analytics Streaming Application
+- AWS Kinesis Video Streams
+- AWS OpenSearch Serverless Collection
+- AWS PCS Parallel Computing Service Cluster
+- AWS SageMaker Domain
+- AWS Translation Job
+- Azure AI Search
+- Azure AI Service
+- Azure Anomaly Detector
+- Azure Bot Service
+- Azure Computer Vision
+- Azure Content Moderator
+- Azure Cosmos DB Jupyter Notebook
+- Azure Custom Vision Prediction
+- Azure Custom Vision Training
+- Azure Data Factory
+- Azure Databricks Workspace
+- Azure Face
+- Azure Form Recognizer
+- Azure Health Insights
+- Azure Immersive Reader
+- Azure Ink Recognizer
+- Azure Metrics Advisor
+- Azure OpenAI
+- Azure Personalizer
+- Azure QnA Maker
+- Azure Speech Services
+- Azure Stream Analytics Cluster
+- Azure Stream Analytics Job
+- Azure Text Analytics
+- Azure Text Translation
+- GCP Database Migration Job
+- GCP Dataflow Job
+- GCP Dataflow Pipeline
+- GCP Datastream Stream
+- OCI HeatWave Channel
+- Snowflake Task
+
+### Database Server 
+- AWS CloudSearch Domain
+- AWS DocumentDB Instance
+- AWS DynamoDB Accelerator (DAX) Cache
+- AWS ElastiCache (Memcached) Node
+- AWS ElastiCache (Redis OSS) Node
+- AWS ElastiCache (Valkey) Node
+- AWS ElastiCache Serverless Cache
+- AWS Elastic DocumentDB Node
+- AWS HealthLake Data Store
+- AWS Keyspace
+- AWS Lightsail Relational Database
+- AWS MemoryDB Node
+- AWS Neptune Analytics Graph
+- AWS Neptune Instance
+- AWS OpenSearch Domain
+- AWS QLDB Ledger
+- AWS RDS Aurora MySQL Instance
+- AWS RDS Aurora PostgreSQL Instance
+- AWS RDS Cluster MySQL Instance
+- AWS RDS Cluster PostgreSQL Instance
+- AWS RDS IBM Db2 Instance
+- AWS RDS MSSQL Server Instance
+- AWS RDS MariaDB Instance
+- AWS RDS MySQL Instance
+- AWS RDS Oracle Instance
+- AWS RDS PostgreSQL Instance
+- AWS Redshift Cluster
+- AWS Redshift Serverless Workgroup
+- AWS Timestream Database
+- Alibaba ApsaraDB For MongoDB Instance
+- Alibaba ApsaraDB RDS MariaDB TX Instance
+- Alibaba ApsaraDB RDS Microsoft SQL Server Instance
+- Alibaba ApsaraDB RDS MySQL Instance
+- Alibaba ApsaraDB RDS PostgreSQL Instance
+- Azure Analysis Service
+- Azure Arc SQL Server Instance
+- Azure Cosmos DB Account
+- Azure Cosmos DB for PostgreSQL Cluster
+- Azure Data Explorer (Kusto) Cluster
+- Azure Database for MariaDB (Server)
+- Azure Database for MySQL (Server)
+- Azure Database for MySQL Flexible (Server)
+- Azure Database for PostgreSQL (Server)
+- Azure Database for PostgreSQL Flexible (Server)
+- Azure Redis
+- Azure Redis Enterprise
+- Azure SQL Managed Instance
+- Azure SQL Server
+- Azure SQL Virtual Machine
+- Azure Synapse Analytics
+- Databricks Catalog
+- DigitalOcean Database
+- GCP AlloyDB Instance
+- GCP BigQuery Dataset
+- GCP Bigtable
+- GCP Bigtable cluster
+- GCP Cloud SQL Instance
+- GCP Memorystore Memcache Instance
+- GCP Memorystore Redis Instance
+- GCP Spanner Instance
+- Hosted Database Server
+- IBM Cloudant Instance
+- IBM DB2 Instance
+- IBM DB2 Warehouse Instance
+- IBM EDB Instance
+- IBM ETCD Instance
+- IBM ElasticSearch Instance
+- IBM MongoDB Instance
+- IBM MySQL Instance
+- IBM PostgreSQL Instance
+- IBM Redis Instance
+- Linode Managed MongoDB
+- Linode Managed MySQL
+- Linode Managed PostgreSQL
+- OCI Autonomous Database
+- OCI Base Database
+- OCI HeatWave DB System
+- OpenStack Database Instance
+- Snowflake Database
+
+### Dedicated Infrastructure 
+- IBM Bare Metal Server for VPC
+- OCI Cloud Exadata Infrastructure
+
+### Deployment 
+- Kubernetes Kubernetes Deployment
+
+### Development Service 
+- AWS Location Geofence Collection
+- AWS Location Key
+- AWS Location Map
+- AWS Location Place Index
+- AWS Location Route Calculator
+- AWS Location Tracker
+- Azure Maps Account
+
+### DNS Private Resolver 
+- AWS Route 53 Resolver Endpoint
+
+### DNS Record 
+- AWS Route53 DNS Record
+- Alibaba Alibaba Cloud DNS Record
+- Azure DNS Record Type A
+- Azure DNS Record Type AAAA
+- Azure DNS Record Type CAA
+- Azure DNS Record Type CNAME
+- Azure DNS Record Type MX
+- Azure DNS Record Type NS
+- Azure DNS Record Type PTR
+- Azure DNS Record Type SOA
+- Azure DNS Record Type SRV
+- Azure DNS Record Type TXT
+- Azure Private DNS Record Type A
+- Azure Private DNS Record Type AAAA
+- Azure Private DNS Record Type CNAME
+- Azure Private DNS Record Type MX
+- Azure Private DNS Record Type PTR
+- Azure Private DNS Record Type SOA
+- Azure Private DNS Record Type SRV
+- Azure Private DNS Record Type TXT
+- Cloudflare DNS Record
+- GCP DNS Record Set
+- IBM Internet Service DNS Record
+- Linode DNS Record
+- Vercel DNS Record
+- Vercel Project Domain
+
+### DNS Zone 
+- AWS Route53 DNS Zone
+- Alibaba Cloud DNS Domain
+- Azure DNS Zone
+- Azure Private DNS Zone
+- Cloudflare DNS Zone
+- GCP DNS Managed Zone
+- IBM Internet Service Domain
+- Vercel Domain
+
+### Email Service 
+- AWS SES Domain Identity
+- AWS SES Email Address Identity
+
+### Encryption Key 
+- AWS KMS Encryption Key
+- AWS Payment Cryptography Key
+- Azure Key Vault Key
+- Azure Key Vault Managed HSM Key
+- GCP KMS Key
+- IBM Key Protect Key
+- OCI Master Encryption Key
+
+### File System Service 
+- AWS Elastic File System (EFS)
+- AWS FSx for Lustre
+- AWS FSx for NetApp ONTAP
+- AWS FSx for OpenZFS
+- AWS FSx for Windows File Server
+- Alibaba Apsara File Storage NAS File System
+- Azure File Share
+- Azure NetApp Files Volume
+- GCP FileStore
+- GCP NetApp Storage Volume
+- OCI File System
+
+### Firewall 
+- AWS EC2 Security Group
+- AWS Network ACL
+- AWS Network Firewall
+- AWS Shield Protection
+- AWS WAF Web ACL
+- Alibaba Apsara File Storage NAS Permission Group
+- Alibaba Security Group
+- Alibaba WAF Instance
+- Azure Network Security Group (NSG)
+- Azure WAF Policy - Application Gateway
+- Azure WAF Policy - CDN
+- Azure WAF Policy - Front Door
+- DigitalOcean Firewall
+- GCP App Engine Firewall
+- GCP Cloud Armor Policy
+- GCP Firewall
+- IBM Network Access Control List
+- IBM Security Group
+- Linode Firewall
+- OCI Network Security Group
+- OCI Security List
+- OpenStack Security Group
+- Vercel Firewall Configuration
+
+### Firewall Configuration 
+- AWS Network Firewall Policy
+- AWS Network Firewall Rules Group
+- AWS Network Firewall TLS inspection configuration
+- AWS Network Firewall VPC Endpoint Association
+- AWS WAF Rule Group
+- Azure Firewall Policy
+
+### Gateway 
+- AWS Backup Gateway
+- AWS Customer Gateway
+- AWS Direct Connect Gateway
+- AWS EC2 Client VPN Endpoint
+- AWS Egress Only Internet Gateway
+- AWS Elemental MediaConnect Bridge
+- AWS Internet Gateway
+- AWS IoT SiteWise Edge Gateway
+- AWS NAT Gateway
+- AWS Transit Gateway
+- AWS VPN Gateway
+- Azure NAT Gateway
+- Azure P2S VPN Gateway
+- Azure Virtual Hub
+- Azure Virtual Network Gateway
+- GCP Cloud NAT
+- GCP Compute VPN Gateway
+- GCP Route
+- GCP Router
+- GCP Target VPN Gateway
+- OCI Internet Gateway
+- OCI NAT Gateway
+- OpenStack Router
+
+### Governance Policy 
+- Azure Policy Definition
+- GCP VPC Service Perimeter
+- OCI Cloud Guard Detector Rule
+- OCI Cloud Guard Responder Rule
+
+### Governance Policy Group 
+- Azure Policy Set Definition
+- OCI Cloud Guard Detector Recipe
+- OCI Cloud Guard Responder Recipe
+
+### Group 
+- AWS IAM Group
+- AWS IAM Identity Center Group
+- Alibaba RAM Group
+- Azure Microsoft Entra ID Group
+- AzureDevOps Group
+- AzureDevOps Team
+- Backstage Group
+- BitbucketCloud Group
+- BitbucketDataCenter Group
+- BitbucketDataCenter Reviewer Group
+- Databricks Group
+- GCP Group
+- GCP Legacy Group
+- GCP Workload Identity Pool Principal Set
+- GCP Workspace Group
+- GitHub Team
+- IBM Access Group
+- Kubernetes Kubernetes Group
+- OCI Group
+- Okta Group
+
+### Hybrid Storage Service 
+- AWS DataSync Agent
+- GCP Storage Transfer Agent Pool
+
+### IAC Backend 
+- AWS CloudFormation Template
+- Terraform Backend
+- Terraform Resolved Backend
+
+### IAC Declaration Instance 
+- AWS CloudFormation Declaration Instance
+- ArgoCD Application Resource
+- Helm Release Manifest
+- Terraform Resource
+
+### IAC Deployment 
+- AWS CloudFormation Stack
+- ArgoCD Application
+- Helm Release
+- Terraform State File
+
+### IAC Module 
+- AWS CloudFormation Template File
+- Helm Chart
+- Kubernetes Yaml Directory
+- Kustomize
+- Terraform Module
+
+### IAC Resource Declaration 
+- AWS CloudFormation Nested Stack
+- AWS CloudFormation Resource Declaration
+- Docker Image Declaration
+- Terraform Module Call
+- Terraform Resource Declaration
+
+### Identity 
+- Identity
+
+### Identity Provider 
+- AWS Cognito Identity Pool
+- AWS Cognito User Pool
+- AWS Directory Service
+- AWS OIDC Identity Provider
+- AWS SAML Identity Provider
+- GCP Google Workspace
+- GCP Identity Platform
+- GCP Workload Identity Pool Provider
+- OCI IAM SAML Federation
+
+### Ip Address Group 
+- AWS Prefix List
+- AWS WAF IP Set
+
+### Ip Address Pool 
+- Azure Public IP Prefix
+
+## J-L
+
+### Kubernetes Cluster 
+- AWS Elastic Kubernetes Service (EKS) Cluster
+- Alibaba Container Service for Kubernetes（ACK) Cluster
+- Azure Arc Kubernetes Cluster
+- Azure Kubernetes Service (AKS) Cluster
+- DigitalOcean Kubernetes Cluster
+- GCP Kubernetes Engine (GKE) Cluster
+- IBM Kubernetes Cluster
+- Kubernetes Kubernetes Cluster
+- Linode LKE Cluster
+- OCI Kubernetes Engine (OKE) Cluster
+- OpenShift OpenShift Cluster
+
+### Kubernetes Cron Job 
+- Kubernetes Kubernetes Cron Job
+
+### Kubernetes Custom Resource 
+- Kubernetes Kubernetes Custom Resource
+
+### Kubernetes Custom Resource Definition 
+- Kubernetes Kubernetes Custom Resource Definition
+
+### Kubernetes Ingress 
+- Kubernetes Kubernetes Ingress
+
+### Kubernetes Ingress Controller 
+- Kubernetes Kubernetes Ingress Controller
+
+### Kubernetes Job 
+- Kubernetes Kubernetes Job
+
+### Kubernetes Network Policy 
+- Kubernetes Kubernetes Network Policy
+
+### Kubernetes Node 
+- Kubernetes Kubernetes Node
+
+### Kubernetes Persistent Volume 
+- Kubernetes Kubernetes Persistent Volume
+
+### Kubernetes Persistent Volume Claim 
+- Kubernetes Kubernetes Persistent Volume Claim
+
+### Kubernetes Pod Security Policy 
+- Kubernetes Kubernetes Pod Security Policy
+
+### Kubernetes Pod Template 
+- Kubernetes Kubernetes Pod Template
+
+### Kubernetes Replication Controller 
+- Kubernetes Kubernetes Replication Controller
+
+### Kubernetes Service 
+- Kubernetes Kubernetes Service
+
+### Kubernetes Storage Class 
+- Kubernetes Kubernetes Storage Class
+
+### Kubernetes Volume 
+- Kubernetes Kubernetes Volume
+
+### Load Balancer 
+- AWS ELB V1 Classic Load Balancer
+- AWS ELB V2
+- AWS ELB V2 Application Load Balancer
+- AWS ELB V2 Gateway Load Balancer
+- AWS ELB V2 Network Load Balancer
+- Alibaba Application Load Balancer (ALB)
+- Alibaba Classic Load Balancer (CLB)
+- Alibaba Internet NAT Gateway
+- Alibaba Network Load Balancer (NLB)
+- Azure Application Gateway
+- Azure Load Balancer
+- Azure Traffic Manager
+- DigitalOcean Load Balancer
+- GCP Compute Backend Service
+- GCP Compute Region Backend Service
+- GCP ComputeTargetPool
+- GCP ComputeUrlMap
+- GCP Load Balancing Forwarding Rule
+- GCP Target HTTP Proxy
+- GCP Target HTTPS Proxy
+- GCP Target SSL Proxy
+- GCP Target TCP Proxy
+- Linode NodeBalancer
+- OCI Load Balancer
+
+### Local Group 
+- AWS ElastiCache User Group
+- Windows Local Group
+
+### Local User 
+- AWS ElastiCache User
+- Azure SQL Local User
+- Domain User
+- GCP Cloud SQL Local User
+- Hosted MSSQL Local User
+- Hosted MySQL Local User
+- Hosted PostgreSQL Local User
+- Linux Local User
+- MacOS Local User
+- RDS Local User
+- RDS MSSQL Local User
+- Windows Local User
+- vSphere ESXi User
+
+## M-R
+
+### Mailbox 
+- Microsoft365 Exchange Mailbox
+
+### Managed Certificate 
+- AWS ACM Server Certificate
+- AWS IAM Server Certificate
+- AWS Private Certificate Authority
+- Azure Key Vault Certificate
+- GCP App Engine Certificate
+- GCP Certificate Manager Certificate
+- GCP SSL Certificate (Classic)
+
+### Managed Jump Server 
+- Azure Bastion Host
+
+### Management Service 
+- AWS Audit Manager Assessment
+- AWS Cloud Map Namespace
+- AWS Config
+- AWS DataZone Domain
+- AWS Elemental MediaConnect Gateway
+- AWS GuardDuty
+- AWS Resilience Hub Application
+- AWS Security Hub Regional Settings
+- AWS Service Catalog Portfolio
+- AWS Well-Architected Tool Workload
+- AWS WorkMail Organization
+- Alibaba Security Center
+- Azure Automation Account
+- Azure Compute Gallery
+- Azure Dev Center
+- Azure Disk Access
+- Azure Disk Encryption Set
+- Azure IoT Hub
+- IBM Internet Services
+
+### Map Reduce Cluster 
+- AWS EMR Serverless Application
+- AWS Elastic MapReduce (EMR)
+- Azure HDInsight Cluster
+- GCP Dataproc Cluster
+
+### Mcp Server 
+- Hosted MCP Server
+
+### Mesh Gateway 
+- Istio Gateway
+
+### Mesh Virtual Service 
+- Istio Virtual Service
+
+### Messaging Service 
+- AWS Data Firehose Stream
+- AWS EventBridge Bus
+- AWS GameLift Game Session Queue
+- AWS IoT Analytics Pipeline
+- AWS Kinesis Data Streams
+- AWS MQ Broker
+- AWS Managed Streaming for Apache Kafka (MSK)
+- AWS MediaConvert Queue
+- AWS Simple Notification Service (SNS) Subscription
+- AWS Simple Notification Service (SNS) Topic
+- AWS Simple Queue Service (SQS) Queue
+- Azure Event Grid Domain
+- Azure Event Grid Partner Namespace
+- Azure Event Grid Topic
+- Azure Event Hub Namespace
+- Azure Service Bus Namespace
+- DigitalOcean Kafka Cluster
+- GCP Cloud Tasks Queue
+- GCP Eventarc Trigger
+- GCP Pub/Sub Subscription
+- GCP Pub/Sub Topic
+- Hosted Messaging Service
+- IBM Event Streams Instance
+- OCI Connector Hub Connector
+- OCI Events Rule
+- OCI Notification Service (ONS) Subscription
+- OCI Notification Service (ONS) Topic
+- OCI Streaming Stream
+- OCI Streaming Stream Pool
+
+### Metadata Repository 
+- GCP Dataproc Metastore Service
+
+### Monitor Alert 
+- AWS CloudWatch Alarm
+- GCP Monitoring Alerting Policy
+
+### Monitor Service 
+- AWS CloudWatch Application Insights Application
+- AWS CloudWatch Internet Monitor
+- AWS CloudWatch Network Monitor
+- AWS IoT Analytics Channel
+- AWS IoT SiteWise Monitor Portal
+- AWS Lookout for Vision Project
+- AWS Managed Grafana Workspace
+- AWS Prometheus Workspace
+- AWS QuickSight Analysis
+- AWS QuickSight Dashboard
+- AWS Route 53 Health Check
+- Azure Application Insights
+- Azure Database Watchers Watcher
+- Azure Grafana Workspace
+- Azure Monitor Workspace
+- GCP Looker (Google Cloud core) Instance
+
+### Namespace 
+- Kubernetes Kubernetes Namespace
+
+### NAT 
+- Kubernetes Kubernetes NAT
+
+### Network Address 
+- AWS Elastic IP Address
+- Alibaba Private IP Address
+- Alibaba Public IP Address
+- Azure CDN Endpoint
+- Azure Public IP Address
+- GCP Compute Address
+- GCP Endpoint
+- Imported Network Address
+- OCI Private IP Address
+- OCI Public IP Address
+- Private Infrastructure Network Address
+
+### Network Appliance 
+- Azure Firewall
+- Firemon Checkpoint CloudGuard (Firemon)
+
+### Network Interface 
+- AWS Network Interface
+- Alibaba Elastic Network Interface (ENI)
+- Azure Network Interface
+- GCP Compute Network Interface
+- IBM Network Interface
+- OCI Virtual Network Interface Card (VNIC)
+- Private Infrastructure Network Interface
+
+### Network Management Service 
+- Azure Virtual WAN
+
+### Peering 
+- AWS VPC Peering
+- Azure Connection
+- Azure Express Route Circuit
+
+### Pod 
+- Kubernetes Kubernetes Pod
+
+### Policy Statement 
+- AWS Policy Statement
+
+### Private Endpoint 
+- AWS S3 Access Point
+- AWS S3 Multi-Region Access Point
+- AWS VPC Endpoint
+- Azure Private Endpoint
+
+### Private Link 
+- AWS VPC Endpoint Service
+- Azure Private Link Service
+
+### Raw Access Policy 
+- AWS CloudWatch Logs Resource Policy
+- AWS IAM AWS Managed Policy
+- AWS IAM Assumed Role Policy
+- AWS IAM Customer Managed Policy
+- AWS IAM Fake Resource Policy
+- AWS IAM Inline Policy
+- AWS IAM Resource Control Policy (RCP)
+- AWS IAM Resource Policy
+- AWS IAM Root User Policy
+- AWS IAM Service Control Policy (SCP)
+- AWS Resource Access Manager Resource Share
+- AWS Vault Lock Policy
+- Alibaba RAM Policy
+- Alibaba RAM Role Trust Policy
+
+### Region 
+- AWS Region
+- Alibaba Region
+- Azure Location
+- Databricks Region
+- DigitalOcean Region
+- GCP Region
+- IBM Region
+- Linode Region
+- MongoDBAtlas Region
+- OCI Region
+- Snowflake Region
+
+### Registered Domain 
+- AWS Route53 Registered Domain
+- Linode Domain
+
+### Replica Set 
+- Kubernetes Kubernetes Replica Set
+
+### Repository 
+- AzureDevOps Repository
+- BitbucketCloud Repository
+- BitbucketDataCenter Repository
+- GitHub Repository
+- GitLab Project
+- Imported Repository
+- Terraform HCP Repository
+
+### Repository Branch 
+- AzureDevOps Branch
+- BitbucketCloud Branch
+- BitbucketDataCenter Branch
+- GitHub Repository Branch
+- GitLab Repository Branch
+- Imported Repository Branch
+
+### Resource Group 
+- AWS Resource Group
+- Alibaba Resource Group
+- Azure Resource Group
+- DigitalOcean Project
+- IBM Resource Group
+- Nebius Project
+
+### Route Table 
+- AWS EC2 Route Table
+- Azure Route Table
+
+## S-Z
+
+### Search Index 
+- AWS Kendra Index
+
+### Secret 
+- AWS SSH Key pair
+- AWS Secret
+- Azure Key Vault Secret
+- Azure SSH Key pair
+- GCP SSH Key pair
+- GCP Secret Manager Secret
+- IBM Secret Manager Secret
+- Kubernetes Kubernetes Secret
+- Linode SSH Keys
+- OCI Secret
+
+### Secret Container 
+- AWS Certificate Manager
+- AWS CloudHSM
+- AWS CloudHSM Cluster
+- AWS KMS Custom Key Store
+- AWS KMS Key Store
+- AWS Secrets Manager
+- Azure Key Vault
+- Azure Key Vault Managed HSM
+- GCP Certificate Manager
+- GCP Key Ring
+- GCP Secret Manager
+- IBM Key Protect Instance
+- IBM Key Protect Key Ring
+- IBM Secret Manager Instance
+- IBM Secret Manager Secret Group
+- OCI Vault
+
+### Serverless 
+- AWS Lambda Function
+- AWS Lambda Function Alias
+- AWS Lambda Function Version
+- Azure Function
+- GCP Cloud Function
+- GCP Cloud Run Execution Environment
+- GCP Cloud Run Revision
+- OCI Function
+
+### Serverless Package 
+- AWS Lambda Layer Version
+- AWS Serverless Application Repository Application
+
+### Service Account 
+- AWS IAM Role
+- Alibaba RAM Role
+- Azure Microsoft Entra ID Application Service Principal
+- Azure Microsoft Entra ID Builtin Application Service Principal
+- Azure Microsoft Entra ID Legacy Service Principal
+- Azure Microsoft Entra ID Managed Identity Service Principal
+- Azure Microsoft Entra ID Service Account Service Principal
+- Azure Microsoft Entra ID Social Idp Service Principal
+- AzureDevOps Installed Extension
+- Databricks Service Principal
+- GCP Service Account
+- GCP Service Agent
+- GCP Workload Identity Pool Principal
+- GitHub Actions Job Service Account
+- GitHub App Installation
+- GitHub Webhook
+- GitLab Bot
+- GitLab Webhook
+- IBM Service ID
+- IBM Trusted Profile
+- Kubernetes Kubernetes Service Account
+- Okta AWS Login Application
+- Okta Application
+- Okta Entra ID Login Application
+- Okta Workspace Login Application
+- OpenStack Application Credential
+- Snowflake Service Account
+
+### Service Blueprint 
+- AWS IAM Identity Center Permission Set
+- AWS IAM Identity Center Permission Set for Account
+- AWS Service Catalog Product
+- Azure Microsoft Entra ID Application Registration
+
+### Service Configuration 
+- AWS App Runner Auto Scaling Configuration
+- AWS AppConfig Configuration Profile
+- AWS AppFabric App Bundle
+- AWS Athena Workgroup
+- AWS Backup Plan Rule
+- AWS CodeGuru Profiler Profiling Group
+- AWS Custom Terminology
+- AWS Data Lifecycle Manager Policy
+- AWS DataSync Location
+- AWS DevOps Guru Regional Settings
+- AWS Developer Tools Notification Rule
+- AWS ECS Task Definition Revision
+- AWS ECS Task Set
+- AWS Elemental MediaConvert Job Template
+- AWS Elemental MediaConvert Output Preset
+- AWS Entity Resolution ID Namespace
+- AWS Entity Resolution Schema Mapping
+- AWS EventBridge Schedule
+- AWS Fault Injection Service (FIS) Experiment Template
+- AWS GameLift Alias
+- AWS GameLift Build
+- AWS GameLift Location
+- AWS GameLift Matchmaking Configuration
+- AWS GameLift Matchmaking Rule Set
+- AWS GameLift Script
+- AWS Glue Connection
+- AWS Glue Data Catalog
+- AWS Glue DataBrew Recipe
+- AWS IoT Analytics Datastore
+- AWS IoT FleetWise Vehicle Model
+- AWS IoT SiteWise Asset Model
+- AWS MQ Configuration
+- AWS Mainframe Modernization Environment
+- AWS Parallel Data
+- AWS QuickSight Account Settings
+- AWS QuickSight Regional Settings
+- AWS Redshift Datashare
+- AWS Resilience Hub Resiliency Policy
+- AWS Route 53 Resolver Rule
+- AWS SSM Parameter
+- AWS SSM Service Configuration
+- AWS Shared AMI Tags
+- AWS Simple Workflow (SWF) Domain
+- AWS Step Function State Machine
+- AWS Telco Network Builder Function Package
+- AWS Telco Network Builder Network Package
+- Azure App Configuration
+- Azure Backup Instance
+- Azure Compute Gallery VM image definition
+- Azure Dev Center Network Connection
+- Azure Recovery Services Backup Item
+- Azure VPN Server Configuration
+- GCP Cloud Scheduler Job
+- GCP Compute Snapshot Schedule
+- GCP Database Migration Connection Profile
+- GCP Database Migration Private Connectivity Configuration
+- GCP Datastream Connection Profile
+- GCP Datastream Private Connection
+- GCP Eventarc Channel
+- GCP Eventarc Google Channel Config
+- GCP GKE Backup
+- GCP NetApp Active Directory Policy
+- GCP NetApp Backup Policy
+- GCP NetApp CMEK Policy
+- GCP Workflow
+- IBM Block Storage Snapshot Consistency Group
+- Kubernetes KEDA Scaled Object
+- Microsoft365 Defender Admin Center
+- Microsoft365 Exchange Admin Center
+- Microsoft365 Fabric Admin Center
+- Microsoft365 Intune Admin Center
+- Microsoft365 Purview Admin Center
+- Microsoft365 SharePoint Admin Center
+- Microsoft365 Teams Admin Center
+- OCI Cloud Guard Target
+
+### Service Discovery Endpoint 
+- GCP Service Directory Endpoint
+
+### Service Discovery Namespace 
+- GCP Service Directory Namespace
+
+### Service Discovery Service 
+- GCP Service Directory Service
+
+### Service Usage Technology 
+- AWS AI Operations Investigation Group
+- AWS API Endpoint
+- AWS API Gateway API Key
+- AWS API Gateway Account
+- AWS API Gateway Authorizer
+- AWS API Gateway Base Path Mapping
+- AWS API Gateway Client Certificate
+- AWS API Gateway Deployment
+- AWS API Gateway Documentation Part
+- AWS API Gateway Documentation Version
+- AWS API Gateway Domain Name
+- AWS API Gateway Domain Name Access Association
+- AWS API Gateway Gateway Response
+- AWS API Gateway Integration
+- AWS API Gateway Integration Response
+- AWS API Gateway Method
+- AWS API Gateway Method Response
+- AWS API Gateway Model
+- AWS API Gateway Private Base Path Mapping
+- AWS API Gateway Private Domain Name
+- AWS API Gateway REST API
+- AWS API Gateway Request Validator
+- AWS API Gateway Resource
+- AWS API Gateway SDK
+- AWS API Gateway Stage
+- AWS API Gateway Template
+- AWS API Gateway Usage Plan
+- AWS API Gateway Usage Plan Key
+- AWS API Origin
+- AWS ARC Region Switch Plan
+- AWS ASC Bill of Materials Import Job
+- AWS ASC Data Integration Flow
+- AWS ASC Dataset
+- AWS ASC Instance
+- AWS ASC Namespace
+- AWS Access Analyzer
+- AWS Access Analyzer Archive Rule
+- AWS Account Organization Member Account
+- AWS Airflow Environment
+- AWS Alexa for Business Address Book
+- AWS Alexa for Business Conference Provider
+- AWS Alexa for Business Contact
+- AWS Alexa for Business Device
+- AWS Alexa for Business Gateway
+- AWS Alexa for Business Gateway Group
+- AWS Alexa for Business Network Profile
+- AWS Alexa for Business Profile
+- AWS Alexa for Business Room
+- AWS Alexa for Business Schedule
+- AWS Alexa for Business Skill Group
+- AWS Alexa for Business User
+- AWS Amplify Admin API
+- AWS Amplify Admin Auth
+- AWS Amplify Admin Backend
+- AWS Amplify Admin Config
+- AWS Amplify Admin Created Backend
+- AWS Amplify Admin Environment
+- AWS Amplify Admin Job
+- AWS Amplify Admin Storage
+- AWS Amplify Admin Token
+- AWS Amplify Branch
+- AWS Amplify Domain
+- AWS Amplify Job
+- AWS Amplify UI Builder Codegen Job
+- AWS Amplify UI Builder Component
+- AWS Amplify UI Builder Form
+- AWS Amplify UI Builder Theme
+- AWS Amplify Webhook
+- AWS App Integrations Event Integration Association
+- AWS App Mesh
+- AWS App Mesh Gateway Route
+- AWS App Mesh Preview Gateway Route
+- AWS App Mesh Preview Mesh
+- AWS App Mesh Preview Route
+- AWS App Mesh Preview Virtual Gateway
+- AWS App Mesh Preview Virtual Node
+- AWS App Mesh Preview Virtual Router
+- AWS App Mesh Preview Virtual Service
+- AWS App Mesh Route
+- AWS App Mesh virtual gateway
+- AWS App Mesh virtual node
+- AWS App Mesh virtual router
+- AWS App Mesh virtual service
+- AWS App Runner Observability Configuration
+- AWS App Runner VPC Connector
+- AWS App Runner VPC Ingress Connection
+- AWS App Studio Application
+- AWS App Studio Connector
+- AWS App Studio Instance
+- AWS AppConfig Application
+- AWS AppConfig Configuration
+- AWS AppConfig Deployment
+- AWS AppConfig Deployment Strategy
+- AWS AppConfig Environment
+- AWS AppConfig Extension
+- AWS AppConfig Extension Association
+- AWS AppConfig Hosted Configuration Version
+- AWS AppFabric App Authorization
+- AWS AppFabric Ingestion
+- AWS AppFabric Ingestion Destination
+- AWS AppFlow Connector
+- AWS AppFlow Connector Profile
+- AWS AppIntegrations Application
+- AWS AppIntegrations Application Association
+- AWS AppIntegrations Data Integration
+- AWS AppIntegrations Data Integration Association
+- AWS AppIntegrations Event Integration
+- AWS AppRunner Connection
+- AWS AppStream 2.0 App Block
+- AWS AppStream 2.0 App Block Builder
+- AWS AppStream 2.0 Application
+- AWS AppStream 2.0 Image
+- AWS AppStream 2.0 Image Builder
+- AWS AppSync API Cache
+- AWS AppSync Channel Namespace
+- AWS AppSync DataSource
+- AWS AppSync Domain Name
+- AWS AppSync Function
+- AWS AppSync GraphQL Field
+- AWS AppSync Merged API Association
+- AWS AppSync Source API Association
+- AWS AppSync Type
+- AWS Application Auto Scaling
+- AWS Application Migration Service Source Server
+- AWS Application Signals SLO
+- AWS Apps Installation
+- AWS Artifact Agreement
+- AWS Artifact Customer Agreement
+- AWS Artifact Report
+- AWS Athena Capacity Reservation
+- AWS Athena Data Catalog
+- AWS Atlas Database User
+- AWS Atlas auditing
+- AWS Atlas networkcontainer
+- AWS Atlas privateendpointregionalmode
+- AWS Atlas projectinvitation
+- AWS Atlas projectipaccesslist
+- AWS Atlas projectipwhitelist
+- AWS Audit Manager Assessment Control Set
+- AWS Audit Manager Assessment Framework
+- AWS Audit Manager Control
+- AWS Aurora DSQL Cluster
+- AWS Auto Scaling Group scheduled action
+- AWS Autoloop Transformer
+- AWS B2B Capability
+- AWS B2B Partnership
+- AWS B2B Profile
+- AWS B2B Transformer
+- AWS BCM Data Export
+- AWS Backup Backup Plan
+- AWS Backup Framework
+- AWS Backup Gateway Hypervisor
+- AWS Backup Gateway VM
+- AWS Backup Gateway Virtual Machine
+- AWS Backup Report Plan
+- AWS Backup Restore Testing Plan
+- AWS Backup Search Export Job
+- AWS Backup Search Search Job
+- AWS Backup legal hold
+- AWS Batch Consumable Resource
+- AWS Batch Job
+- AWS Batch Job Definition Revision
+- AWS Batch Job Queue
+- AWS Batch Scheduling Policy
+- AWS Batch Service Environment
+- AWS Batch Service Job
+- AWS Bedrock Agent Alias
+- AWS Bedrock Agent Runtime Endpoint
+- AWS Bedrock Agentcore API Key Credential Provider
+- AWS Bedrock Agentcore Browser Custom
+- AWS Bedrock Agentcore Gateway
+- AWS Bedrock Agentcore Memory
+- AWS Bedrock Agentcore OAuth2 Credential Provider
+- AWS Bedrock Agentcore Runtime
+- AWS Bedrock Application Inference Profile
+- AWS Bedrock Async Invoke
+- AWS Bedrock Automated Reasoning Policy
+- AWS Bedrock Automated Reasoning Policy Version
+- AWS Bedrock Blueprint
+- AWS Bedrock Browser
+- AWS Bedrock Code Interpreter
+- AWS Bedrock Code Interpreter Custom
+- AWS Bedrock Data Automation Invocation Job
+- AWS Bedrock Data Automation Profile
+- AWS Bedrock Data Automation Project
+- AWS Bedrock Default Prompt Router
+- AWS Bedrock Evaluation Job
+- AWS Bedrock Flow
+- AWS Bedrock Flow Alias
+- AWS Bedrock Flow Execution
+- AWS Bedrock Guardrail Profile
+- AWS Bedrock Marketplace Model Endpoint
+- AWS Bedrock Model Copy Job
+- AWS Bedrock Model Evaluation Job
+- AWS Bedrock Model Invocation Job
+- AWS Bedrock Prompt
+- AWS Bedrock Prompt Router
+- AWS Bedrock Prompt Version
+- AWS Bedrock Provisioned Model
+- AWS Bedrock Session
+- AWS Bedrock Token Vault
+- AWS Bedrock Workload Identity
+- AWS Bedrock Workload Identity Directory
+- AWS Billing Conductor Billing Group
+- AWS Billing Conductor Custom Line Item
+- AWS Billing Conductor Pricing Plan
+- AWS Billing Conductor Pricing Rule
+- AWS Billing and Cost Management Data Export
+- AWS Billing and Cost Management Data Exports Table
+- AWS Braket Job
+- AWS Braket Quantum Task
+- AWS Budget Budget Action
+- AWS Budgets Action
+- AWS Budgets Budget
+- AWS BugBust Event
+- AWS Catalog Product
+- AWS Certificate Authority Activation
+- AWS Chatbot Configuration
+- AWS Chatbot Custom Action
+- AWS Chime App Instance Bot
+- AWS Chime App Instance User
+- AWS Chime AppInstance
+- AWS Chime Channel
+- AWS Chime Channel Flow
+- AWS Chime Media Insights Pipeline Configuration
+- AWS Chime Media Pipeline Kinesis Video Stream Pool
+- AWS Chime MediaPipeline
+- AWS Chime Meeting
+- AWS Chime SIP Media Application
+- AWS Chime Voice Profile
+- AWS Chime Voice Profile Domain
+- AWS Clean Rooms Analysis Template
+- AWS Clean Rooms Configured Audience Model Association
+- AWS Clean Rooms Configured Table
+- AWS Clean Rooms Configured Table Association
+- AWS Clean Rooms ID Mapping Table
+- AWS Clean Rooms ID Namespace Association
+- AWS Clean Rooms ML Audience Generation Job
+- AWS Clean Rooms ML Audience Model
+- AWS Clean Rooms ML Configured Audience Model
+- AWS Clean Rooms ML Configured Model Algorithm
+- AWS Clean Rooms ML Configured Model Algorithm Association
+- AWS Clean Rooms ML Input Channel
+- AWS Clean Rooms ML Trained Model
+- AWS Clean Rooms ML Trained Model Inference Job
+- AWS Clean Rooms ML Training Dataset
+- AWS Clean Rooms Membership
+- AWS Clean Rooms Privacy Budget Template
+- AWS Cloud Directory Applied Schema
+- AWS Cloud Directory Development Schema
+- AWS Cloud Directory Published Schema
+- AWS Cloud Map Http Namespace
+- AWS Cloud Map Private DNS Namespace
+- AWS Cloud Map Public DNS Namespace
+- AWS Cloud Map Service
+- AWS Cloud9 EC2 Environment
+- AWS Cloud9 SSH Environment
+- AWS CloudFormation Change Set
+- AWS CloudFormation Resource Scan
+- AWS CloudFormation Stack Set
+- AWS CloudFormation Stack Set Target
+- AWS CloudFormation Type
+- AWS CloudFront Anycast IP List
+- AWS CloudFront Cache Policy
+- AWS CloudFront Connection Group
+- AWS CloudFront Continuous Deployment Policy
+- AWS CloudFront Distribution Tenant
+- AWS CloudFront Field Level Encryption Config
+- AWS CloudFront Field-Level Encryption Profile
+- AWS CloudFront Function
+- AWS CloudFront Origin Access Control
+- AWS CloudFront Origin Access Identity
+- AWS CloudFront Origin Request Policy
+- AWS CloudFront Realtime Log Config
+- AWS CloudFront Response Headers Policy
+- AWS CloudFront Streaming Distribution
+- AWS CloudFront VPC Origin
+- AWS CloudHSM Backup
+- AWS CloudShell Environment
+- AWS CloudTrail Dashboard
+- AWS CloudTrail Event Data Store
+- AWS CloudWatch Dashboard
+- AWS CloudWatch Evidently Experiment
+- AWS CloudWatch Evidently Feature
+- AWS CloudWatch Evidently Launch
+- AWS CloudWatch Evidently Project
+- AWS CloudWatch Evidently Segment
+- AWS CloudWatch Logs Anomaly Detector
+- AWS CloudWatch Logs Delivery
+- AWS CloudWatch Logs Delivery Destination
+- AWS CloudWatch Logs Delivery Source
+- AWS CloudWatch Logs Destination
+- AWS CloudWatch Logs Log Stream
+- AWS CloudWatch Metric Stream
+- AWS CloudWatch Observability Admin Organization Telemetry Rule
+- AWS CloudWatch Observability Admin Telemetry Rule
+- AWS CloudWatch RUM App Monitor
+- AWS CloudWatch RUM Application
+- AWS CloudWatch SLO
+- AWS CloudWatch Service
+- AWS CloudWatch Synthetics Canary
+- AWS CloudWatch Synthetics Group
+- AWS CloudWatchAlarm
+- AWS CodeArtifact Package
+- AWS CodeArtifact Package Group
+- AWS CodeBuild Build
+- AWS CodeBuild Build Batch
+- AWS CodeBuild Fleet
+- AWS CodeBuild Report
+- AWS CodeBuild Report Group
+- AWS CodeBuild Sandbox
+- AWS CodeCatalyst Connection
+- AWS CodeCatalyst Identity Center Application
+- AWS CodeCatalyst Project
+- AWS CodeCatalyst Space
+- AWS CodeCommit Repository
+- AWS CodeConnections Connection
+- AWS CodeConnections Repository Link
+- AWS CodeDeploy Deployment Configuration
+- AWS CodeDeploy Instance
+- AWS CodeGuru Reviewer Association
+- AWS CodeGuru Reviewer Code Review
+- AWS CodeGuru Security Scan
+- AWS CodePipeline Action
+- AWS CodePipeline Action Type
+- AWS CodePipeline Stage
+- AWS CodePipeline Webhook
+- AWS CodeStar Connection
+- AWS CodeStar Connections Host
+- AWS CodeStar Connections Repository Link
+- AWS CodeStar Project
+- AWS CodeWhisperer
+- AWS CodeWhisperer Customization
+- AWS Cognito Sync Dataset
+- AWS Cognito Sync Identity
+- AWS Cognito Sync Identity Pool
+- AWS Cognito User Pool Client
+- AWS Cognito User Pool Group
+- AWS Comprehend Document Classifier Endpoint
+- AWS Comprehend Entity Recognizer Endpoint
+- AWS Comprehend Flywheel Dataset
+- AWS Config Aggregation Authorization
+- AWS Config Configuration Aggregator
+- AWS Config Configuration Recorder
+- AWS Config Conformance Pack
+- AWS Config Organization Config Rule
+- AWS Config Organization Conformance Pack
+- AWS Config Remediation Configuration
+- AWS Config Rule
+- AWS Config Stored Query
+- AWS Connect Agent Status
+- AWS Connect Attached File
+- AWS Connect Authentication Profile
+- AWS Connect Case
+- AWS Connect Cases Case Rule
+- AWS Connect Cases Domain
+- AWS Connect Cases Field
+- AWS Connect Cases Layout
+- AWS Connect Cases Related Item
+- AWS Connect Cases Template
+- AWS Connect Contact
+- AWS Connect Contact Evaluation
+- AWS Connect Contact Flow
+- AWS Connect Contact Flow Module
+- AWS Connect Customer Managed View
+- AWS Connect Customer Profiles Object Type
+- AWS Connect Email Address
+- AWS Connect Evaluation Form
+- AWS Connect Hierarchy Group
+- AWS Connect Hours of Operation
+- AWS Connect Integration Association
+- AWS Connect Legacy Phone Number
+- AWS Connect Managed View
+- AWS Connect Prompt
+- AWS Connect Qualified AWS Managed View
+- AWS Connect Qualified Customer Managed View
+- AWS Connect Queue
+- AWS Connect Queue Wildcard
+- AWS Connect Quick Connect
+- AWS Connect Routing Profile
+- AWS Connect Rule
+- AWS Connect Security Profile
+- AWS Connect Task Template
+- AWS Connect Traffic Distribution Group
+- AWS Connect Use Case
+- AWS Connect User
+- AWS Connect View Version
+- AWS Connect Vocabulary
+- AWS Connect Wildcard Agent Status
+- AWS Connect Wildcard Contact Flow
+- AWS Connect Wildcard Phone Number
+- AWS Connect Wildcard Quick Connect
+- AWS Console Mobile App Device Identity
+- AWS Control Catalog Common Control
+- AWS Control Catalog Control
+- AWS Control Catalog Domain
+- AWS Control Catalog Objective
+- AWS Control Tower Baseline
+- AWS Control Tower Landing Zone
+- AWS Cost Explorer
+- AWS Cost Explorer Anomaly Monitor
+- AWS Cost Explorer Cost Category
+- AWS Cost and Usage Report Definition
+- AWS Cronitor Monitor
+- AWS DMS Certificate
+- AWS DMS Data Migration
+- AWS DMS Data Provider
+- AWS DMS Endpoint
+- AWS DMS Event Subscription
+- AWS DMS Instance Profile
+- AWS DMS Migration Project
+- AWS DMS Replication Config
+- AWS DMS Replication Subnet Group
+- AWS DMS Replication Task
+- AWS DMS Replication Task Assessment Run
+- AWS DMS Replication Task Individual Assessment
+- AWS DRS Instance
+- AWS DRS Job
+- AWS DRS Launch Configuration Template
+- AWS DRS Recovery Instance
+- AWS DRS Replication Configuration Template
+- AWS DRS Source Network
+- AWS DRS Source Server
+- AWS Data Exchange Data Grant
+- AWS Data Exchange Data Sets
+- AWS Data Exchange Entitled Data Set
+- AWS Data Exchange Entitled Revision
+- AWS Data Exchange Revision
+- AWS Data Pipeline
+- AWS DataBrew Dataset
+- AWS DataBrew Ruleset
+- AWS DataSync Discovery Job
+- AWS Deadline Cloud Budget
+- AWS Deadline Cloud Farm
+- AWS Deadline Cloud Job
+- AWS Deadline Cloud Metered Product
+- AWS Deadline Cloud Worker
+- AWS DeepComposer Audio
+- AWS DeepComposer Model
+- AWS DeepRacer Car
+- AWS DeepRacer Evaluation Job
+- AWS DeepRacer Leaderboard
+- AWS DeepRacer Leaderboard Evaluation Job
+- AWS DeepRacer Model
+- AWS DeepRacer Track
+- AWS DeepRacer Training Job
+- AWS Detective Graph
+- AWS DevOps UID2
+- AWS Device Farm
+- AWS Device Farm Device Instance
+- AWS Device Farm Device Pool
+- AWS Device Farm Network Profile
+- AWS Device Farm Project
+- AWS Device Farm Run
+- AWS Device Farm Session
+- AWS Device Farm Test
+- AWS Device Farm Test Grid Project
+- AWS Device Farm Test Grid Session
+- AWS Device Farm Upload
+- AWS Device Farm VPC Configuration
+- AWS Diagnostic Tool
+- AWS Diagnostic Tools Execution
+- AWS Direct Connect Connection
+- AWS Direct Connect LAG
+- AWS Direct Connect Virtual Interface
+- AWS Directory Service Cloud Directory
+- AWS DynamoDB Export
+- AWS DynamoDB Global Table
+- AWS DynamoDB Import
+- AWS DynamoDB Index
+- AWS DynamoDB Stream
+- AWS EC2 COIP Pool
+- AWS EC2 Capacity Block
+- AWS EC2 Capacity Reservation
+- AWS EC2 Capacity Reservation Fleet
+- AWS EC2 Carrier Gateway
+- AWS EC2 Client VPN Target Network Association
+- AWS EC2 DHCP Options
+- AWS EC2 Declarative Policies Report
+- AWS EC2 Dedicated Host
+- AWS EC2 Elastic GPU
+- AWS EC2 Elastic Inference Accelerator
+- AWS EC2 Event Window
+- AWS EC2 Export Image Task
+- AWS EC2 Export Instance Task
+- AWS EC2 FPGA Image
+- AWS EC2 Fleet
+- AWS EC2 Host Reservation
+- AWS EC2 IPAM
+- AWS EC2 IPAM External Resource Verification Token
+- AWS EC2 IPAM Pool
+- AWS EC2 IPAM Resource Discovery
+- AWS EC2 IPAM Resource Discovery Association
+- AWS EC2 IPAM Scope
+- AWS EC2 IPv4 Pool
+- AWS EC2 IPv6 Pool
+- AWS EC2 Image Builder Component
+- AWS EC2 Image Builder Component Build Versions
+- AWS EC2 Image Builder Container Recipe
+- AWS EC2 Image Builder Distribution Configuration
+- AWS EC2 Image Builder Image Build Versions
+- AWS EC2 Image Builder Image Pipeline
+- AWS EC2 Image Builder Image Recipe
+- AWS EC2 Image Builder Image Version
+- AWS EC2 Image Builder Infrastructure Configuration
+- AWS EC2 Image Builder Lifecycle Execution
+- AWS EC2 Image Builder Lifecycle Policy
+- AWS EC2 Image Builder Workflow
+- AWS EC2 Image Builder Workflow Build Versions
+- AWS EC2 Image Builder Workflow Execution
+- AWS EC2 Image Builder Workflow Step Execution
+- AWS EC2 Image Usage Report
+- AWS EC2 Import Image Task
+- AWS EC2 Import Snapshot Task
+- AWS EC2 Instance Bug
+- AWS EC2 Instance Connect Endpoint
+- AWS EC2 Instance Event Window
+- AWS EC2 Local Gateway
+- AWS EC2 Local Gateway Route Table
+- AWS EC2 Local Gateway Route Table VPC Association
+- AWS EC2 Local Gateway Route Table Virtual Interface Group Association
+- AWS EC2 Local Gateway Virtual Interface
+- AWS EC2 Local Gateway Virtual Interface Group
+- AWS EC2 MAC Modification Task
+- AWS EC2 Network Insights Access Scope
+- AWS EC2 Network Insights Access Scope Analysis
+- AWS EC2 Network Insights Analysis
+- AWS EC2 Network Insights Path
+- AWS EC2 Outpost LAG
+- AWS EC2 Placement Group
+- AWS EC2 Replace Root Volume Task
+- AWS EC2 Reserved Instance
+- AWS EC2 Resource Tagger
+- AWS EC2 Route Server
+- AWS EC2 Route Server Endpoint
+- AWS EC2 Route Server Peer
+- AWS EC2 SSH Key
+- AWS EC2 Security Group Egress
+- AWS EC2 Security Group Ingress
+- AWS EC2 Security Group Rule
+- AWS EC2 Snapshot
+- AWS EC2 Spot Instance Request
+- AWS EC2 Subnet CIDR Reservation
+- AWS EC2 Traffic Mirror Filter
+- AWS EC2 Traffic Mirror Filter Rule
+- AWS EC2 Traffic Mirror Session
+- AWS EC2 Traffic Mirror Target
+- AWS EC2 Transit Gateway Attachment
+- AWS EC2 Transit Gateway Connect
+- AWS EC2 Transit Gateway Connect Peer
+- AWS EC2 Transit Gateway Multicast Domain
+- AWS EC2 Transit Gateway Policy Table
+- AWS EC2 Transit Gateway Route Table
+- AWS EC2 VPC Block Public Access Exclusion
+- AWS EC2 VPC Endpoint Connection
+- AWS EC2 VPC Endpoint Service Permission
+- AWS EC2 VPC Flow Log
+- AWS EC2 VPC Peering Connection
+- AWS EC2 VPN Connection
+- AWS EC2 VPN Connection Route
+- AWS EC2 Verified Access Endpoint
+- AWS EC2 Verified Access Endpoint Target
+- AWS EC2 Verified Access Group
+- AWS EC2 Verified Access Instance
+- AWS EC2 Verified Access Policy
+- AWS EC2 Verified Access Trust Provider
+- AWS ECR Pull Through Cach rule
+- AWS EFS Access Point
+- AWS EKS Access Entry
+- AWS EKS Access Policy
+- AWS EKS Add-ons
+- AWS EKS Addon
+- AWS EKS Anywhere Subscription
+- AWS EKS Dashboard
+- AWS EKS Fargate Profile
+- AWS EKS Identity Provider Config
+- AWS EKS Node Group
+- AWS EKS Pod Identity Association
+- AWS EMR Containers
+- AWS EMR Containers Job Run
+- AWS EMR Containers Job Template
+- AWS EMR Containers Managed Endpoint
+- AWS EMR Containers Security Configuration
+- AWS EMR Containers Virtual Cluster
+- AWS EMR Editor
+- AWS EMR Notebook Execution
+- AWS EMR Serverless Job Run
+- AWS EMR Studio
+- AWS EVS Environment
+- AWS ElastiCache Cache Cluster
+- AWS ElastiCache Global Replication Group
+- AWS ElastiCache Parameter Group
+- AWS ElastiCache Replication Group
+- AWS ElastiCache Reserved Instance
+- AWS ElastiCache Security Group
+- AWS ElastiCache Serverless Cache Snapshot
+- AWS ElastiCache Subnet Group
+- AWS Elastic Beanstalk Application Version
+- AWS Elastic Beanstalk Configuration Template
+- AWS Elastic Beanstalk Platform
+- AWS Elastic Beanstalk Solution Stack
+- AWS Elastic Container Service Capacity Provider
+- AWS Elastic Container Service Service Deployment
+- AWS Elastic Container Service Service Revision
+- AWS Elastic Inference Accelerator
+- AWS Elastic Load Balancing Load Balancer
+- AWS Elastic Transcoder Job
+- AWS Elastic Transcoder Pipeline
+- AWS Elastic Transcoder Preset
+- AWS Elasticbeanstalk Environment
+- AWS Elemental Appliances and Software Quote
+- AWS Elemental MediaConvert Job
+- AWS Elemental MediaConvert Queue
+- AWS Elemental MediaPackage Origin Endpoint
+- AWS Elemental MediaPackage Packaging Configuration
+- AWS Elemental MediaPackage Packaging Group
+- AWS Elemental Support Case
+- AWS End User Messaging SMS Configuration Set
+- AWS End User Messaging SMS Message
+- AWS End User Messaging SMS Opt-Out List
+- AWS End User Messaging SMS Phone Number
+- AWS End User Messaging SMS Pool
+- AWS End User Messaging SMS Protect Configuration
+- AWS End User Messaging SMS Registration
+- AWS End User Messaging SMS Registration Attachment
+- AWS End User Messaging SMS Sender ID
+- AWS End User Messaging SMS SenderID
+- AWS End User Messaging SMS Verified Destination Number
+- AWS Entity Resolution ID Mapping Workflow
+- AWS Entity Resolution Provider Service
+- AWS Event Rule
+- AWS EventBridge API Destination
+- AWS EventBridge Archive
+- AWS EventBridge Connection
+- AWS EventBridge Endpoint
+- AWS EventBridge Event Source
+- AWS EventBridge Replay
+- AWS EventBridge Rule
+- AWS EventBridge Rule on Custom Event Bus
+- AWS EventBridge Scheduler Schedule Group
+- AWS EventBridge Schema
+- AWS EventBridge Schemas Discoverer
+- AWS EventBridge Schemas Registry
+- AWS Execute API Domain
+- AWS Execute API Resource
+- AWS FIS Action
+- AWS FIS Safety Lever
+- AWS FSx Backup
+- AWS FSx Data Repository Association
+- AWS FSx File Cache
+- AWS FSx File System
+- AWS FSx Snapshot
+- AWS FSx Storage Virtual Machine
+- AWS FSx Task
+- AWS FSx Volume
+- AWS FinSpace API Credential
+- AWS FinSpace Environment
+- AWS FinSpace KX Cluster
+- AWS FinSpace KX Database
+- AWS FinSpace KX Dataview
+- AWS FinSpace KX Environment
+- AWS FinSpace KX User
+- AWS FinSpace KX Volume
+- AWS FinSpace Scaling Group
+- AWS FinSpace User
+- AWS Firehose Delivery Stream
+- AWS Firewall Manager Applications List
+- AWS Firewall Manager Policy
+- AWS Firewall Manager Protocols List
+- AWS Firewall Manager Resource Set
+- AWS Forecast
+- AWS Forecast Algorithm
+- AWS Forecast Dataset
+- AWS Forecast Dataset Group
+- AWS Forecast Dataset Import Job
+- AWS Forecast Endpoint
+- AWS Forecast Explainability
+- AWS Forecast Explainability Export
+- AWS Forecast Export Job
+- AWS Forecast Monitor
+- AWS Forecast Predictor
+- AWS Forecast Predictor Backtest Export Job
+- AWS Forecast What-If Analysis
+- AWS Forecast What-If Forecast
+- AWS Forecast What-If Forecast Export
+- AWS Fraud Detector Batch Import
+- AWS Fraud Detector Batch Prediction
+- AWS Fraud Detector Detector Version
+- AWS Fraud Detector Entity Type
+- AWS Fraud Detector Event Type
+- AWS Fraud Detector External Model
+- AWS Fraud Detector Label
+- AWS Fraud Detector List
+- AWS Fraud Detector Model
+- AWS Fraud Detector Model Version
+- AWS Fraud Detector Outcome
+- AWS Fraud Detector Rule
+- AWS Fraud Detector Variable
+- AWS FreeRTOS Configuration
+- AWS FreeRTOS Subscription
+- AWS GameLift Servers Container Fleet
+- AWS GameLift Servers Container Group Definition
+- AWS GameLift Streams Application
+- AWS GameLift Streams Stream Group
+- AWS Geo Maps Provider
+- AWS Geo Places Provider
+- AWS Geo Routes Provider
+- AWS Global Accelerator
+- AWS Global Accelerator Attachment
+- AWS Global Accelerator Endpoint Group
+- AWS Global Accelerator Listener
+- AWS Global WAFV2
+- AWS Glue Blueprint
+- AWS Glue Completion
+- AWS Glue Custom Entity Type
+- AWS Glue Data Quality Ruleset
+- AWS Glue Integration
+- AWS Glue ML Transform
+- AWS Glue Registry
+- AWS Glue Schema
+- AWS Glue Session
+- AWS Glue Table
+- AWS Glue Table Version
+- AWS Glue Trigger
+- AWS Glue Usage Profile
+- AWS Glue User Defined Function
+- AWS Glue Workflow
+- AWS Ground Station Agent
+- AWS Ground Station Config
+- AWS Ground Station Contact
+- AWS Ground Station Dataflow Endpoint Group
+- AWS Ground Station Ephemeris
+- AWS Ground Station Ground Station Resource
+- AWS Ground Station Mission Profile
+- AWS Ground Station Satellite
+- AWS GuardDuty Filter
+- AWS GuardDuty IP Set
+- AWS GuardDuty Malware Protection Plan
+- AWS GuardDuty Publishing Destination
+- AWS GuardDuty Threat Entity Set
+- AWS GuardDuty Threat Intel Set
+- AWS GuardDuty Trusted Entity Set
+- AWS Health Event
+- AWS HealthImaging Image Set
+- AWS HealthLake FHIR Data Store
+- AWS High Availability registered EC2 instance
+- AWS High-volume Outbound Communications Campaign
+- AWS Honeycode Screen
+- AWS Honeycode Screen Automation
+- AWS Honeycode Table
+- AWS Honeycode Workbook
+- AWS IAM Access Report
+- AWS IAM Federated User
+- AWS IAM Identity Center Account
+- AWS IAM Identity Center Application Provider
+- AWS IAM Identity Center Instance
+- AWS IAM Identity Center Trusted Token Issuer
+- AWS IAM Instance Profile
+- AWS IAM MFA Token
+- AWS IAM Policy
+- AWS IAM Roles Anywhere CRL
+- AWS IAM Roles Anywhere Profile
+- AWS IAM Roles Anywhere Subject
+- AWS IAM Roles Anywhere Trust Anchor
+- AWS IAM SAML Provider
+- AWS IAM SMS MFA Token
+- AWS IQ Attachment
+- AWS IQ Buyer
+- AWS IQ Call
+- AWS IQ Company
+- AWS IQ Conversation
+- AWS IQ Expert
+- AWS IQ Listing
+- AWS IQ Payment Request
+- AWS IQ Payment Schedule
+- AWS IQ Proposal
+- AWS IQ Request
+- AWS IQ Seller
+- AWS IQ Token
+- AWS IVS Playbackkey
+- AWS Identity Store All Users
+- AWS Identity Store Group
+- AWS Identity Store Group Membership
+- AWS Identity Store Group Memberships
+- AWS Identity Store Groups
+- AWS Identity Store Identitystore
+- AWS Identity Store User
+- AWS Identity Sync Sync Profile
+- AWS Identity Sync Sync Target
+- AWS Image Builder Image
+- AWS Incident Manager Contact
+- AWS Incident Manager Contacts Contact Channel
+- AWS Incident Manager Contacts Engagement
+- AWS Incident Manager Contacts Page
+- AWS Incident Manager Contacts Rotation
+- AWS Incident Manager Incident Record
+- AWS Incident Manager Replication Set
+- AWS Incident Manager Response Plan
+- AWS Inspector Application
+- AWS Inspector Code Security Integration
+- AWS Inspector Code Security Scan Configuration
+- AWS Inspector Finding
+- AWS Inspector Target
+- AWS Inspector2 CIS Scan Configuration
+- AWS Inspector2 Filter
+- AWS Inspector2 Owner
+- AWS Interactive Video Service Channel
+- AWS Interactive Video Service Chat Logging Configuration
+- AWS Interactive Video Service Chat Room
+- AWS Interactive Video Service Composition
+- AWS Interactive Video Service Encoder Configuration
+- AWS Interactive Video Service Ingest Configuration
+- AWS Interactive Video Service Playback Key Pair
+- AWS Interactive Video Service Playback Restriction Policy
+- AWS Interactive Video Service Public Key
+- AWS Interactive Video Service Recording Configuration
+- AWS Interactive Video Service Stage
+- AWS Interactive Video Service Storage Configuration
+- AWS Interactive Video Service Stream Key
+- AWS Internet Monitor Health Event
+- AWS Internet Monitor Internet Event
+- AWS Invoicing Service Invoice Unit
+- AWS IoT 1-Click Device
+- AWS IoT 1-Click Project
+- AWS IoT Analytics Datastore Index
+- AWS IoT Authorizer
+- AWS IoT Billing Group
+- AWS IoT CA Certificate
+- AWS IoT Certificate Provider
+- AWS IoT Client
+- AWS IoT Command
+- AWS IoT Custom Metric
+- AWS IoT Destination
+- AWS IoT Device Advisor Suite Definition
+- AWS IoT Device Advisor Suite Run
+- AWS IoT Dimension
+- AWS IoT Domain Configuration
+- AWS IoT Events Alarm Model
+- AWS IoT Events Detector Model
+- AWS IoT Events Input
+- AWS IoT Fleet Hub Application
+- AWS IoT Fleet Metric
+- AWS IoT FleetWise Decoder Manifest
+- AWS IoT FleetWise Fleet
+- AWS IoT FleetWise Signal Catalog
+- AWS IoT FleetWise State Template
+- AWS IoT FleetWise Vehicle
+- AWS IoT Greengrass
+- AWS IoT Greengrass Bulk Deployment
+- AWS IoT Greengrass Certificate Authority
+- AWS IoT Greengrass Component
+- AWS IoT Greengrass Component Version
+- AWS IoT Greengrass Connector Definition
+- AWS IoT Greengrass Connector Definition Version
+- AWS IoT Greengrass Core Definition
+- AWS IoT Greengrass Core Definition Version
+- AWS IoT Greengrass Core Device
+- AWS IoT Greengrass Deployment
+- AWS IoT Greengrass Device Definition
+- AWS IoT Greengrass Device Definition Version
+- AWS IoT Greengrass Function Definition
+- AWS IoT Greengrass Function Definition Version
+- AWS IoT Greengrass Group
+- AWS IoT Greengrass Group Version
+- AWS IoT Greengrass Logger Definition
+- AWS IoT Greengrass Logger Definition Version
+- AWS IoT Greengrass Resource Definition
+- AWS IoT Greengrass Resource Definition Version
+- AWS IoT Greengrass Subscription Definition
+- AWS IoT Greengrass Subscription Definition Version
+- AWS IoT Greengrass Thing Runtime Config
+- AWS IoT Index
+- AWS IoT Job
+- AWS IoT Job Template
+- AWS IoT Managed Integrations Account Association
+- AWS IoT Managed Integrations Credential Locker
+- AWS IoT Managed Integrations Managed Thing
+- AWS IoT Managed Integrations OTA Task
+- AWS IoT Managed Integrations Provisioning Profile
+- AWS IoT Mitigation Action
+- AWS IoT OTA Update
+- AWS IoT Package
+- AWS IoT Package Version
+- AWS IoT Policy
+- AWS IoT Provisioning Template
+- AWS IoT Role Alias
+- AWS IoT Rule
+- AWS IoT Scheduled Audit
+- AWS IoT Security Profile
+- AWS IoT SiteWise Access Policy
+- AWS IoT SiteWise Asset
+- AWS IoT SiteWise Computation Model
+- AWS IoT SiteWise Dashboard
+- AWS IoT SiteWise Dataset
+- AWS IoT SiteWise Project
+- AWS IoT SiteWise Time Series
+- AWS IoT Stream
+- AWS IoT Thing Group
+- AWS IoT Thing Type
+- AWS IoT Topic
+- AWS IoT Topic Filter
+- AWS IoT Tunnel
+- AWS IoT TwinMaker Component Type
+- AWS IoT TwinMaker Entity
+- AWS IoT TwinMaker Metadata Transfer Job
+- AWS IoT TwinMaker Scene
+- AWS IoT TwinMaker Sync Job
+- AWS IoT Wireless Destination
+- AWS IoT Wireless Device Profile
+- AWS IoT Wireless FUOTA Task
+- AWS IoT Wireless Import Task
+- AWS IoT Wireless Multicast Group
+- AWS IoT Wireless Network Analyzer Configuration
+- AWS IoT Wireless Service Profile
+- AWS IoT Wireless Sidewalk Account
+- AWS IoT Wireless Wireless Device
+- AWS IoT Wireless Wireless Gateway
+- AWS IoT Wireless Wireless Gateway Task Definition
+- AWS Kendra Access Control Configuration
+- AWS Kendra Data Source
+- AWS Kendra Experience
+- AWS Kendra FAQ
+- AWS Kendra Featured Results Set
+- AWS Kendra Intelligent Ranking Rescore Execution Plan
+- AWS Kendra Query Suggestions Block List
+- AWS Kendra Thesaurus
+- AWS Keyspaces Keyspace
+- AWS Keyspaces Stream
+- AWS Kinesis Analytics Application
+- AWS Kinesis Consumer
+- AWS Kinesis Data Firehose Delivery Stream
+- AWS Kinesis Video Streams Channel
+- AWS Lake Formation Data Filter
+- AWS Lake Formation Permission
+- AWS Lake Formation Tag
+- AWS Lambda Code Signing Config
+- AWS Lambda Event Source Mapping
+- AWS Launch Wizard Deployment
+- AWS Lex Bot
+- AWS Lex Bot Channel
+- AWS Lex Bot Version
+- AWS Lex Channel
+- AWS Lex Intent Version
+- AWS Lex Slot Type Version
+- AWS Lex V2 Bot Alias
+- AWS License Manager Grant
+- AWS License Manager License
+- AWS License Manager License Configuration
+- AWS License Manager Linux Subscriptions Subscription Provider
+- AWS License Manager Report Generator
+- AWS License Manager User Subscriptions Identity Provider
+- AWS License Manager User Subscriptions Instance User
+- AWS License Manager User Subscriptions License Server Endpoint
+- AWS License Manager User Subscriptions Product Subscription
+- AWS Lightsail Alarm
+- AWS Lightsail Certificate
+- AWS Lightsail CloudFormation Stack Record
+- AWS Lightsail Contact Method
+- AWS Lightsail Database Snapshot
+- AWS Lightsail Disk Snapshot
+- AWS Lightsail Distribution
+- AWS Lightsail Domain
+- AWS Lightsail Export Snapshot Record
+- AWS Lightsail Instance Snapshot
+- AWS Lightsail Key Pair
+- AWS Lightsail Load Balancer
+- AWS Lightsail Static IP
+- AWS Lightsail TLS Certificate
+- AWS Load Balancer Listener
+- AWS Load Balancer Listener Rule
+- AWS Local Gateway Route Table ID
+- AWS Local Gateway Route Table VPC Association ID
+- AWS Local Gateway Route Table Virtual Interface Group Association ID
+- AWS Log Group
+- AWS Lookout Metrics Alert
+- AWS Lookout Metrics Anomaly Detector
+- AWS Lookout Metrics Metric Set
+- AWS Lookout Vision Model
+- AWS Lookout for Equipment Label Group
+- AWS Lookout for Equipment Model Version
+- AWS Lookout for Equipment Project
+- AWS MGN Application Resource
+- AWS MGN Connector
+- AWS MGN Export
+- AWS MGN Import Resource
+- AWS MGN Job
+- AWS MGN Launch Configuration Template
+- AWS MGN Network Migration Definition
+- AWS MGN Replication Configuration Template
+- AWS MGN Source Server
+- AWS MGN Wave
+- AWS MGN vCenter Client
+- AWS MSK Cluster Configuration
+- AWS MSK Configuration
+- AWS MSK Connect Connector
+- AWS MSK Connect Connector Operation
+- AWS MSK Connect Custom Plugin
+- AWS MSK Connect Worker Configuration
+- AWS MSK Replicator
+- AWS MSK VPC Connection
+- AWS MWAA RBAC Role
+- AWS Machine Learning Batch Prediction
+- AWS Machine Learning Datasource
+- AWS Machine Learning Evaluation
+- AWS Machine Learning ML Model
+- AWS Macie Allow List
+- AWS Macie Classification Job
+- AWS Macie Custom Data Identifier
+- AWS Macie Findings Filter
+- AWS Macie Member
+- AWS Macie Session DUP
+- AWS Mainframe Modernization Application Testing Test Case
+- AWS Mainframe Modernization Application Testing Test Configuration
+- AWS Mainframe Modernization Application Testing Test Run
+- AWS Mainframe Modernization Application Testing Test Suite
+- AWS Managed Blockchain Accessor
+- AWS Managed Blockchain Invitation
+- AWS Managed Blockchain Member
+- AWS Managed Blockchain Network
+- AWS Managed Blockchain Networks
+- AWS Managed Blockchain Node
+- AWS Managed Blockchain Proposal
+- AWS Managed Prometheus Collector
+- AWS Managed Prometheus Rule Groups Namespace
+- AWS MapCredits Agreement
+- AWS MarketPlace
+- AWS MarketPlace Vendor Insight Data Source
+- AWS Marketplace Catalog Change Set
+- AWS Marketplace Catalog Entity
+- AWS Marketplace Deployment Parameter
+- AWS MediaConnect Entitlement
+- AWS MediaConnect Gateway Instance
+- AWS MediaConnect Output
+- AWS MediaConnect Source
+- AWS MediaConvert Certificate Association
+- AWS MediaConvert Job
+- AWS MediaLive Channel
+- AWS MediaLive Channel Placement Group
+- AWS MediaLive CloudWatch Alarm Template
+- AWS MediaLive CloudWatch Alarm Template Group
+- AWS MediaLive Cluster
+- AWS MediaLive EventBridge Rule Template
+- AWS MediaLive EventBridge Rule Template Group
+- AWS MediaLive Input
+- AWS MediaLive Input Device
+- AWS MediaLive Input Security Group
+- AWS MediaLive Multiplex
+- AWS MediaLive Network
+- AWS MediaLive Node
+- AWS MediaLive Offering
+- AWS MediaLive Reservation
+- AWS MediaLive SDI Source
+- AWS MediaLive Signal Map
+- AWS MediaPackage Channel
+- AWS MediaPackage Harvest Job
+- AWS MediaPackage Origin Endpoint
+- AWS MediaPackage VOD Asset
+- AWS MediaPackage VOD Packaging Configuration
+- AWS MediaPackage VOD Packaging Group
+- AWS MediaStore Folder
+- AWS MediaStore Object
+- AWS MediaTailor Channel
+- AWS MediaTailor Live Source
+- AWS MediaTailor Playback Configuration
+- AWS MediaTailor Prefetch Schedule
+- AWS MediaTailor Program
+- AWS MediaTailor Source Location
+- AWS MediaTailor VOD Source
+- AWS Medical Imaging Datastore
+- AWS MemoryDB ACL
+- AWS MemoryDB Multi-Region Cluster
+- AWS MemoryDB Multi-Region Parameter Group
+- AWS MemoryDB Parameter Group
+- AWS MemoryDB Reserved Node
+- AWS MemoryDB Subnet Group
+- AWS MemoryDB User
+- AWS Migration Hub Automation Run
+- AWS Migration Hub Automation Unit
+- AWS Migration Hub Connection
+- AWS Migration Hub Migration Task
+- AWS Migration Hub Orchestrator Template
+- AWS Migration Hub Orchestrator Workflow
+- AWS Migration Hub Progress Update Stream
+- AWS Migration Hub Refactor Spaces Application
+- AWS Migration Hub Refactor Spaces Environment
+- AWS Migration Hub Refactor Spaces Route
+- AWS Migration Hub Refactor Spaces Service
+- AWS MongoDB Atlas Network Peering
+- AWS MongoDB Atlas Private Endpoint
+- AWS MongoDB Atlas Search Index
+- AWS MongoDB Atlas Team
+- AWS Monitron Project
+- AWS Multi-party Approval Approval Team
+- AWS Multi-party Approval Identity Source
+- AWS Multi-party Approval Session
+- AWS Neptune Analytics Export Task
+- AWS Neptune Analytics Import Task
+- AWS Neptune Database
+- AWS Network Firewall Stateful Rule Group
+- AWS Network Firewall Stateless Rule Group
+- AWS Network Firewall Stateless Rules Group
+- AWS Network Flow Monitor
+- AWS Network Flow Monitor Scope
+- AWS Network Manager Attachment
+- AWS Network Manager Connect Peer
+- AWS Network Manager Connection
+- AWS Network Manager Core Network
+- AWS Network Manager Customer Gateway Association
+- AWS Network Manager Device
+- AWS Network Manager Global Network
+- AWS Network Manager Link
+- AWS Network Manager Link Association
+- AWS Network Manager Peering
+- AWS Network Manager Registered Transit Gateway
+- AWS Network Manager Site
+- AWS Network Synthetic Monitor Probe
+- AWS New Relic Alert
+- AWS Nimble Studio
+- AWS Nimble Studio EULA
+- AWS Nimble Studio EULA Acceptance
+- AWS Nimble Studio Launch Profile
+- AWS Nimble Studio Streaming Image
+- AWS Nimble Studio Streaming Session
+- AWS Nimble Studio Streaming Session Backup
+- AWS Nimble Studio Studio Component
+- AWS OAM Link
+- AWS OAM Sink
+- AWS Omics Annotation Store
+- AWS Omics Annotation Store Version
+- AWS Omics Read Set
+- AWS Omics Reference
+- AWS Omics Reference Store
+- AWS Omics Run
+- AWS Omics Run Cache
+- AWS Omics Run Group
+- AWS Omics Sequence Store
+- AWS Omics Task
+- AWS Omics Variant Store
+- AWS Omics Workflow
+- AWS Omics Workflow Version
+- AWS One Configuration
+- AWS One Device Configuration Template
+- AWS One Device Instance
+- AWS One Site
+- AWS One User
+- AWS OpenSearch Ingestion Pipeline Blueprint
+- AWS OpenSearch Serverless Dashboards
+- AWS OpsWorks CM Backup
+- AWS OpsWorks CM Server
+- AWS OpsWorks Instance
+- AWS OpsWorks Layer
+- AWS OpsWorks Stack
+- AWS Oracle Database Cloud Autonomous VM Cluster
+- AWS Oracle Database Cloud Exadata Infrastructure
+- AWS Oracle Database Cloud VM Cluster
+- AWS Oracle Database DB Node
+- AWS Oracle Database Network
+- AWS Oracle Database Peering Connection
+- AWS Organization Policy
+- AWS Organizations Account
+- AWS Organizations Handshake
+- AWS Organizations Organization
+- AWS Organizations Organizational Unit
+- AWS Organizations Root
+- AWS Outpost
+- AWS Outposts Site
+- AWS Panorama Application Instance
+- AWS Panorama DataSource
+- AWS Panorama Device
+- AWS Panorama Package
+- AWS Parallel Computing Service Compute Node Group
+- AWS Parallel Computing Service Queue
+- AWS Partner Central Selling Engagement
+- AWS Partner Central Selling Engagement From Opportunity Task
+- AWS Partner Central Selling Engagement Invitation
+- AWS Partner Central Selling Engagement by Accepting Invitation Task
+- AWS Partner Central Selling Opportunity
+- AWS Partner Central Selling Resource Snapshot
+- AWS Partner Central Selling Resource Snapshot Job
+- AWS Partner Central Selling Solution
+- AWS Payment Cryptography Alias
+- AWS Payments Payment Instrument
+- AWS Performance Insights Metric
+- AWS Performance Insights Performance Report
+- AWS Personalize Algorithm
+- AWS Personalize Batch Inference Job
+- AWS Personalize Batch Segment Job
+- AWS Personalize Campaign
+- AWS Personalize Data Deletion Job
+- AWS Personalize Data Insights Job
+- AWS Personalize Dataset
+- AWS Personalize Dataset Export Job
+- AWS Personalize Dataset Group
+- AWS Personalize Dataset Import Job
+- AWS Personalize Event Tracker
+- AWS Personalize Feature Transformation
+- AWS Personalize Filter
+- AWS Personalize Metric Attribution
+- AWS Personalize Recipe
+- AWS Personalize Recommender
+- AWS Personalize Schema
+- AWS Personalize Solution
+- AWS Pinpoint App
+- AWS Pinpoint Application
+- AWS Pinpoint Application Metrics
+- AWS Pinpoint Attribute
+- AWS Pinpoint Campaign
+- AWS Pinpoint Campaign Metrics
+- AWS Pinpoint Channel
+- AWS Pinpoint Email Service Configuration Set
+- AWS Pinpoint Email Service Dedicated IP Pool
+- AWS Pinpoint Email Service Identity
+- AWS Pinpoint Endpoint
+- AWS Pinpoint Event Stream
+- AWS Pinpoint Events
+- AWS Pinpoint Export Job
+- AWS Pinpoint Import Job
+- AWS Pinpoint Journey
+- AWS Pinpoint Journey Execution Activity Metrics
+- AWS Pinpoint Journey Execution Metrics
+- AWS Pinpoint Journey Metrics
+- AWS Pinpoint Message
+- AWS Pinpoint OTP
+- AWS Pinpoint Phone Number Validation
+- AWS Pinpoint Recommender
+- AWS Pinpoint Reports
+- AWS Pinpoint SMS Phone Pool
+- AWS Pinpoint SMS Registration
+- AWS Pinpoint Segment
+- AWS Pinpoint Template
+- AWS Pinpoint User
+- AWS Pinpoint Verify OTP
+- AWS Polly Lexicon
+- AWS Pricing Calculator Bill Estimate
+- AWS Pricing Calculator Bill Scenario
+- AWS Pricing Calculator Workload Estimate
+- AWS Private 5G Device Identifier
+- AWS Private 5G Network
+- AWS Private 5G Network Resource
+- AWS Private 5G Network Site
+- AWS Private 5G Order
+- AWS Private CA Connector for Active Directory Connector
+- AWS Private CA Connector for Active Directory Directory Registration
+- AWS Private CA Connector for Active Directory Template
+- AWS Private CA Connector for SCEP Challenge
+- AWS Private CA Connector for SCEP Connector
+- AWS Privilege Cloud Safe
+- AWS Profile Calculated Attribute
+- AWS Profile Domain
+- AWS Profile Event Stream
+- AWS Profile Event Trigger
+- AWS Profile Integration
+- AWS Profile Layout
+- AWS Profile Object Type
+- AWS Profile Segment Definition
+- AWS Proton Component
+- AWS Proton Deployment
+- AWS Proton Environment
+- AWS Proton Environment Account Connection
+- AWS Proton Environment Template
+- AWS Proton Environment Template Major Version
+- AWS Proton Environment Template Minor Version
+- AWS Proton Environment Template Version
+- AWS Proton Repository
+- AWS Proton Service
+- AWS Proton Service Instance
+- AWS Proton Service Template
+- AWS Proton Service Template Major Version
+- AWS Proton Service Template Minor Version
+- AWS Proton Service Template Version
+- AWS Purchase Order
+- AWS Purchase Orders Console
+- AWS Q App Application
+- AWS Q Apps QApp
+- AWS Q Apps Session
+- AWS Q Business Chat Response Configuration
+- AWS Q Business Data Accessor
+- AWS Q Business Integration
+- AWS Q Business Plugin
+- AWS Q Business Retriever
+- AWS Q Business Subscription
+- AWS Q Business Web Experience
+- AWS Q Developer Code Transformation
+- AWS Q Expert Application
+- AWS Q Plugin
+- AWS Q in Connect AI Agent
+- AWS Q in Connect AI Guardrail
+- AWS Q in Connect AI Prompt
+- AWS Q in Connect Assistant
+- AWS Q in Connect Assistant Association
+- AWS Q in Connect Content
+- AWS Q in Connect Content Association
+- AWS Q in Connect Knowledge Base
+- AWS Q in Connect Message Template
+- AWS Q in Connect Quick Response
+- AWS Q in Connect Session
+- AWS QLDB Catalog
+- AWS QLDB Stream
+- AWS QLDB Table
+- AWS QuickSight Account
+- AWS QuickSight Asset Bundle Export Job
+- AWS QuickSight Asset Bundle Import Job
+- AWS QuickSight Assignment
+- AWS QuickSight Brand
+- AWS QuickSight Custom Permissions
+- AWS QuickSight Customization
+- AWS QuickSight Dashboard Snapshot Job
+- AWS QuickSight Email Customization Template
+- AWS QuickSight Folder
+- AWS QuickSight Group
+- AWS QuickSight Ingestion
+- AWS QuickSight Namespace
+- AWS QuickSight Refresh Schedule
+- AWS QuickSight Template
+- AWS QuickSight Theme
+- AWS QuickSight Topic
+- AWS QuickSight User
+- AWS QuickSight VPC Connection
+- AWS RDS Automated Backup
+- AWS RDS Cluster Automated Backup
+- AWS RDS Cluster Endpoint
+- AWS RDS Cluster Parameter Group
+- AWS RDS Custom Engine Version
+- AWS RDS DB
+- AWS RDS DB User
+- AWS RDS Database Proxy
+- AWS RDS Deployment
+- AWS RDS Global Cluster
+- AWS RDS Integration
+- AWS RDS Option Group
+- AWS RDS Parameter Group
+- AWS RDS Performance Insights
+- AWS RDS Preview Subnet Group
+- AWS RDS Proxy
+- AWS RDS Proxy Endpoint
+- AWS RDS Reserved Instance
+- AWS RDS Security Group
+- AWS RDS Shard Group
+- AWS RDS Subnet Group
+- AWS RDS Target Group
+- AWS RDS Tenant Database
+- AWS RDS Tenant Database Snapshot
+- AWS Recovery Point
+- AWS Redshift DB Group
+- AWS Redshift Database Name
+- AWS Redshift Database User
+- AWS Redshift Event Subscription
+- AWS Redshift HSM Client Certificate
+- AWS Redshift HSM Configuration
+- AWS Redshift Integration
+- AWS Redshift Namespace
+- AWS Redshift Parameter Group
+- AWS Redshift Security Group
+- AWS Redshift Security Group Ingress CIDR
+- AWS Redshift Security Group Ingress EC2 Security Group
+- AWS Redshift Serverless Endpoint Access
+- AWS Redshift Serverless Namespace
+- AWS Redshift Serverless Recovery Point
+- AWS Redshift Serverless Snapshot
+- AWS Redshift Snapshot Copy Grant
+- AWS Redshift Snapshot Schedule
+- AWS Redshift Subnet Group
+- AWS Redshift Usage Limit
+- AWS Regional WAFV2
+- AWS Rekognition Collection
+- AWS Rekognition Dataset
+- AWS Rekognition Project
+- AWS Rekognition Project Version
+- AWS Resilience Hub App Assessment
+- AWS Resilience Hub Recommendation Template
+- AWS ResilienceHub App
+- AWS Resource Access Manager Customer Managed Permission
+- AWS Resource Access Manager Permission
+- AWS Resource Access Manager Resource Share Invitation
+- AWS Resource Explorer Index
+- AWS Resource Explorer Managed View
+- AWS Resource Explorer View
+- AWS RoboMaker Deployment Fleet
+- AWS RoboMaker Deployment Job
+- AWS RoboMaker Robot
+- AWS RoboMaker Robot Application
+- AWS RoboMaker Robot Application Version
+- AWS RoboMaker Simulation Application
+- AWS RoboMaker Simulation Job
+- AWS RoboMaker Simulation Job Batch
+- AWS RoboMaker World
+- AWS RoboMaker World Export Job
+- AWS RoboMaker World Generation Job
+- AWS RoboMaker World Template
+- AWS Route 53 CIDR Collection
+- AWS Route 53 Change
+- AWS Route 53 Delegation Set
+- AWS Route 53 Profile
+- AWS Route 53 Profiles Profile Association
+- AWS Route 53 Query Logging Configuration
+- AWS Route 53 Recovery Controls Cluster
+- AWS Route 53 Recovery Controls Control Panel
+- AWS Route 53 Recovery Controls Safety Rule
+- AWS Route 53 Recovery Readiness Cell
+- AWS Route 53 Recovery Readiness Readiness Check
+- AWS Route 53 Recovery Readiness Recovery Group
+- AWS Route 53 Recovery Readiness Resource Set
+- AWS Route 53 Resolver Auto-Defined Rule
+- AWS Route 53 Resolver Configuration
+- AWS Route 53 Resolver DNSSEC Config
+- AWS Route 53 Resolver Firewall Configuration
+- AWS Route 53 Resolver Firewall Domain List
+- AWS Route 53 Resolver Firewall Rule Group
+- AWS Route 53 Resolver Firewall Rule Group Association
+- AWS Route 53 Resolver Outpost Resolver
+- AWS Route 53 Traffic Policy
+- AWS Route 53 Traffic Policy Instance
+- AWS Route53 Hosted Zone
+- AWS S3 Access Grant
+- AWS S3 Access Grants Instance
+- AWS S3 Access Grants Location
+- AWS S3 Access Point Object
+- AWS S3 Bug 1
+- AWS S3 Bug 2
+- AWS S3 Bug 3
+- AWS S3 Bug 4
+- AWS S3 Bug 5
+- AWS S3 Bug 6
+- AWS S3 Express Access Point
+- AWS S3 Job
+- AWS S3 Multi-Region Access Point Request
+- AWS S3 Object
+- AWS S3 Outposts Access Point
+- AWS S3 Outposts Bucket
+- AWS S3 Outposts Endpoint
+- AWS S3 Outposts Object
+- AWS S3 Replication Configuration
+- AWS S3 Storage Lens
+- AWS S3 Storage Lens Configuration
+- AWS S3 Storage Lens Group
+- AWS S3 Tables Table
+- AWS S3 Tables Table Bucket
+- AWS S3 Vectors Index
+- AWS S3 Vectors Vector Bucket
+- AWS S3 arn
+- AWS SES Mail Manager Addon Instance
+- AWS SES Mail Manager Addon Subscription
+- AWS SES Mail Manager Address List
+- AWS SES Mail Manager Ingress Point
+- AWS SES Mail Manager Rule Set
+- AWS SES Mail Manager SMTP Relay
+- AWS SES Mail Manager Traffic Policy
+- AWS SQL Workbench Chart
+- AWS SQL Workbench Connection
+- AWS SQL Workbench Notebook
+- AWS SQL Workbench Query
+- AWS SSM Patch Manager association
+- AWS SSM State Manager association
+- AWS STS Context Provider
+- AWS STS Federated User
+- AWS STS Root User
+- AWS STS Self Session
+- AWS SageMaker Action
+- AWS SageMaker Algorithm
+- AWS SageMaker App
+- AWS SageMaker App Image Configuration
+- AWS SageMaker Artifact
+- AWS SageMaker AutoML Job
+- AWS SageMaker Catalog
+- AWS SageMaker Cluster
+- AWS SageMaker Cluster Scheduler Config
+- AWS SageMaker Code Repository
+- AWS SageMaker Compilation Job
+- AWS SageMaker Compute Quota
+- AWS SageMaker Context
+- AWS SageMaker Data Quality Job Definition
+- AWS SageMaker Device
+- AWS SageMaker Device Fleet
+- AWS SageMaker Edge Deployment Plan
+- AWS SageMaker Edge Packaging Job
+- AWS SageMaker Endpoint Configuration
+- AWS SageMaker Experiment
+- AWS SageMaker Experiment Trial
+- AWS SageMaker Experiment Trial Component
+- AWS SageMaker Feature Group
+- AWS SageMaker Flow Definition
+- AWS SageMaker Geospatial Earth Observation Job
+- AWS SageMaker Geospatial Raster Data Collection
+- AWS SageMaker Geospatial Vector Enrichment Job
+- AWS SageMaker Hub
+- AWS SageMaker Hub Content
+- AWS SageMaker Human Loop
+- AWS SageMaker Human Task UI
+- AWS SageMaker Hyperparameter Tuning Job
+- AWS SageMaker Image
+- AWS SageMaker Image Version
+- AWS SageMaker Inference Component
+- AWS SageMaker Inference Experiment
+- AWS SageMaker Inference Recommendations Job
+- AWS SageMaker Labeling Job
+- AWS SageMaker Lineage Group
+- AWS SageMaker Model Bias Job Definition
+- AWS SageMaker Model Card
+- AWS SageMaker Model Card Export Job
+- AWS SageMaker Model Explainability Job Definition
+- AWS SageMaker Model Package
+- AWS SageMaker Model Package Group
+- AWS SageMaker Model Quality Job Definition
+- AWS SageMaker Monitoring Schedule
+- AWS SageMaker Monitoring Schedule Alert
+- AWS SageMaker Notebook Instance Lifecycle Config
+- AWS SageMaker Optimization Job
+- AWS SageMaker Partner App
+- AWS SageMaker Pipeline
+- AWS SageMaker Pipeline Execution
+- AWS SageMaker Processing Job
+- AWS SageMaker Project
+- AWS SageMaker Reserved Capacity
+- AWS SageMaker Shared Model
+- AWS SageMaker Shared Model Event
+- AWS SageMaker Space
+- AWS SageMaker Studio Lifecycle Configuration
+- AWS SageMaker Training Plan
+- AWS SageMaker User Profile
+- AWS SageMaker Workforce
+- AWS SageMaker Workteam
+- AWS Savings Plans Savings Plan
+- AWS Secrets Manager Secret
+- AWS Security Hub
+- AWS Security Hub Aggregator V2
+- AWS Security Hub Automation Rule
+- AWS Security Hub Configuration Policy
+- AWS Security Hub Connector V2
+- AWS Security Hub Finding Aggregator
+- AWS Security Hub Hub
+- AWS Security Hub Product
+- AWS Security Incident Response Case
+- AWS Security Incident Response Membership
+- AWS Security Lake Data Lake
+- AWS Security Lake Subscriber
+- AWS Service Catalog
+- AWS Service Catalog Application
+- AWS Service Catalog Attribute Group
+- AWS Service Catalog Portfolio - dup
+- AWS Service Catalog Stack
+- AWS Service Quotas Quota
+- AWS ServiceQuotas Athena
+- AWS ServiceQuotas Autoscaling
+- AWS ServiceQuotas CloudFormation
+- AWS ServiceQuotas EBS
+- AWS ServiceQuotas EC2
+- AWS ServiceQuotas Forecast
+- AWS ServiceQuotas IAM
+- AWS ServiceQuotas Logs
+- AWS ServiceQuotas Monitoring
+- AWS ServiceQuotas RDS
+- AWS ServiceQuotas Route53Resolver
+- AWS ServiceQuotas SSM
+- AWS ServiceQuotas SageMaker
+- AWS ServiceQuotas ServiceQuotas
+- AWS ServiceQuotas Textract
+- AWS ServiceQuotas Workspaces
+- AWS Services Integration
+- AWS Shield Attack
+- AWS Shield Protection Group
+- AWS Shield Regional Protection
+- AWS Signer Signing Job
+- AWS Signer Signing Profile
+- AWS SimSpace Weaver Simulation
+- AWS Simple Email Service (SES) Email Template
+- AWS Simple Workflow Service
+- AWS SimpleDB Domain
+- AWS Snow Device Management Managed Device
+- AWS Snow Device Management Task
+- AWS Social Messaging Phone Number ID
+- AWS Social Messaging WABA
+- AWS Step Functions Activity
+- AWS Step Functions Execution
+- AWS Step Functions Express Workflow Execution
+- AWS Step Functions Labelled Execution
+- AWS Step Functions Labelled Express
+- AWS Step Functions Map Run
+- AWS Step Functions State Machine Alias
+- AWS Step Functions State Machine Version
+- AWS Storage Gateway
+- AWS Storage Gateway Cache Report
+- AWS Storage Gateway Device
+- AWS Storage Gateway File Share Association
+- AWS Storage Gateway Share
+- AWS Storage Gateway Tape
+- AWS Storage Gateway Tape Pool
+- AWS Storage Gateway Target
+- AWS Storage Gateway Volume
+- AWS Systems Manager Association
+- AWS Systems Manager Automation Definition
+- AWS Systems Manager Automation Execution
+- AWS Systems Manager Maintenance Window
+- AWS Systems Manager Managed Instance
+- AWS Systems Manager Managed Instance Inventory
+- AWS Systems Manager OpsItem
+- AWS Systems Manager OpsItem Group
+- AWS Systems Manager OpsMetadata
+- AWS Systems Manager Patch Baseline
+- AWS Systems Manager Quick Setup Configuration Manager
+- AWS Systems Manager Service Setting
+- AWS Systems Manager Session
+- AWS Systems Manager Window Target
+- AWS Systems Manager Window Task
+- AWS Systems Manager for SAP Application
+- AWS Systems Manager for SAP Component
+- AWS Systems Manager for SAP Database
+- AWS Telco Network Builder Function Instance
+- AWS Telco Network Builder Network Instance
+- AWS Telco Network Builder Network Operation
+- AWS Testing wordpress
+- AWS Textract Adapter Version
+- AWS Timestream InfluxDB DB Instance
+- AWS Timestream InfluxDB DB Parameter Group
+- AWS Timestream Scheduled Query
+- AWS Transcribe Call Analytics Category
+- AWS Transcribe Vocabulary Filter
+- AWS Transfer Agreement
+- AWS Transfer Certificate
+- AWS Transfer Connector
+- AWS Transfer Host Key
+- AWS Transfer Profile
+- AWS Transfer User
+- AWS Transfer Web App
+- AWS Transfer Workflow
+- AWS Transform Profile
+- AWS Transit Gateway Attachment
+- AWS Transit Gateway Route Table Announcement
+- AWS Trusted Advisor Check
+- AWS User Notifications Configuration
+- AWS User Notifications Contacts Email Contact
+- AWS User Notifications Event
+- AWS User Notifications Event Rule
+- AWS User Notifications Managed Notification Child Event
+- AWS User Notifications Managed Notification Configuration
+- AWS User Notifications Managed Notification Event
+- AWS VPC Lattice Access Log Subscription
+- AWS VPC Lattice Listener
+- AWS VPC Lattice Resource Configuration
+- AWS VPC Lattice Resource Endpoint Association
+- AWS VPC Lattice Resource Gateway
+- AWS VPC Lattice Rule
+- AWS VPC Lattice Service Network
+- AWS VPC Lattice Service Network Resource Association
+- AWS VPC Lattice Service Network Service Association
+- AWS VPC Lattice Service Network VPC Association
+- AWS VPC Lattice Target Group
+- AWS VPN Connection Device Type
+- AWS Vendor Insights Data Source
+- AWS Vendor Insights Security Profile
+- AWS Verified Permissions Policy Store
+- AWS WAF Byte Match Set
+- AWS WAF Classic Rule Group
+- AWS WAF Classic Web ACL
+- AWS WAF Geo Match Set
+- AWS WAF Rate-Based Rule
+- AWS WAF Regex Match Set
+- AWS WAF Regex Pattern Set
+- AWS WAF Regional Byte Match Set
+- AWS WAF Regional Geo Match Set
+- AWS WAF Regional IP Set
+- AWS WAF Regional Rate-Based Rule
+- AWS WAF Regional Regex Match Set
+- AWS WAF Regional Regex Pattern Set
+- AWS WAF Regional Rule
+- AWS WAF Regional Rule Group
+- AWS WAF Regional SQL Injection Match Set
+- AWS WAF Regional Size Constraint Set
+- AWS WAF Regional Web ACL
+- AWS WAF Regional XSS Match Set
+- AWS WAF Rule
+- AWS WAF SQL Injection Match Set
+- AWS WAF Size Constraint Set
+- AWS WAF XSS Match Set
+- AWS Well-Architected Lens
+- AWS Well-Architected Review Template
+- AWS Well-Architected Tool Profile
+- AWS Wickr Network
+- AWS WorkDocs Organization
+- AWS WorkLink Fleet
+- AWS WorkMail Message Flow Raw Message
+- AWS WorkSpaces Application
+- AWS WorkSpaces Bundle
+- AWS WorkSpaces Certificate
+- AWS WorkSpaces Connection Alias
+- AWS WorkSpaces Directory
+- AWS WorkSpaces IP Group
+- AWS WorkSpaces Image
+- AWS WorkSpaces Managed Instances Workspace Instance
+- AWS WorkSpaces Pool
+- AWS WorkSpaces Secure Browser Data Protection Settings
+- AWS WorkSpaces Secure Browser IP Access Settings
+- AWS WorkSpaces Secure Browser Identity Provider
+- AWS WorkSpaces Secure Browser Network Settings
+- AWS WorkSpaces Secure Browser Portal
+- AWS WorkSpaces Secure Browser Session Logger
+- AWS WorkSpaces Secure Browser Settings
+- AWS WorkSpaces Secure Browser Trust Store
+- AWS WorkSpaces Secure Browser User Access Logging Settings
+- AWS WorkSpaces Secure Browser User Settings
+- AWS WorkSpaces Thin Client Device
+- AWS WorkSpaces Thin Client Environment
+- AWS WorkSpaces Thin Client Software Set
+- AWS WorkSpaces Workspace
+- AWS Workspace Web IP Access Settings
+- AWS X-Ray Group
+- AWS X-Ray Sampling Rule
+- AWS amazonmq#broker
+- AWS amplify#apps
+- AWS appstream#directoryconfig
+- AWS appsync#graphqlapi
+- AWS athena#namedqueryream
+- AWS athena#preparedstatement
+- AWS autoscaling#launchconfiguration
+- AWS autoscaling#scalingpolicy
+- AWS autoscaling#warmpool
+- AWS backup#backupselection
+- AWS cloudformation#delay
+- AWS cloudformation#stackset
+- AWS codegurureviewer#repositoryassociation
+- AWS connect#phonenumber
+- AWS datasync#locationefs
+- AWS datasync#locationfsxlustre
+- AWS datasync#locationfsxwindows
+- AWS datasync#locationhdfs
+- AWS datasync#locationnfs
+- AWS datasync#locationobjectstorage
+- AWS datasync#locations3
+- AWS datasync#locationsmb
+- AWS datasync#system
+- AWS dms#cert
+- AWS dms#es
+- AWS dms#replicationinstance
+- AWS dms#subgrp
+- AWS ec2 availability zone
+- AWS ec2#ec2fleet
+- AWS ec2#eip
+- AWS ec2#futurecapacityrequest
+- AWS ec2#futurecapacityspecification
+- AWS ec2#host
+- AWS ec2#spotfleet
+- AWS ec2#subnetroutetableassociation
+- AWS ecr#registrypolicy
+- AWS efs#filesystem
+- AWS elasticloadbalancingv2#listener
+- AWS elasticloadbalancingv2#loadbalancer
+- AWS elasticloadbalancingv2#networkloadbalancer
+- AWS emr#instance
+- AWS emr#instancefleet
+- AWS emr#instancegroup
+- AWS emr#securityconfiguration
+- AWS emr#step
+- AWS events#bus
+- AWS eventschemas#discoverer
+- AWS eventschemas#registry
+- AWS eventschemas#registrypolicy
+- AWS eventschemas#schema
+- AWS iot#accountauditconfiguration
+- AWS kinesisanalyticsv2#application
+- AWS macie2#session
+- AWS mediaconnect#flowentitlement
+- AWS mediaconnect#flowsource
+- AWS mediaconnect#flowvpcinterface
+- AWS msk#batchscramsecret
+- AWS pinpoint#applicationsettings
+- AWS pinpoint#emailchannel
+- AWS pinpoint#emailtemplate
+- AWS pinpoint#inapptemplate
+- AWS rds#dbcluster
+- AWS rds#dbclusterparametergroup
+- AWS rds#dbclustersnapshot
+- AWS rds#dbinstance
+- AWS rds#dbsecuritygroup
+- AWS rds#dbsnapshot
+- AWS rds#dbsubnetgroup
+- AWS rds#eventsubscription
+- AWS rds#optiongroup
+- AWS re:Post Private Space
+- AWS route53resolver#resolverqueryloggingconfig
+- AWS route53resolver#resolverqueryloggingconfigassociation
+- AWS route53resolver#resolverruleassociation
+- AWS s3#accesspoint
+- AWS s3#accountpublicaccessblock
+- AWS s3#multiregionaccesspoint
+- AWS s3#publicaccessblock
+- AWS servicediscovery#instance
+- AWS servicediscovery#serviceinstance
+- AWS servicediscovery#serviceresource
+- AWS ses#contactlist
+- AWS ses#receiptfilter
+- AWS ses#receiptruleset
+- AWS ssm#filedata
+- AWS stepfunctions#activity
+- AWS wafv2#regexpatternset
+- AWS wafv2#webacl
+- Alibaba ApsaraDB PolarDB Database
+- Alibaba ApsaraDB PolarDB Instance
+- Azure 84codes CloudAMQP Server
+- Azure API Connection
+- Azure API for FHIR
+- Azure AVS Private Cloud
+- Azure AVS Private Cloud Add On
+- Azure AVS Private Cloud Authorization
+- Azure AVS Private Cloud Cluster
+- Azure AVS Private Cloud Datastore
+- Azure AVS Private Cloud Global Reach Connection
+- Azure AVS Private Cloud HCX Enterprise Site
+- Azure AVS Private Cloud Script Execution
+- Azure AVS Private Cloud Workload Network DHCP Configuration
+- Azure AVS Private Cloud Workload Network DNS Service
+- Azure AVS Private Cloud Workload Network DNS Zone
+- Azure AVS Private Cloud Workload Network Port Mirroring Profile
+- Azure AVS Private Cloud Workload Network Segment
+- Azure AVS Private Cloud Workload Network VM Group
+- Azure AWS Connector CloudFormation StackSets
+- Azure AWS Connector CloudTrail
+- Azure AWS Connector IAM Instance Profiles
+- Azure AWS Connector IAM Virtual MFA Device
+- Azure AWS Connector Lambda Function
+- Azure AWS Connector RDS Snapshot
+- Azure AWS Connector SNS Subscription
+- Azure AWS Connector route53 Record Set
+- Azure Action Group
+- Azure Active Directory CIAM Directories
+- Azure Active Directory Private Link
+- Azure App Managed Environment
+- Azure App Service Certificate
+- Azure App Service Domains
+- Azure App Service Kubernetes Environment
+- Azure Application Group
+- Azure Application Insights Guest Diagnostic Setting
+- Azure Application Insights Notification Group
+- Azure Application Insights Scheduled Query Rule
+- Azure Application Security Group
+- Azure Aquila Instance
+- Azure Arc Data Controller
+- Azure Arc Extended Security Updates license
+- Azure Arc Private Link Scope
+- Azure Arc Resource Bridges
+- Azure Arc-enabled PostgreSQL Hyperscale server group
+- Azure Arc-enabled SQL Managed Instance
+- Azure Attestation Provider
+- Azure Auto Scale Setting
+- Azure Automanage Account
+- Azure Automanage Configuration Profile
+- Azure Automanage Configuration Profile Preference
+- Azure Availability Test
+- Azure BareMetal Instance
+- Azure Bing Resource
+- Azure BizTalk Service
+- Azure Blueprint Assignment
+- Azure Bonsai
+- Azure CDN Profiles
+- Azure Capacity Reservation Group
+- Azure Chaos Experiment
+- Azure Citrix Virtual Apps Essential
+- Azure CloudMonix Service
+- Azure CloudTest Image
+- Azure Code Signing Account
+- Azure Codespaces Plan
+- Azure Communication Services Email
+- Azure Compute Domain Name (Classic)
+- Azure Compute Shared VMExtension
+- Azure Compute Snapshot Dup
+- Azure ComputeImage
+- Azure Confidential Ledger
+- Azure Confluent Organization
+- Azure Connected Cache
+- Azure Connected VMware vSphere Cluster
+- Azure Connected VMware vSphere Datastore
+- Azure Connected VMware vSphere Host
+- Azure Connected VMware vSphere Resource Pool
+- Azure Connected VMware vSphere VCenter
+- Azure Connected VMware vSphere Virtual Machine
+- Azure Connected VMware vSphere Virtual Machine Template
+- Azure Connected VMware vSphere Virtual Networks
+- Azure Container Apps Job
+- Azure Container Service
+- Azure Container Service Snapshot
+- Azure Cosmos DB for MongoDB vCore Cluster
+- Azure Custom Entity Store Assignment
+- Azure Custom IP Prefix
+- Azure Custom Location
+- Azure Custom Provider Resource
+- Azure DDOS Protection Plan
+- Azure DNS Forwarding Ruleset
+- Azure DNS Resolver
+- Azure Data Box
+- Azure Data Box Edge Device
+- Azure Data Catalog
+- Azure Data Collection Endpoint
+- Azure Data Collection Rule
+- Azure Data Factories
+- Azure Data Lake Analytics
+- Azure Data Lake Storage Gen1
+- Azure Data Replication replicationFabrics
+- Azure Data Replication replicationVaults
+- Azure Data Scanner
+- Azure Data Share
+- Azure Database Migration Service
+- Azure Databricks Access Connector
+- Azure Datadog
+- Azure Dedicated HSM
+- Azure Defender EASM
+- Azure Defender for Cloud Pricing
+- Azure Defender for DevOps
+- Azure Defender for DevOps GitHub Connectors
+- Azure Delegated Subnet
+- Azure Deployment Script
+- Azure Dev Test Lab
+- Azure Dev Test Lab Schedule
+- Azure Device Provisioning Service
+- Azure Device Registry Asset Endpoint Profiles
+- Azure Device Update For IoT Hubs
+- Azure Devops Starter
+- Azure Digital Twins
+- Azure Disk Pool
+- Azure Edge Capability List
+- Azure Edge Hardware Center
+- Azure Edge Hardware Center Address
+- Azure Elasticsearch (Elastic Cloud)
+- Azure Email Service
+- Azure Event Grid Namespaces
+- Azure Event Grid Partner Configuration
+- Azure Event Grid Partner Destinations
+- Azure Event Grid Partner Partner Registrations
+- Azure Event Grid Partner Topic
+- Azure Event Grid System Topic
+- Azure Event Hub Cluster
+- Azure Experiment Workspace
+- Azure Express Route Cross Connections
+- Azure Express Route Gateway
+- Azure Express Route Ports
+- Azure Fidalgo Dev Center
+- Azure Fidalgo Project
+- Azure Fluid Relay
+- Azure Github AE
+- Azure Github Network Settings
+- Azure Health Bot
+- Azure Healthcare APIs Workspace
+- Azure Host Group
+- Azure HostingEnvironment
+- Azure Hybrid Container Service provisioned cluster
+- Azure Hybrid Container Service virtual networks
+- Azure Hyper-V Site
+- Azure IP Group
+- Azure Image Template
+- Azure Import Site
+- Azure Incapsula WAF
+- Azure Integration Account
+- Azure Integration Service Environment
+- Azure Intelligent Recommendations Account
+- Azure IoT Central Application
+- Azure IoT Security Solution
+- Azure Jit Request
+- Azure Kubernetes Configuration Private Link Scope
+- Azure Kubernetes Fleet Manager
+- Azure Lab
+- Azure Lab Account
+- Azure Lab Plan
+- Azure Load Testing
+- Azure Local Network Gateway
+- Azure Log Analytics Query Pack
+- Azure Logic App Workflow
+- Azure Logic Apps Custom Connector
+- Azure Logz Main Account
+- Azure Machine Learning Studio Web Service
+- Azure Machine Learning Studio Web Service Plans
+- Azure Machine Learning registries
+- Azure Maintenance Configuration
+- Azure Managed Application
+- Azure Managed Identity
+- Azure Managed Instance For Apache Cassandra
+- Azure Master Site
+- Azure Media Service
+- Azure Microsoft AWS Connector Logs Metric Filters
+- Azure Microsoft Device Registry Assets
+- Azure Microsoft Entra ID B2C Tenant
+- Azure Microsoft Entra ID Domain Service
+- Azure Microsoft Entra ID Guest Usage
+- Azure Microsoft Fabric Capacity
+- Azure Microsoft Graph
+- Azure Microsoft Purview Account
+- Azure Microsoft.MachineLearning#Workspaces
+- Azure Migrate Assessment Project
+- Azure Migrate Modernize Projects
+- Azure Migrate Move Collection
+- Azure Migration Migrate Project
+- Azure Migration Project
+- Azure Mobile Network
+- Azure Mobile Network Sim Groups
+- Azure Monitor Action Rule
+- Azure Monitor Activity Log Alert
+- Azure Monitor Alert Rule
+- Azure Monitor For Sap Solutions v2
+- Azure Monitor Metric Alert
+- Azure Monitor Private Link Scopes
+- Azure Monitor Prometheus Rule Groups
+- Azure Monitor Smart Detector Alert Rule
+- Azure Monitor for SAP Solutions
+- Azure Native Dynatrace Service
+- Azure Network Configurations
+- Azure Network Function Manager - Device
+- Azure Network Function Manager - Network Functions
+- Azure Network Intent Policy
+- Azure Network Manager
+- Azure Network Profile
+- Azure Network Reserved IP (Classic)
+- Azure Network Security Group (Classic)
+- Azure Network Security Perimeter
+- Azure Network Virtual Appliance
+- Azure Network Virtual Network (Classic)
+- Azure Network Watcher
+- Azure Nginx Deployment
+- Azure Notification Hubs Namespace
+- Azure Nutanix Interface
+- Azure Nutanix Node
+- Azure Object Anchors Account
+- Azure Object Understanding Account
+- Azure On-Premises Data Gateway
+- Azure Packet Core Control Plane
+- Azure Peering
+- Azure Peering Service
+- Azure Percept accounts
+- Azure Playwright Service Accounts
+- Azure Policy Assignment
+- Azure Power Bi Embedded
+- Azure Power Platform Account
+- Azure Power Platform Enterprise Policies
+- Azure PowerBI Dedicated Auto Scale V-Core
+- Azure PowerBI Workspace Collection
+- Azure Professional Service
+- Azure Project CI
+- Azure Proximity Placement Group
+- Azure Quantum Workspace
+- Azure Radio Access Network
+- Azure Red Hat Openshift
+- Azure Relay
+- Azure Remote Rendering Account
+- Azure Resource Graph Query
+- Azure Resource Guard
+- Azure Resource Management Private Link
+- Azure Restore Point Collection
+- Azure Route Filter
+- Azure SAP HANA On Azure
+- Azure SCVMM VMM Server
+- Azure SCVMM Virtual Machine
+- Azure SIM
+- Azure SQL Instance Pool
+- Azure SQL Migration Service
+- Azure SQL Server Registration
+- Azure SQL Virtual Cluster
+- Azure SQL Virtual Machine Group
+- Azure Saas
+- Azure Sap Virtual Instance
+- Azure Scaling Plan
+- Azure Scheduler Job Collection
+- Azure Security Assignment
+- Azure Security Automation
+- Azure Security Connector
+- Azure Security Detonation Chamber
+- Azure Security Partner Provider
+- Azure Security Standard
+- Azure Security VM Scanner
+- Azure Server Site
+- Azure ServerFarm
+- Azure Service Catalog Managed Application Definition
+- Azure Service Endpoint Policy
+- Azure Service Fabric Managed Cluster
+- Azure Service Fabric Mesh Application
+- Azure Service Fabric Mesh Gateway
+- Azure Service Fabric Mesh Network
+- Azure Service Fabric Mesh Volume
+- Azure Services Hub Connector
+- Azure Shared Dashboard
+- Azure Solution
+- Azure Spatial Anchors Account
+- Azure Spring Cloud
+- Azure Stack HCI Gallery Image
+- Azure Stack HCI Logical Network
+- Azure Stack HCI Marketplace Gallery Image
+- Azure Stack HCI Marketplace Gallery Images
+- Azure Stack HCI Network Interface
+- Azure Stack HCI Storage Container
+- Azure Stack HCI Virtual Hard Disks
+- Azure Stack HCI Virtual Machine
+- Azure Stack HCI Virtual Network
+- Azure Stack Linked Subscription
+- Azure Stack Registration
+- Azure StorSimple Data Manager
+- Azure StorSimple Device Manager
+- Azure Storage Account (Classic)
+- Azure Storage Mover
+- Azure Storage Sync Service
+- Azure Synapse Analytics Private Link Hub
+- Azure Template Spec
+- Azure Test Base Account
+- Azure Time Series Insights Environment
+- Azure Toolchain Orchestrator Campaign
+- Azure Traffic Analytics Collector
+- Azure VM-Series Next-Generation Firewall from Palo Alto Networks
+- Azure VM-Series Next-Generation Firewall local Rulestacks from Palo Alto Networks
+- Azure VMware Site
+- Azure VPN Gateway
+- Azure VPN Site
+- Azure Video Analyzer
+- Azure Video Analyzer For Media
+- Azure Virtual Machine (Classic)
+- Azure Visual Studio
+- Azure Visual Studio Online Plan
+- Azure WANdisco Fusion Migrator
+- Azure Web PubSub Service
+- Azure WebCertificate
+- Azure Windows Multiple Activation Key
+- Azure Workbook
+- Azure Workbook Template
+- GCP AI Platform NotebookRuntime
+- GCP API Config
+- GCP API Gateway API
+- GCP API Keys Key
+- GCP Anthos AWS GKE Cluster
+- GCP Anthos Attached GKE Cluster
+- GCP Anthos Azure GKE Cluster
+- GCP Anthos Connected Cluster
+- GCP Apigee Instance
+- GCP App Engine Application
+- GCP App Engine Version
+- GCP AppHub Service Project Attachment
+- GCP Application Integration
+- GCP Application Integration Integration Version
+- GCP Artifact Registry Maven Artifact
+- GCP Artifact Registry Npm Package
+- GCP Artifact Registry Python Package
+- GCP Autoscaler
+- GCP Backup and DR Management Server
+- GCP Batch Job
+- GCP BeyondCorp Client Connector Service
+- GCP BeyondCorp Client Gateway
+- GCP BeyondCorp Enterprise
+- GCP BeyondCorp Enterprise App Connector
+- GCP Beyondcorp App Gateway
+- GCP BigQuery Dataform Compilation Result
+- GCP BigQuery Dataform Release Configuration
+- GCP BigQuery Dataform Workflow Configuration
+- GCP BigQuery Dataform Workflow Invocation
+- GCP BigQuery Dataform Workspace
+- GCP BigQuery Model
+- GCP BigQuery Table
+- GCP Bigtable Admin App Profile
+- GCP Bigtable Admin Backup
+- GCP Bigtable Admin Cluster
+- GCP Bigtable Admin Instance
+- GCP Bigtable Admin Table
+- GCP Blockchain Node Engine Blockchain Node
+- GCP Certificate
+- GCP Certificate Authority
+- GCP Certificate Authority Pool
+- GCP Certificate Revocation List
+- GCP Certificate Template
+- GCP Cloud Build Bitbucket Server Config
+- GCP Cloud Build Github Enterprise Config
+- GCP Cloud Build Global Trigger Settings
+- GCP Cloud Build Installation
+- GCP Cloud Build Trigger
+- GCP Cloud Build Worker Pool
+- GCP Cloud Deploy
+- GCP Cloud Deploy Release
+- GCP Cloud Deploy Rollout
+- GCP Cloud Deploy Target
+- GCP Cloud Domains
+- GCP Cloud KMS Crypto Key
+- GCP Cloud KMS Crypto Key Version
+- GCP Cloud KMS Import Job
+- GCP Cloud KMS Key Ring
+- GCP Cloud Run Domain Mapping
+- GCP Cloud SWG Gateway
+- GCP Cloud VPN Tunnel
+- GCP CloudFunction
+- GCP Compute Engine Commitment
+- GCP Compute Engine License
+- GCP Compute Engine Reservation
+- GCP Compute Global Address
+- GCP Compute Health Check
+- GCP Compute Network Endpoint Group
+- GCP ComputeInstanceGroupManager
+- GCP ComputeProject
+- GCP Connectivity Test
+- GCP Container Registry Image
+- GCP DLP Deidentification Template
+- GCP DLP Inspection Template
+- GCP DLP Job
+- GCP DLP Stored Info Type
+- GCP DNS Server Policies
+- GCP Dataplex Asset
+- GCP Dataplex Lake
+- GCP Dataplex Task
+- GCP Dataplex Zone
+- GCP Dataproc Autoscaling Policy
+- GCP Dataproc Job
+- GCP Dataproc Metastore Backup
+- GCP Dataproc Metastore Metadata Import
+- GCP Dataproc Workflow Template
+- GCP Dialogflow Conversation Profile
+- GCP Dialogflow Knowledge Base
+- GCP Dialogflow Location Settings
+- GCP Document AI Human Review Config
+- GCP Document AI Labeler Pool
+- GCP Document AI Processor Version
+- GCP Edge Cache Origin
+- GCP Edge Cache Service
+- GCP Extension
+- GCP External VPN Gateway
+- GCP File Backup
+- GCP File Instance
+- GCP Filestore Database
+- GCP Firebase App
+- GCP Firebase Project
+- GCP Firewall Policy
+- GCP GKE Cluster Role
+- GCP GKE Cluster Role Binding
+- GCP GKE Container Cluster
+- GCP GKE Container Node Pool
+- GCP GKE Deployment
+- GCP GKE GatewayClass
+- GCP GKE Hub
+- GCP GKE Hub Fleet
+- GCP GKE Hub Membership
+- GCP GKE Ingress Controller
+- GCP GKE Namespace
+- GCP GKE Network Policy
+- GCP GKE Node
+- GCP GKE On-Prem VMware Cluster
+- GCP GKE Pod
+- GCP GKE Policy Pod Disruption Budget
+- GCP GKE Replica Set
+- GCP GKE Restore
+- GCP GKE Role
+- GCP GKE Role Binding
+- GCP GKE Service
+- GCP GKE Volume Backup
+- GCP GKE Volume Restore
+- GCP GKE horizontal Pod autoscaling
+- GCP Game Server Cluster
+- GCP Game Server Deployment
+- GCP Game Server Realm
+- GCP GlobalForwardingRule
+- GCP HTTP Health Check
+- GCP HTTPS Health Check
+- GCP Healthcare Consent
+- GCP Healthcare DICOM
+- GCP Healthcare Dataset
+- GCP Healthcare FHIR
+- GCP Healthcare HL7v2
+- GCP IAM Role
+- GCP IAM Service Account
+- GCP IAM Service Account Key
+- GCP IDS Endpoint
+- GCP Iam PolicyV2
+- GCP Integration Connectors
+- GCP Integrations SFDC Channel
+- GCP Integrations SFDC Instance
+- GCP Interconnect
+- GCP K8S Replication Controller
+- GCP K8s Endpoints
+- GCP K8s PodTemplate
+- GCP KMS External Key Manager (EKM)
+- GCP Logging Bucket Log
+- GCP Logging Metric
+- GCP Logging Sink Log
+- GCP Machine Image
+- GCP Managed Identity Domain
+- GCP Managed Service
+- GCP Monitoring Dashboard
+- GCP Monitoring Notification Channel
+- GCP Monitoring Snooze
+- GCP Network Analyzer
+- GCP Network Connectivity Center Hub
+- GCP Network Connectivity Center Spoke
+- GCP Network Security Client TLS Policy
+- GCP Network Services HttpRoute
+- GCP Network Services LB Route Extension
+- GCP Node Group
+- GCP Node Template
+- GCP OS Inventory Management
+- GCP OS Patch Deployment
+- GCP OS Policy Assignment
+- GCP OS Policy Assignment Report
+- GCP OS Vulnerability Report
+- GCP Organization Policy
+- GCP Packet Mirroring
+- GCP Project Billing Information
+- GCP Pub/Sub Schema
+- GCP Pub/Sub Snapshot
+- GCP Public delegated prefix
+- GCP Regional Persistent Disk
+- GCP Resource Manager Tag Binding
+- GCP Resource Manger Project
+- GCP Resource Policy
+- GCP SQL Admin Instance
+- GCP SSL Policy
+- GCP Secret
+- GCP Secret Version
+- GCP Serverless VPC Access Connector
+- GCP Service Usage Service
+- GCP Speaker ID Phrase
+- GCP Speaker ID Speaker
+- GCP Speech Recognizer
+- GCP Speech to Text Custom Class
+- GCP Speech to Text Phrase Set
+- GCP Storage Insights DatasetConfig
+- GCP Storage Insights ReportConfig
+- GCP Storage Insights ReportDetail
+- GCP TPU Node
+- GCP Target Instance
+- GCP Transcoder
+- GCP Uptime Check Configuration
+- GCP VLAN attachment
+- GCP VMware Engine Network
+- GCP VPC Service Attachment
+- GCP Vertex AI Data Labeling Job
+- GCP Vertex AI Feature Store
+- GCP Vertex AI Specialist Pool
+- GCP Vmware Engine Private Cloud
+- GCP Vmware Engine Private Connection
+- GCP VmwareEngine ExternalAccessRule
+- GCP VmwareEngine ExternalAddress
+- GCP VmwareEngine NetworkPeering
+- GCP admissionregistration#MutatingWebhookConfiguration
+- GCP admissionregistration#ValidatingWebhookConfiguration
+- GCP aiplatform#Tensorboard
+- GCP aiplatform#metadatastore
+- GCP aiplatform#modeldeploymentmonitoringjob
+- GCP alloydb#Instance
+- GCP cloudresourcemanager#TagKey
+- GCP cloudresourcemanager#TagValue
+- GCP dataplex#DataScan
+- GCP dataplex#Environment
+- GCP discoveryengine#Collection
+- GCP gkemulticloud#AwsNodePool
+- GCP gkemulticloud#AzureClient
+- GCP gkemulticloud#AzureNodePool
+- GCP integrations#AuthConfig
+- GCP integrations#Execution
+- GCP integrations#Suspension
+- GCP k8s#ResourceQuota
+- IBM Floating IP
+- IBM Instance Group
+- IBM Load Balancer
+- IBM Routing Table
+- IBM SSH Key
+- IBM Virtual Private Endpoint Gateway
+- OCI BYOIP Range
+- OCI Big Data Service Metastore Config
+- OCI Certificate Authority
+- OCI Console Dashboard Group
+- OCI Cross Connect Group
+- OCI Customer DNS Zone
+- OCI DNS Resolver
+- OCI Dynamic Routing Gateway (DRG) Route Table
+- OCI Mount Target
+- OCI Oracle Resource Manager (ORM) Job
+- OCI Tag Default
+- OCI Virtual Circuit
+- OCI Vulnerability Scanning Service (VSS) Container Scan Recipe
+
+### Simulation Service 
+- AWS Fault Injection Service (FIS) Experiment
+- AWS IoT TwinMaker Workspace
+
+### Snapshot 
+- AWS DB Cluster Snapshot
+- AWS DB Instance Snapshot
+- AWS DocumentDB Elastic Cluster Snapshot
+- AWS DynamoDB Backup
+- AWS EBS Encrypted Snapshot
+- AWS EBS Unencrypted Snapshot
+- AWS Elasticache Snapshot
+- AWS MemoryDB Snapshot
+- AWS Neptune Analytics Graph Snapshot
+- AWS Redshift Cluster Snapshot
+- Azure Compute Snapshot
+- Azure SQL LTR Backup
+- DigitalOcean Volume Snapshot
+- GCP AlloyDB Backup
+- GCP Cloud SQL Backup
+- GCP Cloud SQL Backup Run
+- GCP Compute Snapshot
+- GCP Spanner Backup
+- IBM Block Storage Snapshot
+- vSphere Virtual Machine Snapshot
+
+### Stateful Set 
+- Kubernetes Kubernetes Stateful Set
+
+### Storage Account 
+- Azure NetApp Files Account
+- Azure Storage Account
+- GCP NetApp Storage Pool
+- IBM Cloud Object Storage Instance
+
+### Subnet 
+- AWS VPC Subnet
+- Alibaba Subnet
+- Azure Virtual Network Subnet
+- GCP Subnet
+- IBM Subnet
+- Linode Subnet
+- OCI Subnet
+- OpenStack Subnet
+
+### Subscription 
+- AWS Account
+- Alibaba Account
+- Azure Subscription
+- Cloudflare Account
+- Databricks Metastore
+- Databricks Workspace
+- DigitalOcean Team
+- GCP Project
+- GenericDB Subscription
+- IBM Account
+- Linode Account
+- Microsoft365 Organization
+- MongoDBAtlas Project
+- Nebius Tenant
+- OCI Compartment
+- OpenAI Project
+- OpenShift Project
+- OpenStack Project
+- Salesforce Organization
+- SelfHosted Custom Subscription
+- Snowflake Account
+- Terraform Organization
+- Vercel Team
+- vSphere Datacenter
+
+### Switch 
+- vSphere Distributed Virtual Switch
+
+### Target Group 
+- AWS Load Balancer Target Group
+- Azure Load Balancer Backend Pool
+- GCP Backend Bucket
+
+### User Account 
+- AWS IAM Identity Center User
+- AWS IAM Root User
+- AWS IAM User
+- Alibaba RAM Root User
+- Alibaba RAM User
+- Azure Microsoft Entra ID User
+- AzureDevOps User
+- Backstage User
+- BitbucketCloud User
+- BitbucketDataCenter User
+- Databricks User
+- GCP User
+- GCP Workspace User
+- GitHub User
+- GitLab User
+- IBM User
+- Kubernetes Kubernetes User
+- Linode User
+- MongoDBAtlas Cloud User
+- MongoDBAtlas Database User
+- OCI User
+- Okta User
+- OpenAI User
+- OpenStack User
+- ServiceNow User
+- Snowflake User
+- Vercel Team Member
+- Wiz User
+
+### Virtual Desktop 
+- AWS AppStream 2.0 Stack
+- AWS WorkSpace
+
+### Virtual Drive 
+- Microsoft365 Drive
+
+### Virtual Machine 
+- AWS EC2 Instance
+- AWS Lightsail Instance
+- Alibaba ECS Instance
+- Azure Arc Machine
+- Azure Compute Virtual Machine
+- Azure Machine Learning Studio Workspace Compute Instance
+- Azure Scale Set Virtual Machine
+- Azure Stack HCI Cluster
+- DigitalOcean Droplet
+- GCP Compute Instance
+- IBM Virtual Server Instance
+- Imported Enrichment
+- Imported Private Server
+- Imported Virtual Machine
+- Linode Linode Instance
+- OCI Base Database DB System
+- OCI Compute Instance
+- OpenStack Compute Instance
+- Private Server
+- vSphere ESXi Host
+- vSphere Virtual Machine
+- vSphere vCenter
+
+### Virtual Machine Image 
+- AWS Machine Image (AMI)
+- Azure Compute Gallery VM image version
+- Azure Compute Virtual Machine Image
+- DigitalOcean Droplet Snapshot
+- GCP Compute Image
+- Linode Image
+- OCI Compute Image
+- OCI Database Software Image
+- OpenStack Image
+- vSphere Virtual Machine Template
+
+### Virtual Network 
+- AWS VPC
+- Alibaba Virtual Private Cloud (VPC)
+- Azure Virtual Network
+- GCP Compute VPC Network
+- IBM VPC
+- Linode Virtual Network
+- OCI Virtual Cloud Network (VCN)
+- OpenStack Network
+
+### Virtual Workspace 
+- AWS Clean Rooms Collaboration
+- Azure Dev Center Project
+- Azure Machine Learning Studio Workspace
+- Azure OpenAI Service
+- GCP BigQuery Dataform Repository
+- GCP Data Fusion Instance
+
+### Virtual Workstation 
+- AWS SageMaker  Notebook
+- GCP Vertex AI Workbench Instance
+- GCP Vertex AI Workbench Managed Notebook
+- GCP Vertex AI Workbench User Managed Notebook
+- GCP Workstation
+
+### Volume 
+- AWS EC2 Volume (EBS)
+- AWS Lightsail Disk
+- Alibaba Disk
+- Azure Disk
+- DigitalOcean Volume
+- GCP Compute Disk
+- IBM Block Storage Volume
+- Linode Volume
+- OCI Boot Volume
+- OCI Volume
+- OpenStack Volume
+
+### Web Service 
+- AWS Amplify App
+- AWS App Runner Service
+- AWS AppSync API
+- AWS Elastic Beanstalk Application
+- AWS Mainframe Modernization Application
+- Azure App Service
+- Azure Cloud Service
+- Azure Communication Service
+- Azure Logic App
+- Azure SignalR
+- Azure Static Web App
+- GCP App Engine Service
+- OCI Function Application
+- Vercel Project

@@ -1,15 +1,16 @@
-"""Guard TASK-018 / TASK-019 playbooks are tracked and present (Wave C–D)."""
+"""Guard Wave C–D playbooks referenced by CI manifest are present."""
 
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_run_exec_briefing_and_debug_pipeline_playbooks_tracked() -> None:
+def test_wave_cd_playbooks_tracked() -> None:
     manifest = (REPO_ROOT / "scripts/ci/required-paths.manifest").read_text(encoding="utf-8")
     for rel in (
-        "docs/ai/playbooks/run-exec-briefing.md",
-        "docs/ai/playbooks/debug-pipeline.md",
+        "docs/ai/playbooks/run-journey-timeline.md",
+        "docs/ai/playbooks/refresh-wiz-doc-cache.md",
+        "docs/ai/playbooks/bootstrap-customer.md",
     ):
         assert rel in manifest, f"{rel} must be listed in required-paths.manifest"
         path = REPO_ROOT / rel

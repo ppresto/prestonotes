@@ -82,6 +82,16 @@ def test_main_does_not_block(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
         server.main()
 
 
+def test_refresh_wiz_vector_index_dry_run_returns_command(repo_ctx: Path) -> None:
+    from prestonotes_mcp.server import refresh_wiz_vector_index
+
+    raw = refresh_wiz_vector_index(dry_run=True, reset=False)
+    data = json.loads(raw)
+    assert data.get("dry_run") is True
+    cmd = data.get("command") or []
+    assert "prestonotes_mcp.ingestion.build_vector_db" in " ".join(cmd)
+
+
 def test_read_transcripts_prefers_per_call_files(repo_ctx: Path) -> None:
     from prestonotes_mcp.server import read_transcripts
 
@@ -98,3 +108,16 @@ def test_read_transcripts_prefers_per_call_files(repo_ctx: Path) -> None:
     names = [t["file"] for t in data["transcripts"]]
     assert "2026-01-10-discovery.txt" in names
     assert "_MASTER_TRANSCRIPT_Acme.txt" not in names
+
+
+def test_read_transcripts_allows_leading_underscore_customer(repo_ctx: Path) -> None:
+    from prestonotes_mcp.server import read_transcripts
+
+    base = repo_ctx / "MyNotes" / "Customers" / "_TEST_CUSTOMER" / "Transcripts"
+    base.mkdir(parents=True)
+    (base / "_MASTER_TRANSCRIPT__TEST_CUSTOMER.txt").write_text("fixture", encoding="utf-8")
+
+    raw = read_transcripts("_TEST_CUSTOMER", limit=5)
+    data = json.loads(raw)
+    assert "transcripts" in data
+    assert len(data["transcripts"]) == 1
