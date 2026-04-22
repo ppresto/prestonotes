@@ -220,14 +220,16 @@ Use these cross-references to:
 - **Detect regressions** — if the ledger shows a challenge was resolved but transcripts suggest it resurfaced, flag it for clarification.
 - **Detect stale state** — if the ledger's last row is old and transcripts show material changes, note the gap.
 
-**Daily Activity Logs — meeting recap gap (required; feed Step 8):**
+**Daily Activity Logs — prepend-per-call (required; feed Step 8):**
 - From Step 3 `read` JSON, treat `daily_activity_logs.free_text` entries as paragraphs: derive a **normalized meeting title key** for each block’s **first line** (strip leading `#`, trim — same idea as the duplicate guard in `docs/ai/references/daily-activity-ai-prepend.md`).
-- From Step 4 transcripts **within lookback**, list meetings you can recap (date, title, source path).
-- **Only recap meetings with usable transcript content.** If a meeting block contains `[No Transcript Data]` (or otherwise lacks substantive transcript body), mark it as `no transcript available` and **do not** include it in Daily Activity recap mutations.
+- From Step 4 transcripts **within lookback**, list meetings you can recap (date, title, source path). **UCN emits one DAL prepend per call in the lookback window**, not per chosen narrative. For a customer with N in-lookback transcripts, `daily_activity_logs.free_text` receives exactly N new date-headed groups (after the duplicate guard filters out meetings that already have a recap).
+- **Only recap meetings with usable transcript content.** If a meeting block contains `[No Transcript Data]` (or otherwise lacks substantive transcript body), mark it as `no transcript available`, record `skipped:dal_prepend call=<date> reason=empty_transcript` in the run log (§F), and do **not** include it in Daily Activity recap mutations.
 - **Missing recaps:** meetings whose proposed `heading_line` would **not** duplicate any existing normalized first line. If the same calendar meeting already has a recap, skip unless the user asked to refresh it.
 - Carry the **missing** list (count + identifiers) into Step 8.
 
-**Tell user:** "Step 6 of 11 — I read through all the notes and found [N] possible updates across [N] sections, [N] conflicts that need your input, and Daily Activity: [N] meetings in lookback still need a recap / all covered."
+**Populatable-field walk (required; feed Step 8):** Enumerate every populatable GDoc field the planner must visit in Step 8 — 15 fields, listed in Step 8 below. For each, decide whether the in-lookback transcripts contain explicit signal; if yes, draft a candidate mutation; if no, pre-classify the skip reason (`no_in_scope_transcript_signal`, `same_as_current_entry`, `evidence_below_confidence_threshold`, `section_off_by_opt_out`). The per-field extraction rules are the canonical list in `.cursor/rules/21-extractor.mdc` § **Per-section GDoc extraction**.
+
+**Tell user:** "Step 6 of 11 — I read through all the notes and found [N] possible updates across [N] sections, [N] conflicts that need your input, Daily Activity: [N] of [N] in-lookback calls still need a recap, and [N] of the 15 populatable fields carry in-scope transcript signal."
 
 ### Step 7 of 11 — Clarification gate (ask before acting on ambiguity)
 
@@ -255,6 +257,26 @@ Produce a typed change plan (mutation JSON) following the schema, core rules, an
 Incorporate user answers from Step 7 as evidence (cite "user confirmation [date]" as evidence source).
 
 Run the planner coverage guard: every run must explicitly cover `exec_account_summary.top_goal`, `exec_account_summary.risk`, `use_cases.free_text`, and `workflows.free_text` with either a change or `no_evidence`.
+
+**Populatable-field enumeration (required — propose or skip-with-reason):** On top of the coverage guard above, the planner MUST visit every populatable GDoc field and for each one either propose a mutation or record a skip with one of **four** reasons: `no_in_scope_transcript_signal`, `same_as_current_entry`, `evidence_below_confidence_threshold`, `section_off_by_opt_out`. The 15 fields:
+
+1. `company_overview.free_text`
+2. `contacts.free_text`
+3. `org_structure.free_text`
+4. `cloud_environment.platforms` (tools_list)
+5. `cloud_environment.devops_vcs` (tools_list)
+6. `cloud_environment.security_tools` (tools_list)
+7. `cloud_environment.ticketing` (tools_list)
+8. `use_cases.free_text`
+9. `workflows.free_text`
+10. `accomplishments.free_text`
+11. `account_motion_metadata.exec_buyer`
+12. `account_motion_metadata.champion`
+13. `account_motion_metadata.technical_owner`
+14. `account_motion_metadata.sensor_coverage_pct`
+15. `account_motion_metadata.critical_issues_open`
+
+`account_motion_metadata.mttr_days` and `account_motion_metadata.monthly_reporting_hours` are populated only when a transcript states the number explicitly; otherwise skip with `no_in_scope_transcript_signal`. Per-field extraction rules live in `.cursor/rules/21-extractor.mdc` § **Per-section GDoc extraction**; skip-reason accounting is what the writer surfaces in the agent run log (§F / Step 10 below).
 
 When you **do** append to the exec summary, target the correct field so new text becomes a **bullet under the matching H3** (**Goals** / **Risk** / **Upsell Path**). Do not place deal-risk language in `top_goal` or SKU upsell lines in `risk`.
 
@@ -320,9 +342,16 @@ uv run prestonotes_gdoc/update-gdoc-customer-notes.py write \
 
 For first-time testing, add `--dry-run`.
 
+**What the writer does before it emits the final applied change set:**
+
+- **Append-with-history timestamp emission** — for the four `append_with_history` fields (`exec_account_summary.top_goal` / `risk` / `upsell_path`, `appendix.agent_run_log`) the writer renders each newly added entry as `<value> [YYYY-MM-DD]` using the current run date. Pre-existing entries without a timestamp are left alone (append-only; no backfill). This is what drives the acceptance bar in §G — every new `append_with_history` entry in the post-run doc carries `[YYYY-MM-DD]`.
+- **Challenge Tracker ↔ lifecycle reconciliation pass** — when `write_doc` receives the customer name, the writer loads `MyNotes/Customers/[CustomerName]/AI_Insights/challenge-lifecycle.json` and, for every Challenge Tracker row carrying a `[lifecycle_id:<id>]` anchor, rewrites the row `status` to match the lifecycle mapping: `identified → Open`, `in_progress → In Progress`, `stalled → Stalled`, `resolved → Resolved` (plus `acknowledged → Open`, `reopened → In Progress`). Each row the reconciler flips shows up as an applied change with `action=reconcile_with_lifecycle`. If lifecycle JSON is absent or unreadable, the reconciler is a no-op and the rest of the write proceeds unchanged.
+- **Deal Stage Tracker motion capture** — for every SKU (`cloud`, `sensor`, `defend`, `code`) cited in an applied `exec_account_summary.upsell_path` entry, the writer advances the Deal Stage row: `not-active → discovery` by default, `→ pov` when the upsell text matches POV evidence phrases (`pov`, `timeboxed`, `pilot`, `poc kicked off`, …), `→ win` when it matches purchase evidence phrases (`po signed`, `purchased`, `contract signed`, …). `activity` flips to `active`; `reason` is rewritten to `<stage> evidence in upsell_path (<call-date>)` using the most recent ISO date found in the upsell line (fallback: today). Applied as `action=advance_deal_stage_from_upsell`.
+- **Agent run log append** — on a successful run with ≥ 1 applied mutation, the writer appends exactly one `appendix.agent_run_log` entry carrying the TASK-050 §F keys (`run_date`, `sections_touched`, `entries_added`, `entries_skipped`, `skipped_reasons`, `reconciled`, and — when the planner supplies them — `lookback_window`, `transcripts_in_scope`, `dal_prepends_emitted`). On rejection / zero-write runs the writer does **not** append a run-log entry (matches the "no ledger row on rejection" rule).
+
 After write, re-run the `read` subcommand to confirm changes are reflected. Save the post-write doc state for the ledger row.
 
-**Tell user:** "Step 10 of 11 — Changes written to Google Doc. Here's what changed: [summary]. Here's what I skipped and why: [summary]."
+**Tell user:** "Step 10 of 11 — Changes written to Google Doc. Here's what changed: [summary]. Here's what I skipped and why: [summary]. Reconciled [N] Challenge Tracker rows against the lifecycle. Advanced [N] Deal Stage rows. Appended one `agent_run_log` entry."
 
 ### Step 11 of 11 — Append History Ledger row and sync
 

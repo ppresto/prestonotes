@@ -65,6 +65,30 @@ Every UCN run that reaches Step 11 builds one **schema v3** row for `append_ledg
 5. **`value_realized` quantified when evidence allows.** If **any** in-scope transcript contains at least one quantified element (regex-family `\$\d | \d+% | \d+\s*(workloads|CVEs|findings|weeks|hours|alerts)`), the `value_realized` cell MUST include at least one such element. If no in-scope transcript contains a quantified element, free-text narrative is fine. This is an extractor-side rule; the MCP writer does not regex-check it.
 6. **Challenge columns are derived, not extracted.** Never populate `challenges_new`, `challenges_in_progress`, `challenges_stalled`, or `challenges_resolved` from transcript text. Derive them from `read_challenge_lifecycle` output for the customer. UCN Step 11 has the exact derivation rules.
 
+## Per-section GDoc extraction (TASK-050 §C)
+
+Every UCN run MUST visit the **15 populatable GDoc fields** below. For each field, the planner either proposes a mutation backed by an in-lookback transcript quote OR records a skip with one of four reasons: `no_in_scope_transcript_signal`, `same_as_current_entry`, `evidence_below_confidence_threshold`, `section_off_by_opt_out`. Skip accounting is what the UCN writer surfaces in the `appendix.agent_run_log` entry (TASK-050 §F). Fields not listed here (e.g. `cloud_environment.csp_regions`, `cloud_environment.idp_sso`, `cloud_environment.sizing`, `challenge_tracker` rows) retain their existing Step 9 / daily UCN rules — they are covered by the four planner coverage guard fields and the table-row policies elsewhere in this rule.
+
+1. **`company_overview.free_text`** — industry + size + platform stance. Quote one transcript line.
+2. **`contacts.free_text`** — every speaker named in transcripts. Include role if stated. Flag departures explicitly.
+3. **`org_structure.free_text`** — identity hub, tenant structure, acquisition relationships.
+4. **`cloud_environment.platforms`** — `tools_list` entries for container orchestrator, compute, serverless.
+5. **`cloud_environment.devops_vcs`** — CI/CD systems named in transcripts.
+6. **`cloud_environment.security_tools`** — SIEMs, agents, CDRs named in transcripts, including retired ones with `(retired)` suffix.
+7. **`cloud_environment.ticketing`** — ticketing tools named.
+8. **`use_cases.free_text`** — one entry per distinct use case covered by a call.
+9. **`workflows.free_text`** — one entry per distinct workflow/process covered.
+10. **`accomplishments.free_text`** — one entry per quantified customer win (workload counts, retired tools, score deltas, acquisition visibility, challenge resolutions).
+11. **`account_motion_metadata.exec_buyer`** — named exec sponsor.
+12. **`account_motion_metadata.champion`** — named champion.
+13. **`account_motion_metadata.technical_owner`** — named technical owner / SE counterpart.
+14. **`account_motion_metadata.sensor_coverage_pct`** — numeric only, verbatim from transcript.
+15. **`account_motion_metadata.critical_issues_open`** — numeric only, verbatim from transcript.
+
+**`account_motion_metadata.mttr_days`** and **`account_motion_metadata.monthly_reporting_hours`** are populated only when a transcript states the number explicitly; otherwise skip with `no_in_scope_transcript_signal`.
+
+The `STRICT_METADATA_FIELDS` constraint from `customer-notes-mutation-rules.md` still applies to `exec_buyer` / `champion` / `technical_owner` — only write them when explicitly stated in source evidence; do not infer from role or title hints.
+
 ## Challenge Tracker row discipline (TASK-048 §B.1)
 
 The **same "call date wins over run date" rule** applies to a **second write path** that bypasses `update_challenge_state`: UCN's GDoc mutation plan writes **Challenge Tracker** rows directly via **`write_doc`**, and those rows have their own `date` column and `notes_references` evidence string. **`write_doc`** is a generic doc writer and does not validate these — enforcement is extractor-side preflight only.

@@ -80,6 +80,9 @@ Generates the final account-summary artifact (chat output; optional manual save 
     - Deal Stage Tracker advanced for Cloud / Sensor entries.
     - Daily Activity with recap coverage for every transcript date.
 - The Account Summary chat output (step 10) contains **no** references to `TASK-NNN`, `round 1`, `round 2`, `v1 corpus`, `v2 corpus`, `phase`, `E2E`, `harness`, or `fixture`.
+- [ ] Every populated `append_with_history` entry has a non-null `timestamp`.
+- [ ] Challenge Tracker row `status` matches `challenge-lifecycle.json` `current_state` for every row referencing a lifecycle id.
+- [ ] `appendix.agent_run_log` has exactly 2 new entries (one per UCN round) after the E2E completes.
 
 ## Triggers reserved by `.cursor/rules/11-e2e-test-customer-trigger.mdc`
 

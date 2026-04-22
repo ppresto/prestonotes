@@ -49,3 +49,4 @@ Customer artifacts (the Google Doc, History Ledger, `challenge-lifecycle.json`, 
 - **Section dates** in any artifact (Daily Activity, call spine, milestones, ledger rows, challenge history) must be **call dates** or **milestone dates** — never the run date.
 - A section explicitly named **Metadata** may carry the run date labeled as `Generated: YYYY-MM-DD`; no other field should carry the run date.
 - If a chat-facing progress line cites the E2E flow (e.g. "step 6 of 10"), that line is operator-facing and does not enter any persisted artifact.
+- After UCN, `appendix.agent_run_log` MUST have one new entry; `exec_account_summary.*` entries MUST have `timestamp` set (rendered in the Doc as `<value> [YYYY-MM-DD]` on every newly appended `append_with_history` entry — pre-existing null-timestamp entries are left alone per TASK-050 §A).

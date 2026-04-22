@@ -55,7 +55,7 @@ DAILY_ACTIVITY_SKIP_PATTERNS = re.compile(r"daily\s+activity", re.IGNORECASE)
 DEFAULT_RUNLOG_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%SZ"
 DEFAULT_RUNLOG_MAX_BYTES = int(0.05 * 1024 * 1024)  # 50KB, aligned with transcript rollover.
 ALLOWED_DEAL_STAGE_VALUES = {
-    "not-active", "pov", "tech win", "procurement", "win",
+    "not-active", "discovery", "pov", "tech win", "procurement", "win",
 }
 ALLOWED_DEAL_ACTIVITY_VALUES = {"active", "inactive"}
 COMMERCIAL_SKUS = {"cloud", "sensor", "defend", "code"}
@@ -63,8 +63,45 @@ LIST_CONTROLLED_FIELDS: set[str] = set()
 NUMERIC_CONTROLLED_FIELDS = {
     "critical_issues_open", "mttr_days", "monthly_reporting_hours",
 }
-ALLOWED_CHALLENGE_STATUSES = {"Open", "In Progress", "Resolved", "Closed", "Needs Validation"}
+ALLOWED_CHALLENGE_STATUSES = {"Open", "In Progress", "Stalled", "Resolved", "Closed", "Needs Validation"}
 EXEC_SUMMARY_FIELDS = {"top_goal", "risk", "upsell_path"}
+# TASK-050 §A (D1): fields whose `append_with_history` strategy requires the
+# run_date to be persisted in the Doc text itself (as `value [YYYY-MM-DD]`)
+# so that subsequent `read` passes roundtrip the timestamp. Mirrors
+# `doc-schema.yaml` entries with `update_strategy: append_with_history`.
+APPEND_WITH_HISTORY_FIELDS: frozenset[tuple[str, str]] = frozenset({
+    ("exec_account_summary", "top_goal"),
+    ("exec_account_summary", "risk"),
+    ("exec_account_summary", "upsell_path"),
+    ("appendix", "agent_run_log"),
+})
+# TASK-050 §B (D2): canonical mapping from `challenge-lifecycle.json`
+# `current_state` values to Challenge Tracker row `status` values. Lifecycle
+# JSON is the single source of truth (TASK-048); the reconciler rewrites
+# Challenge Tracker status to match this mapping.
+LIFECYCLE_STATE_TO_TRACKER_STATUS: dict[str, str] = {
+    "identified": "Open",
+    "in_progress": "In Progress",
+    "stalled": "Stalled",
+    "resolved": "Resolved",
+    # Additional lifecycle states defined in `prestonotes_mcp.journey` that
+    # don't have a native Challenge Tracker cell value — map conservatively.
+    "acknowledged": "Open",
+    "reopened": "In Progress",
+}
+# TASK-050 §E (D5): Deal Stage Tracker SKU signal vocabulary. The SKU token
+# is matched (case-insensitively) inside `upsell_path` entries; the stage is
+# picked from the first evidence phrase that fires. Stages are ordered from
+# low → high; the planner picks the highest stage whose evidence fires.
+DEAL_STAGE_ORDER: tuple[str, ...] = ("not-active", "discovery", "pov", "tech win", "procurement", "win")
+DEAL_STAGE_POV_PHRASES: tuple[str, ...] = (
+    "pov", "proof-of-value", "proof of value", "timeboxed", "pilot",
+    "poc kicked off", "pov kicked off",
+)
+DEAL_STAGE_WIN_PHRASES: tuple[str, ...] = (
+    "po signed", "po issued", "purchase order", "enterprise sku purchased",
+    "purchased", "contract signed", "closed-won", "closed won",
+)
 # Full list replacement (synthesis / Step 9 post-seed cleanup). Not for routine daily UCN.
 REPLACE_FIELD_ENTRIES_TARGETS: dict[str, frozenset[str]] = {
     "exec_account_summary": frozenset(EXEC_SUMMARY_FIELDS),
@@ -2722,7 +2759,29 @@ def _normalize_insert_index(index: int, raw_content: list) -> int:
 
 
 def _format_entry_line_for_section(section_key: str, field_key: str, entry: Entry) -> str:
-    return format_entry_for_doc(entry)
+    base = format_entry_for_doc(entry)
+    if not base:
+        return base
+    # TASK-050 §A (D1): `append_with_history` fields must carry the run_date
+    # into the Doc text so the timestamp survives re-reads. Pre-existing
+    # entries without a timestamp (parsed as `timestamp=None`) remain
+    # untouched — append-only, no backfill.
+    key = (section_key or "", field_key or "")
+    if (
+        key in APPEND_WITH_HISTORY_FIELDS
+        and entry.status == "active"
+        and entry.timestamp
+        and not _entry_line_already_carries_timestamp(base)
+    ):
+        return f"{base} [{entry.timestamp}]"
+    return base
+
+
+_ENTRY_TRAILING_DATE_RE = re.compile(r"\[\d{4}-\d{2}-\d{2}\]\s*$")
+
+
+def _entry_line_already_carries_timestamp(text: str) -> bool:
+    return bool(_ENTRY_TRAILING_DATE_RE.search(text or ""))
 
 
 def _is_guidance_line(text: str) -> bool:
@@ -2773,6 +2832,109 @@ def _normalize_challenge_key(text: str) -> str:
     base = re.sub(r"^\[.*?\]\s*", "", base)
     base = re.sub(r"[^a-z0-9\s]", " ", base)
     return " ".join(base.split())
+
+
+_LIFECYCLE_ID_RE = re.compile(r"\[lifecycle_id:([a-zA-Z0-9_.-]+)\]", re.IGNORECASE)
+
+
+def _load_challenge_lifecycle(customer_name: str) -> dict[str, dict]:
+    """Return parsed `challenge-lifecycle.json` for a customer, or {} on any error.
+
+    TASK-050 §B (D2): the reconciler treats missing / unreadable lifecycle JSON
+    as "no authoritative state" and simply returns an empty dict — the caller
+    then records zero reconciliations and the write proceeds unchanged.
+    """
+    safe = (customer_name or "").strip()
+    if not safe or ".." in safe or "/" in safe or "\\" in safe:
+        return {}
+    path = LOCAL_CUSTOMERS_BASE / safe / "AI_Insights" / "challenge-lifecycle.json"
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _lifecycle_ids_for_row(row: "TableRow") -> list[str]:
+    """Extract all [lifecycle_id:<id>] anchors from a Challenge Tracker row."""
+    blob = f"{row.challenge or ''}\n{row.notes_references or ''}"
+    return [m.group(1).lower() for m in _LIFECYCLE_ID_RE.finditer(blob)]
+
+
+def _reconcile_with_lifecycle(
+    section_map: SectionMap,
+    customer_name: str,
+    lifecycle_override: Optional[dict] = None,
+) -> list[dict]:
+    """TASK-050 §B (D2): lifecycle-authoritative reconciliation.
+
+    For every Challenge Tracker row carrying a ``[lifecycle_id:<id>]`` anchor
+    whose lifecycle ``current_state`` maps to a Challenge Tracker status that
+    differs from the row's current ``status``, rewrite the row status to match
+    the lifecycle. Each rewrite is recorded as an "applied" change so it shows
+    up in the agent run log (§F) and the markdown audit log.
+
+    ``lifecycle_override`` lets callers (and tests) inject a lifecycle dict
+    without touching disk.
+    """
+    changes: list[dict] = []
+    tracker = section_map.get("challenge_tracker")
+    if not tracker or tracker.section_type != "table" or not tracker.rows:
+        return changes
+    lifecycle = lifecycle_override if lifecycle_override is not None else _load_challenge_lifecycle(customer_name)
+    if not lifecycle:
+        return changes
+    states_by_id: dict[str, str] = {}
+    for cid, payload in lifecycle.items():
+        if not isinstance(cid, str) or not isinstance(payload, dict):
+            continue
+        state = str(payload.get("current_state") or "").strip().lower()
+        if state:
+            states_by_id[cid.lower()] = state
+
+    for row in tracker.rows:
+        row_ids = _lifecycle_ids_for_row(row)
+        if not row_ids:
+            continue
+        # Prefer the first anchor whose id is known in lifecycle JSON.
+        state = None
+        matched_id = None
+        for rid in row_ids:
+            if rid in states_by_id:
+                state = states_by_id[rid]
+                matched_id = rid
+                break
+        if state is None:
+            continue
+        expected_status = LIFECYCLE_STATE_TO_TRACKER_STATUS.get(state)
+        if not expected_status or expected_status not in ALLOWED_CHALLENGE_STATUSES:
+            continue
+        current_status = (row.status or "").strip()
+        if current_status == expected_status:
+            continue
+        prior = current_status or "(empty)"
+        row.status = expected_status
+        changes.append({
+            "section_key": "challenge_tracker",
+            "field_key": "table",
+            "action": "reconcile_with_lifecycle",
+            "reasoning": (
+                f"lifecycle:{matched_id} current_state={state} -> tracker status '{expected_status}'"
+            ),
+            "message": (
+                f"Reconciled Challenge Tracker row for lifecycle:{matched_id} "
+                f"status '{prior}' -> '{expected_status}'"
+            ),
+            "subject": matched_id,
+            "lifecycle_id": matched_id,
+            "lifecycle_state": state,
+            "prior_status": prior,
+            "new_status": expected_status,
+            "full_change": f"{row.challenge} | {row.date} | {row.category} | {expected_status} | {row.notes_references}",
+        })
+    return changes
 
 
 def _reconcile_challenges_with_tracker(section_map: SectionMap) -> list[dict]:
@@ -2844,6 +3006,248 @@ def _reconcile_challenges_with_tracker(section_map: SectionMap) -> list[dict]:
         # Do not retain bullet once promoted.
     fld.entries = retained_entries
     return changes
+
+
+_DEAL_STAGE_CALL_DATE_RE = re.compile(r"\b(20\d{2})-(\d{2})-(\d{2})\b")
+
+
+def _sku_tokens_in_text(text: str) -> list[str]:
+    """Return SKU keys (from COMMERCIAL_SKUS) referenced in an upsell_path line."""
+    if not text:
+        return []
+    lower = text.lower()
+    hits: list[str] = []
+    for sku in COMMERCIAL_SKUS:
+        token = f"wiz {sku}"
+        if token in lower or re.search(rf"\b{re.escape(sku)}\b", lower):
+            hits.append(sku)
+    return hits
+
+
+def _infer_deal_stage_from_text(text: str) -> str:
+    lower = (text or "").lower()
+    for phrase in DEAL_STAGE_WIN_PHRASES:
+        if phrase in lower:
+            return "win"
+    for phrase in DEAL_STAGE_POV_PHRASES:
+        if phrase in lower:
+            return "pov"
+    return "discovery"
+
+
+def _rank_deal_stage(stage: str) -> int:
+    try:
+        return DEAL_STAGE_ORDER.index(stage)
+    except ValueError:
+        return 0
+
+
+def _extract_latest_call_date(text: str) -> Optional[str]:
+    dates = _DEAL_STAGE_CALL_DATE_RE.findall(text or "")
+    if not dates:
+        return None
+    iso = [f"{y}-{m}-{d}" for y, m, d in dates]
+    iso.sort()
+    return iso[-1]
+
+
+def _advance_deal_stage_from_applied(section_map: SectionMap, applied: list[dict]) -> list[dict]:
+    """TASK-050 §E (D5): promote Deal Stage Tracker rows for SKUs referenced in
+    applied `exec_account_summary.upsell_path` mutations.
+
+    Rules (task §E):
+      * For every SKU referenced in an applied upsell_path entry: if its Deal
+        Stage row is `not-active`, advance to `discovery` (higher stage if
+        evidence supports).
+      * Explicit POV evidence (`pov`, `timeboxed`, `pilot`, …) → `pov`.
+      * Explicit purchase evidence (`po signed`, `purchased`, …) → `win`.
+      * `activity` becomes `active`; `reason` is updated with the most recent
+        call-date we can extract from the upsell_path line (fallback: TODAY).
+    """
+    changes: list[dict] = []
+    stage_tracker = section_map.get("deal_stage_tracker")
+    if not stage_tracker or stage_tracker.section_type != "table" or not stage_tracker.rows:
+        return changes
+
+    rows_by_sku: dict[str, "TableRow"] = {}
+    for row in stage_tracker.rows:
+        key = (row.challenge or "").strip().lower()
+        if key in COMMERCIAL_SKUS:
+            rows_by_sku.setdefault(key, row)
+
+    upsell_applied = [
+        a for a in applied
+        if a.get("section_key") == "exec_account_summary"
+        and a.get("field_key") == "upsell_path"
+        and a.get("action") in {"append_with_history", "set_if_empty", "update_in_place"}
+    ]
+    if not upsell_applied:
+        return changes
+
+    per_sku_best: dict[str, tuple[str, str, str]] = {}
+    for item in upsell_applied:
+        text = str(item.get("full_change") or item.get("message") or item.get("subject") or "").strip()
+        if not text:
+            continue
+        inferred = _infer_deal_stage_from_text(text)
+        call_date = _extract_latest_call_date(text) or TODAY
+        for sku in _sku_tokens_in_text(text):
+            prev = per_sku_best.get(sku)
+            if prev is None or _rank_deal_stage(inferred) > _rank_deal_stage(prev[0]):
+                per_sku_best[sku] = (inferred, call_date, text)
+
+    for sku, (target_stage, call_date, snippet) in per_sku_best.items():
+        row = rows_by_sku.get(sku)
+        if not row:
+            continue
+        current_stage = (row.date or "").strip().lower() or "not-active"
+        if _rank_deal_stage(target_stage) <= _rank_deal_stage(current_stage):
+            continue
+        if target_stage not in ALLOWED_DEAL_STAGE_VALUES:
+            continue
+        prior_stage = current_stage
+        prior_status = (row.status or "").strip().lower()
+        row.date = target_stage
+        row.status = "active"
+        reason_text = f"{target_stage} evidence in upsell_path ({call_date})"
+        if snippet and snippet not in (row.notes_references or ""):
+            # Preserve existing narrative; append a short reason cue.
+            existing = (row.notes_references or "").strip()
+            if existing and existing.lower() not in {"bootstrap default", "no active opportunity"}:
+                row.notes_references = f"{existing}; {reason_text}".strip("; ")
+            else:
+                row.notes_references = reason_text
+        else:
+            row.notes_references = reason_text
+        changes.append({
+            "section_key": "deal_stage_tracker",
+            "field_key": "table",
+            "action": "advance_deal_stage_from_upsell",
+            "reasoning": (
+                f"Applied upsell_path cited SKU '{sku}' with {target_stage} evidence; "
+                f"advanced stage from '{prior_stage}' to '{target_stage}' (activity '{prior_status or '(empty)'}' -> 'active')"
+            ),
+            "message": (
+                f"Advanced deal_stage_tracker[{sku}] '{prior_stage}' -> '{target_stage}' (reason: {call_date})"
+            ),
+            "subject": sku,
+            "prior_stage": prior_stage,
+            "new_stage": target_stage,
+            "call_date": call_date,
+            "full_change": f"{row.challenge} | {row.date} | {row.category} | {row.status} | {row.notes_references}",
+        })
+    return changes
+
+
+def _build_agent_run_log_value(
+    *,
+    applied: list[dict],
+    skipped: list[dict],
+    reconciled: list[dict],
+    completeness_report: Optional[dict[str, str]],
+    lookback_window: Optional[str] = None,
+    transcripts_in_scope: Optional[int] = None,
+    dal_prepends_emitted: Optional[int] = None,
+    run_date: Optional[str] = None,
+) -> str:
+    """Render TASK-050 §F agent_run_log entry as a single-line string.
+
+    The Docs writer inserts this as one bullet under the `appendix.agent_run_log`
+    label; using one compact line keeps rendering simple and survives re-reads.
+    """
+    run_date = run_date or TODAY
+    sections_touched = sorted({
+        f"{a.get('section_key') or ''}.{a.get('field_key') or 'table'}"
+        for a in applied
+        if (a.get("section_key") or "") and (a.get("action") or "") != "advance_deal_stage_from_upsell_noop"
+        and (a.get("section_key") or "") != "appendix"
+    })
+    entries_added = sum(
+        1 for a in applied
+        if _change_kind(a) == "add" and (a.get("section_key") or "") != "appendix"
+    )
+    entries_skipped = len(skipped)
+    skipped_reasons: list[str] = []
+    # Prefer a compact per-field skip list when one is available from the
+    # planner's own completeness report; fall back to the raw skip list.
+    if completeness_report:
+        for target, status in sorted(completeness_report.items()):
+            if not status:
+                continue
+            base = status.split(":", 1)[0]
+            if base not in {"missing_evidence", "blocked_by_policy", "unchanged"}:
+                continue
+            skipped_reasons.append(f"{target}:{base}")
+    if not skipped_reasons:
+        for s in skipped[:10]:
+            mut = s.get("mutation") or {}
+            target = f"{mut.get('section_key') or ''}.{mut.get('field_key') or 'table'}"
+            bucket = _skip_reason_bucket(str(s.get("reason") or ""))
+            skipped_reasons.append(f"{target}:{bucket}")
+    reconciled_summary = "; ".join(
+        f"{r.get('lifecycle_id') or r.get('subject') or ''}:{r.get('lifecycle_state') or ''}->{r.get('new_status') or r.get('new_stage') or ''}"
+        for r in reconciled
+        if r.get("action") in {"reconcile_with_lifecycle", "advance_deal_stage_from_upsell"}
+    )
+    parts = [
+        f"run_date={run_date}",
+        f"sections_touched={','.join(sections_touched) if sections_touched else '(none)'}",
+        f"entries_added={entries_added}",
+        f"entries_skipped={entries_skipped}",
+        f"skipped_reasons=[{';'.join(skipped_reasons) if skipped_reasons else ''}]",
+        f"reconciled={reconciled_summary or '(none)'}",
+    ]
+    if lookback_window:
+        parts.append(f"lookback_window={lookback_window}")
+    if transcripts_in_scope is not None:
+        parts.append(f"transcripts_in_scope={transcripts_in_scope}")
+    if dal_prepends_emitted is not None:
+        parts.append(f"dal_prepends_emitted={dal_prepends_emitted}")
+    return "; ".join(parts)
+
+
+def _inject_agent_run_log_entry(
+    section_map: SectionMap,
+    *,
+    applied: list[dict],
+    skipped: list[dict],
+    reconciled: list[dict],
+    completeness_report: Optional[dict[str, str]],
+    lookback_window: Optional[str] = None,
+    transcripts_in_scope: Optional[int] = None,
+    dal_prepends_emitted: Optional[int] = None,
+) -> Optional[dict]:
+    """Append one `appendix.agent_run_log` Entry into `section_map`.
+
+    Returns the applied-style dict describing the injection, or ``None`` if
+    the target section/field isn't present in the parsed doc (older templates
+    that pre-date the Agent Run Log subsection).
+    """
+    appendix = section_map.get("appendix")
+    if not appendix or appendix.section_type == "table":
+        return None
+    fld = appendix.fields.get("agent_run_log")
+    if not fld:
+        return None
+    value = _build_agent_run_log_value(
+        applied=applied,
+        skipped=skipped,
+        reconciled=reconciled,
+        completeness_report=completeness_report,
+        lookback_window=lookback_window,
+        transcripts_in_scope=transcripts_in_scope,
+        dal_prepends_emitted=dal_prepends_emitted,
+    )
+    fld.entries.append(Entry(value=value, timestamp=TODAY, status="active"))
+    return {
+        "section_key": "appendix",
+        "field_key": "agent_run_log",
+        "action": "append_with_history",
+        "reasoning": "TASK-050 §F: one agent_run_log entry per successful UCN run",
+        "message": f"Appended agent_run_log entry for run_date={TODAY}",
+        "subject": "agent_run_log",
+        "full_change": value,
+    }
 
 
 def _merge_duplicate_top_goal_themes(section_map: SectionMap) -> list[dict]:
@@ -4774,14 +5178,34 @@ def cmd_write(args: argparse.Namespace) -> int:
     applied, skipped = apply_mutations(section_map, mutation_list)
     skipped = pre_skipped + skipped
     applied.extend(_reconcile_challenges_with_tracker(section_map))
+    lifecycle_reconciled: list[dict] = []
+    if getattr(args, "customer_name", None):
+        lifecycle_reconciled = _reconcile_with_lifecycle(section_map, args.customer_name)
+        applied.extend(lifecycle_reconciled)
     applied.extend(_auto_cleanup_contacts(section_map))
     applied.extend(_cleanup_generic_tool_details(section_map))
     applied.extend(_auto_cleanup_tool_display_and_dedupe(section_map))
     applied.extend(_auto_populate_account_metadata(section_map))
+    deal_stage_advanced = _advance_deal_stage_from_applied(section_map, applied)
+    applied.extend(deal_stage_advanced)
+    reconciled_for_runlog = list(lifecycle_reconciled) + list(deal_stage_advanced)
     completeness_report = _compute_template_completeness_report(
         section_map, section_configs, applied, skipped
     )
     run_titles = [str(m.get("new_value", "")).strip() for m in runlog_mutations if str(m.get("new_value", "")).strip()]
+
+    runlog_injected: Optional[dict] = None
+    if applied:
+        # TASK-050 §F (D6+D7): one agent_run_log entry per successful UCN run.
+        runlog_injected = _inject_agent_run_log_entry(
+            section_map,
+            applied=applied,
+            skipped=skipped,
+            reconciled=reconciled_for_runlog,
+            completeness_report=completeness_report,
+        )
+        if runlog_injected:
+            applied.append(runlog_injected)
 
     if getattr(args, "customer_name", None) and not getattr(args, "skip_lifecycle_parity_check", False):
         _run_lifecycle_tracker_parity_gate(args.customer_name, section_map)

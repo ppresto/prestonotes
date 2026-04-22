@@ -151,6 +151,38 @@ Use this model whenever proposing `challenge_tracker` changes:
 
 ---
 
+### Deal Stage Tracker — SKU signal mapping
+
+TASK-050 §E: on every approved UCN write, the writer scans each applied `exec_account_summary.upsell_path` mutation for SKU references and promotes the corresponding Deal Stage Tracker row. This happens after the mutation plan is applied and is emitted as an additional `advance_deal_stage_from_upsell` change — the planner does not need to pre-compute the row update; it just needs to keep the upsell line factual.
+
+**Canonical vocabulary** (shipped in `prestonotes_gdoc/update-gdoc-customer-notes.py`):
+
+- `COMMERCIAL_SKUS = {"cloud", "sensor", "defend", "code"}` — only these four SKU keys participate in auto-promotion. ASM stays manual.
+- `DEAL_STAGE_POV_PHRASES = ("pov", "proof-of-value", "proof of value", "timeboxed", "pilot", "poc kicked off", "pov kicked off")`
+- `DEAL_STAGE_WIN_PHRASES = ("po signed", "po issued", "purchase order", "enterprise sku purchased", "purchased", "contract signed", "closed-won", "closed won")`
+- `ALLOWED_DEAL_STAGE_VALUES = {"not-active", "discovery", "pov", "tech win", "procurement", "win"}` — `discovery` is the default floor for any SKU cited in `upsell_path`.
+
+**Promotion rules (the writer applies these in order of stage, keeping the highest stage whose evidence fires):**
+
+| Evidence in the applied `upsell_path` line | Target stage |
+|---|---|
+| Any SKU reference + no POV / no win phrase hit | `discovery` (advance from `not-active`) |
+| Any SKU reference + POV phrase hit | `pov` |
+| Any SKU reference + win phrase hit | `win` |
+
+**Row-level side effects the writer also performs:**
+
+- `activity` column flips to `active`.
+- `reason` (the Notes & References cell) is rewritten to `<target-stage> evidence in upsell_path (<call-date>)`, using the latest ISO date found in the upsell_path line (fallback: today). Existing bootstrap phrases (`bootstrap default`, `no active opportunity`) are replaced; other existing narrative is appended with `; <reason>`.
+- **Rank guard:** a row already at a higher stage is never demoted. If the row is already at `pov`, an `upsell_path` line that only matches `discovery` is a no-op.
+
+**Skipped / manual cases:**
+
+- Rows whose `challenge` key is not one of `COMMERCIAL_SKUS` are untouched (e.g. a manually seeded ASM row).
+- If no `upsell_path` mutations applied this run, Deal Stage Tracker is not touched — use `update_table_row` manually per § Mutation Actions Reference when you need a one-off stage change.
+
+---
+
 ## Historical Synthesis Mode (for backfill runs over old notes)
 
 When processing historical transcripts in chronological batches, use this sequence:

@@ -1,6 +1,6 @@
 # TASK-050 — UCN GDoc write completeness + internal consistency
 
-**Status:** [ ] NOT STARTED
+**Status:** [x] CODE COMPLETE (doc/archive pending)
 **Opened:** 2026-04-21
 **Related:** Surfaced by the TASK-044 E2E review (Q6). Pairs with `TASK-048` (lifecycle write discipline — provides the canonical challenge state this task reconciles against) and `TASK-049` (ledger schema v3 — the derivation source for ledger-side challenge columns). The Challenge Tracker row date/evidence discipline is handled by an extended TASK-048 bullet.
 **Related files:**
@@ -194,16 +194,16 @@ Rewrite Step 7 of `docs/ai/playbooks/update-customer-notes.md` ("Propose targete
 
 ## Acceptance
 
-- [ ] `rg '"timestamp": null' MyNotes/Customers/_TEST_CUSTOMER/` — after a post-TASK-050 E2E run — returns hits only for pre-existing entries (if any); **no new** null timestamps introduced.
-- [ ] Every populated `exec_account_summary.top_goal` / `risk` / `upsell_path` entry created by UCN has `timestamp` equal to that run's run_date.
-- [ ] Challenge Tracker row `status` equals the lifecycle `current_state` mapping for every row whose `notes_references` cites a `lifecycle:<id>` tag.
-- [ ] Fresh `_TEST_CUSTOMER` E2E post-TASK-050 produces a GDoc with ≥ 80% of populatable fields non-empty (concrete count: ≥ 20 of 25 populatable fields by the enumeration in §C).
-- [ ] `daily_activity_logs.free_text` contains exactly one date-headed group per transcript in the lookback window (8 for `_TEST_CUSTOMER`).
-- [ ] Deal Stage Tracker `defend` and `code` rows are NOT `not-active` in the post-run GDoc — they reflect at least `discovery` with a call-date-cited reason, OR the run-log entry records why Deal Stage updates were skipped.
-- [ ] `appendix.agent_run_log` has one new entry per UCN run, each containing all keys enumerated in §F.
-- [ ] No GDoc cell contains harness vocabulary from the TASK-047 `FORBIDDEN_EVIDENCE_TERMS` list.
-- [ ] Unit tests in `prestonotes_gdoc/` cover: timestamp emission, run-log entry shape, cross-section reconciliation flipping a Challenge Tracker status to match lifecycle.
-- [ ] No regression in existing UCN fields that were correctly populated in TASK-044 (Exec Summary, csp_regions, idp_sso content stays factually equivalent).
+- [ ] `rg '"timestamp": null' MyNotes/Customers/_TEST_CUSTOMER/` — after a post-TASK-050 E2E run — returns hits only for pre-existing entries (if any); **no new** null timestamps introduced. _(runtime-deferred; re-check after next Run E2E Test Customer)_
+- [ ] Every populated `exec_account_summary.top_goal` / `risk` / `upsell_path` entry created by UCN has `timestamp` equal to that run's run_date. _(runtime-deferred; re-check after next Run E2E Test Customer — unit tests prove the writer emits `value [YYYY-MM-DD]`, but the acceptance bar is "after a post-TASK-050 E2E run")_
+- [ ] Challenge Tracker row `status` equals the lifecycle `current_state` mapping for every row whose `notes_references` cites a `lifecycle:<id>` tag. _(runtime-deferred; re-check after next Run E2E Test Customer)_
+- [ ] Fresh `_TEST_CUSTOMER` E2E post-TASK-050 produces a GDoc with ≥ 80% of populatable fields non-empty (concrete count: ≥ 20 of 25 populatable fields by the enumeration in §C). _(runtime-deferred; re-check after next Run E2E Test Customer)_
+- [ ] `daily_activity_logs.free_text` contains exactly one date-headed group per transcript in the lookback window (8 for `_TEST_CUSTOMER`). _(runtime-deferred; re-check after next Run E2E Test Customer)_
+- [ ] Deal Stage Tracker `defend` and `code` rows are NOT `not-active` in the post-run GDoc — they reflect at least `discovery` with a call-date-cited reason, OR the run-log entry records why Deal Stage updates were skipped. _(runtime-deferred; re-check after next Run E2E Test Customer)_
+- [ ] `appendix.agent_run_log` has one new entry per UCN run, each containing all keys enumerated in §F. _(runtime-deferred; re-check after next Run E2E Test Customer)_
+- [ ] No GDoc cell contains harness vocabulary from the TASK-047 `FORBIDDEN_EVIDENCE_TERMS` list. _(writer change introduces no new cell-rendering path that could inject harness vocab; runtime-verified by existing E2E post-run scan.)_
+- [x] Unit tests in `prestonotes_gdoc/` cover: timestamp emission, run-log entry shape, cross-section reconciliation flipping a Challenge Tracker status to match lifecycle.
+- [ ] No regression in existing UCN fields that were correctly populated in TASK-044 (Exec Summary, csp_regions, idp_sso content stays factually equivalent). _(runtime-deferred; re-check after next Run E2E Test Customer)_
 
 ## Verification
 
@@ -231,11 +231,34 @@ TASK-051  call-record quality
 
 ## Output / Evidence
 
-_(Filled in as the task is executed.)_
+- Writer diffs (`prestonotes_gdoc/update-gdoc-customer-notes.py`):
+    - §A (D1): added `APPEND_WITH_HISTORY_FIELDS` and `_ENTRY_TRAILING_DATE_RE`; `_format_entry_line_for_section()` now suffixes `value [YYYY-MM-DD]` only for the four `append_with_history` fields (`exec_account_summary.top_goal` / `risk` / `upsell_path`, `appendix.agent_run_log`) and only when `entry.timestamp` is truthy — roundtrip-safe, no backfill of pre-existing null timestamps.
+    - §B (D2): added `_load_challenge_lifecycle`, `_lifecycle_ids_for_row`, `_reconcile_with_lifecycle`, and `LIFECYCLE_STATE_TO_TRACKER_STATUS` (`identified → Open`, `in_progress → In Progress`, `stalled → Stalled`, `resolved → Resolved`, plus `acknowledged → Open`, `reopened → In Progress`). `cmd_write` now calls the reconciler after `_reconcile_challenges_with_tracker` when `--customer-name` is supplied; each flipped row is recorded as an `applied` entry with `action=reconcile_with_lifecycle`. Added `"Stalled"` to `ALLOWED_CHALLENGE_STATUSES` so the `stalled → Stalled` mapping round-trips through the existing row validation.
+    - §E (D5): added `COMMERCIAL_SKUS = {"cloud", "sensor", "defend", "code"}`, `DEAL_STAGE_POV_PHRASES`, `DEAL_STAGE_WIN_PHRASES`, plus `_sku_tokens_in_text`, `_infer_deal_stage_from_text`, `_rank_deal_stage`, `_extract_latest_call_date`, `_advance_deal_stage_from_applied`; `"discovery"` added to `ALLOWED_DEAL_STAGE_VALUES`. `cmd_write` now advances Deal Stage rows for every SKU cited in an applied `exec_account_summary.upsell_path` mutation (`not-active → discovery` by default; POV phrases promote to `pov`; purchase phrases promote to `win`; `activity` flips to `active`; `reason` is rewritten with the most-recent call date parsed from the upsell line).
+    - §F (D6+D7): added `_build_agent_run_log_value` and `_inject_agent_run_log_entry`; `cmd_write` appends one `appendix.agent_run_log` Entry per successful run (skips injection when `applied` is empty — mirrors the "no ledger row on rejection" rule). Entry carries `run_date`, `sections_touched`, `entries_added`, `entries_skipped`, `skipped_reasons`, `reconciled`, and — when the planner supplies them — `lookback_window`, `transcripts_in_scope`, `dal_prepends_emitted`; renders with a trailing `[YYYY-MM-DD]` via the §A formatter.
+- Tests (new): `prestonotes_gdoc/tests/conftest.py` (session-scoped `pn_gdoc_writer` fixture that loads the hyphenated module via importlib + sys.modules pre-registration so dataclass string annotations resolve); `prestonotes_gdoc/tests/test_task_050_ucn_writer.py` (15 cases: 4 for §A timestamp emission, 4 for §B lifecycle reconciliation, 3 for §E Deal Stage motion capture, 4 for §F run-log entry shape + roundtrip).
+- Playbook + rule diffs:
+    - `docs/ai/playbooks/update-customer-notes.md` — Steps 6–10 rewritten: Step 6 calls out prepend-per-call (§D) + the populatable-field walk (§C); Step 8 adds the 15-field enumeration + four skip reasons (§C); Step 10 documents the writer-side §A timestamp emission, §B reconciliation pass, §E Deal Stage motion capture, and §F agent_run_log append.
+    - `.cursor/rules/21-extractor.mdc` — new § **Per-section GDoc extraction (TASK-050 §C)** enumerates the 15 populatable fields verbatim with extraction rules + the mttr_days / monthly_reporting_hours skip guidance.
+    - `docs/ai/references/customer-notes-mutation-rules.md` — new `### Deal Stage Tracker — SKU signal mapping` subsection under § Mutation Actions Reference documents `COMMERCIAL_SKUS` / `DEAL_STAGE_POV_PHRASES` / `DEAL_STAGE_WIN_PHRASES` and the `upsell → discovery / pov / win` promotion rules + row-level side effects + rank guard.
+    - `.cursor/rules/20-orchestrator.mdc` — UCN contract Execute Step 2 now cites the §B lifecycle reconciler (writer rewrites Challenge Tracker row `status` to match lifecycle JSON) and the §F agent_run_log append (one entry per successful run; none on rejection).
+    - `.cursor/rules/11-e2e-test-customer-trigger.mdc` — Artifact hygiene block adds the TASK-050 §G bullet: "After UCN, `appendix.agent_run_log` MUST have one new entry; `exec_account_summary.*` entries MUST have `timestamp` set."
+    - `docs/ai/playbooks/e2e-test-customer.md` — manual verification checklist adds the three §G bullets (timestamp on every populated append_with_history entry; Challenge Tracker status vs lifecycle parity; exactly 2 new agent_run_log entries after the E2E).
+    - `docs/ai/references/daily-activity-ai-prepend.md` — opening paragraph rewritten for prepend-per-call (one prepend per in-lookback call, not per narrative); empty-transcript skip routes to the `agent_run_log` `skipped:dal_prepend call=<date> reason=empty_transcript` line.
+    - `docs/ai/references/exec-summary-template.md` — **no change** — the `<value> [YYYY-MM-DD]` shape is a GDoc Exec Account Summary rendering detail, not user-facing in the Account Summary template (this file describes the `Run Account Summary` artifact, not the GDoc).
+- Post-task `_TEST_CUSTOMER` GDoc fill-rate count vs acceptance: **runtime-deferred — re-check after next Run E2E Test Customer.**
+- Post-task `appendix.agent_run_log` contents: **runtime-deferred — re-check after next Run E2E Test Customer.**
+- Cross-artifact consistency check (Challenge Tracker vs lifecycle): **runtime-deferred — verification step 3 is runtime-only.**
+- Operator-safety run (≥ 30-day-old transcript) result: **runtime-deferred — verification step 4 is runtime-only.**
+- Verification evidence (unit tests, from /tester):
+    ```
+    uv run pytest prestonotes_gdoc/tests/  →  15 passed
+    uv run pytest                          →  92 passed, 1 skipped
+    uv run ruff check .                    →  All checks passed!
+    bash scripts/ci/check-repo-integrity.sh →  OK
+    ```
 
-- Writer diffs (`update-gdoc-customer-notes.py`): —
-- Playbook + rule diffs (UCN Steps 6–10, extractor per-section §): —
-- Post-task `_TEST_CUSTOMER` GDoc fill-rate count vs acceptance: —
-- Post-task `appendix.agent_run_log` contents: —
-- Cross-artifact consistency check (Challenge Tracker vs lifecycle): —
-- Operator-safety run (≥ 30-day-old transcript) result: —
+## Handoff / follow-ups
+
+- Runtime-only acceptance bullets (1–7, 9) stay `[ ]` with the `runtime-deferred; re-check after next Run E2E Test Customer` annotation. The orchestrator / operator re-runs the E2E when they are ready; this task does not start a new run (user constraint 4).
+- No scope creep into TASK-051 (call-record quality) or TASK-046–049 archive files; any behavior discovered mid-doc-pass that belongs elsewhere is to be filed as a new task by the orchestrator rather than inlined here.
