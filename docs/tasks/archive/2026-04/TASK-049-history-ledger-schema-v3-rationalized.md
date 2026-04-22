@@ -1,6 +1,6 @@
 # TASK-049 — History Ledger schema v3 (rationalized, single-source, no duplicates)
 
-**Status:** [ ] NOT STARTED
+**Status:** [ ] IN PROGRESS — coder + doc phases landed (code + tests + prose); two runtime-only acceptance bullets remain deferred pending the next `Run E2E Test Customer` execution
 **Opened:** 2026-04-21
 **Related:** Surfaced by the TASK-044 E2E review (Q5). Pairs with `TASK-048` (challenge lifecycle write discipline — provides the clean lifecycle state this schema derives 4 columns from) and `TASK-047` (harness vocabulary list — this task reuses `FORBIDDEN_EVIDENCE_TERMS` and extends enforcement to ledger cells).
 **Related files:**
@@ -160,20 +160,20 @@ Replace `LEDGER_BASE_COLUMNS` + `LEDGER_V2_EXTRA_COLUMNS` in `prestonotes_mcp/le
 
 ## Acceptance
 
-- [ ] `prestonotes_mcp/ledger_v2.py` (to be renamed `prestonotes_mcp/ledger.py`) exports `LEDGER_V3_COLUMNS` with exactly the 20 columns listed in §A, in order. No `LEDGER_BASE_COLUMNS` / `LEDGER_V2_EXTRA_COLUMNS` / `LEDGER_V2_ALL` / `migrate_standard_table_to_v2` references remain.
-- [ ] `prestonotes_mcp/tools/migrate_ledger.py` does not exist.
-- [ ] `rg "LEDGER_BASE_COLUMNS|LEDGER_V2_EXTRA_COLUMNS|LEDGER_V2_ALL|migrate_ledger|migrate_standard_table_to_v2"` returns no hits outside `docs/tasks/archive/`.
-- [ ] `append_ledger_row` rejects: non-enum values, future `run_date`, id-list format violations, ISO-SKU format violations, `FORBIDDEN_EVIDENCE_TERMS` in any cell. Each rejection carries an error payload naming field + value + expected.
-- [ ] `read_ledger` returns typed v3 rows (ints for `wiz_score`, lists for id-list cells).
-- [ ] Tests in `test_ledger_v2.py` (renamed `test_ledger.py`) cover: round-trip append + read, each enum rejection, each format rejection, forbidden-vocab rejection, lazy-create path, and the "empty response when no file" path.
-- [ ] `Run E2E Test Customer` on fresh `_TEST_CUSTOMER` after TASK-048 lands produces a ledger with:
+- [x] `prestonotes_mcp/ledger_v2.py` (to be renamed `prestonotes_mcp/ledger.py`) exports `LEDGER_V3_COLUMNS` with exactly the 20 columns listed in §A, in order. No `LEDGER_BASE_COLUMNS` / `LEDGER_V2_EXTRA_COLUMNS` / `LEDGER_V2_ALL` / `migrate_standard_table_to_v2` references remain.
+- [x] `prestonotes_mcp/tools/migrate_ledger.py` does not exist.
+- [x] `rg "LEDGER_BASE_COLUMNS|LEDGER_V2_EXTRA_COLUMNS|LEDGER_V2_ALL|migrate_ledger|migrate_standard_table_to_v2"` returns no hits outside `docs/tasks/archive/`.
+- [x] `append_ledger_row` rejects: non-enum values, future `run_date`, id-list format violations, ISO-SKU format violations, `FORBIDDEN_EVIDENCE_TERMS` in any cell. Each rejection carries an error payload naming field + value + expected.
+- [x] `read_ledger` returns typed v3 rows (ints for `wiz_score`, lists for id-list cells).
+- [x] Tests in `test_ledger_v2.py` (renamed `test_ledger.py`) cover: round-trip append + read, each enum rejection, each format rejection, forbidden-vocab rejection, lazy-create path, and the "empty response when no file" path.
+- [ ] _(runtime-deferred; re-check after next Run E2E Test Customer)_ `Run E2E Test Customer` on fresh `_TEST_CUSTOMER` after TASK-048 lands produces a ledger with:
     - `schema_version: 3` in frontmatter.
     - 20-column header.
     - Both rows have `challenges_new` / `challenges_in_progress` / `challenges_stalled` / `challenges_resolved` populated consistent with `challenge-lifecycle.json` (post-TASK-048 quality).
     - Row 2 (v1-window run) has `challenges_resolved` containing sensor rollout + kubelet noise ids.
     - `value_realized` written **once** per row; no duplicate-concept columns.
     - No harness vocabulary in any cell.
-- [ ] `docs/project_spec.md` and `docs/MIGRATION_GUIDE.md` reflect v3; `README.md` has no `migrate_ledger` mention.
+- [x] `docs/project_spec.md` and `docs/MIGRATION_GUIDE.md` reflect v3; `README.md` has no `migrate_ledger` mention. _(Doc phase completed the v3 prose rewrite: `project_spec.md` § _Ledger writes_ now carries the full 20-col table; `MIGRATION_GUIDE.md` § _History Ledger v3_ is the minimal one-paragraph v2→v3 note; `README.md` cheat sheet references `append_ledger_row` and `LEDGER_V3_COLUMNS` cleanly.)_
 
 ## Verification
 
@@ -201,10 +201,27 @@ TASK-051  call-record quality
 
 ## Output / Evidence
 
-_(Filled in as the task is executed.)_
+- **Code diffs — coder phase, 2026-04-21.**
+    - `prestonotes_mcp/ledger.py` — `git mv` from `prestonotes_mcp/ledger_v2.py` (history preserved); full rewrite against the v3 schema: single `LEDGER_V3_COLUMNS` constant (20 columns), `append_ledger_row(customer_name, row) -> Path`, `read_ledger(customer_name, max_rows) -> dict` returning typed v3 rows, `LedgerValidationError(ValueError)` with `payload: dict` field (parity with `ChallengeValidationError`), forbidden-vocabulary check imports `FORBIDDEN_EVIDENCE_TERMS` from `prestonotes_mcp.journey` (no list redefinition).
+    - `prestonotes_mcp/server.py` — MCP tool renamed `append_ledger_v2` → `append_ledger_row`; wrapper catches `LedgerValidationError` and returns `{"ok": false, **payload}`; `read_ledger` MCP tool now returns typed v3 rows via the new `prestonotes_mcp.ledger.read_ledger` helper (empty-file response preserved).
+    - `prestonotes_mcp/tests/test_ledger.py` — `git mv` from `prestonotes_mcp/tests/test_ledger_v2.py`; full rewrite, 19 tests covering round-trip append + read, each enum rejection, date violations (future / regression), id-list format, ISO:sku format, forbidden vocabulary (pulled from `FORBIDDEN_EVIDENCE_TERMS` so tests couple to the SSoT), length cap, GDrive mirror, MCP tool wrapper success + payload rejection.
+- **Deleted files.**
+    - `prestonotes_mcp/tools/migrate_ledger.py` — `git rm`. `scripts/ci/required-paths.manifest` entry removed. `rg "LEDGER_BASE_COLUMNS|LEDGER_V2_EXTRA_COLUMNS|LEDGER_V2_ALL|migrate_ledger|migrate_standard_table_to_v2"` returns hits only under `docs/tasks/archive/**` (allowed) and inside this task file (explicitly allowed by the delegation packets).
+- **Playbook + rule diffs — doc phase, 2026-04-21.**
+    - `docs/ai/playbooks/update-customer-notes.md` — Step 11 rewritten column-by-column against the 20-col v3 schema; the four `challenges_*` columns documented as "derive from `read_challenge_lifecycle`", not extract; `append_ledger_v2` references (lines ~5 and ~357) renamed to `append_ledger_row`.
+    - `.cursor/rules/21-extractor.mdc` — new "Ledger cell extraction (TASK-049)" section with the six bullets from §D (one transcript line per free-text cell, no harness vocabulary, `run_date` / `call_type` rules, `wiz_score` verbatim-or-empty, `value_realized` quantified-when-available regex family, challenge columns derived not extracted).
+    - `docs/ai/playbooks/run-account-summary.md` — Step 4 (`read_ledger`) describes the v3 row shape (typed return — `int` for `wiz_score`, `list[str]` for id-list cells; 20 columns) and adds the explicit note that the open-challenges count is derived on read as `len(challenges_in_progress) + len(challenges_stalled)` — not stored. Step 5 weights unchanged.
+    - `docs/ai/references/customer-notes-mutation-rules.md` — History Ledger Integration section rewritten against v3 columns (column list, derived columns, typed values, write-time rejections, SSoT pointers).
+- **Prose scrub of `append_ledger_v2` / `24-column` references in non-archive files — doc phase, 2026-04-21.**
+    - `.cursor/rules/core.mdc`, `.cursor/rules/20-orchestrator.mdc` (description + `_TEST_CUSTOMER` override + Block B execute steps + approval STOP + Compile step + step-9 execute), `.cursor/rules/11-e2e-test-customer-trigger.mdc` (Hard rule #2 tool list), `docs/ai/playbooks/bootstrap-customer.md` (§2 renamed "History Ledger v3 (lazy create)"; "24-column v2 table" → "20-column `schema_version: 3` table"), `docs/V2_MVP_BUILD_PLAN.md` (TASK-011 row + gate), `docs/tasks/INDEX.md` (TASK-011 entries annotated "(superseded by TASK-049 schema v3)"), `docs/project_spec.md` (Rule 7 `append_ledger` / `append_ledger_row` mention + flow diagram × 2 + TASK-017 step 9 prose). `README.md` had already been scrubbed in the coder phase (`migrate_ledger` row removed; cheat sheet renamed to `append_ledger_row` with `LEDGER_V3_COLUMNS` pointer).
+- **Doc-side prose rewrites — doc phase, 2026-04-21.**
+    - `docs/MIGRATION_GUIDE.md` § _History Ledger v3 — 20 snake_case columns (TASK-049)_ — one-paragraph v2→v3 statement; points at `LEDGER_V3_COLUMNS` and `docs/project_spec.md` for the full column spec.
+    - `docs/project_spec.md` § _Ledger writes: `append_ledger` vs `append_ledger_row`_ — full 20-column v3 table (type, notes per column), write-time validation narrative (enum / date / id-list / ISO:sku / length / forbidden-vocabulary), `read_ledger` typed-return shape, derived open-challenges count rule, FORBIDDEN SSoT pointer (same pattern §7.4 TASK-048 uses).
+- **Post-task E2E `_TEST_CUSTOMER-History-Ledger.md` vs acceptance bullets:** _(runtime-deferred — re-check after next Run E2E Test Customer; same pattern TASK-048 used for its runtime-only bullet.)_
+- **Operator-safety run (≥ 30-day-old transcript) result:** _(runtime-deferred — verification step 4 is runtime-only and deferred by explicit user instruction.)_
+- **Verification (coder phase).** `uv run pytest` = 92 passed, 1 skipped (incl. 19 in `test_ledger.py`). `uv run ruff check .` = All checks passed. `bash scripts/ci/check-repo-integrity.sh` = Repo integrity OK. `rg "LEDGER_BASE_COLUMNS|LEDGER_V2_EXTRA_COLUMNS|LEDGER_V2_ALL|migrate_ledger|migrate_standard_table_to_v2"` outside `docs/tasks/archive/**` and this file = 0 hits.
 
-- Code diffs (`ledger.py`, server tools, test suite): —
-- Playbook + rule diffs (UCN Step 11, extractor ledger section): —
-- Deleted files (`migrate_ledger.py`): —
-- Post-task E2E `_TEST_CUSTOMER-History-Ledger.md` vs acceptance bullets: —
-- Operator-safety run (≥ 30-day-old transcript) result: —
+## Handoff / follow-ups
+
+- **`prestonotes_gdoc/update-gdoc-customer-notes.py` — LEDGER_REQUIRED_COLUMNS** (flagged by the coder phase and confirmed during the doc pass). The GDoc-side helper still carries its own `LEDGER_REQUIRED_COLUMNS` list of **19 Title-Case v2 names** (`Date`, `Account Health`, `Wiz Score`, …). Per user instruction (`user_constraints` rule 2), we did **not** rewrite this file — the MCP server no longer depends on it for the in-repo ledger and the GDoc ledger-append flow is a separate `append_ledger` path. Track reconciling the GDoc-side constant to the 20-col v3 snake_case names (or retiring it if `append_ledger` is no longer called) as a candidate item for **TASK-050** (UCN GDoc write completeness + consistency) — it is adjacent to that task's cross-section reconciliation scope.
+- **Runtime-only acceptance bullets** (`_TEST_CUSTOMER-History-Ledger.md` post-TASK-048 content and ≥ 30-day-old transcript operator-safety run) stay deferred; re-check both after the next `Run E2E Test Customer` execution and flip to `[x]` in this file before archival.

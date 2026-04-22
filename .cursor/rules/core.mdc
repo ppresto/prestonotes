@@ -65,7 +65,7 @@ Proposed doc edits must follow **`docs/ai/references/customer-notes-mutation-rul
 Append **one row per successful write run**; never rewrite prior rows.
 
 - Missing ledger file on first run is valid. Treat this as **no history yet**, not an error.
-- Prefer MCP **`append_ledger_v2`** for writes. If the ledger file is missing, the v2 tool creates an empty v2 ledger then appends the first row.
+- Prefer MCP **`append_ledger_row`** (schema v3, TASK-049) for writes. If the ledger file is missing, the tool creates a fresh `schema_version: 3` stub then appends the first row.
 - If **`read_ledger`** returns `{"empty": true, ...}`, continue the workflow using transcript/doc evidence and create history on the first approved write.
 - Keep values evidence-backed; leave cells empty instead of fabricating.
 

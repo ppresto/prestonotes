@@ -25,12 +25,12 @@ Follow **`.cursor/rules/15-user-preferences.mdc`**. Show plans before writes; us
 - Canonical mirror: **`MyNotes/Customers/<Customer>/`**
 - MCP **`bootstrap_customer`** can scaffold folders; **`sync_notes`** pulls from Drive when configured.
 
-## 2) History Ledger v2 (lazy create)
+## 2) History Ledger v3 (lazy create)
 
 - **Path:** **`MyNotes/Customers/<Customer>/AI_Insights/<Customer>-History-Ledger.md`**
-- **Greenfield:** the ledger file may be **absent** until the first successful **`append_ledger_v2`** — the MCP path creates an empty **24-column** v2 table, then appends the row.
-- **`read_ledger`:** returns an **`empty`** JSON shape when **`AI_Insights/`** exists but the ledger file does not (see **`docs/MIGRATION_GUIDE.md`** §History Ledger v2).
-- **E2E reset:** The `_TEST_CUSTOMER` E2E flow (TASK-044) hard-deletes the customer folder (local + Drive) and re-runs `bootstrap_customer`, so the ledger is absent after reset and gets created lazily on the first approved `append_ledger_v2`.
+- **Greenfield:** the ledger file may be **absent** until the first successful **`append_ledger_row`** — the MCP path creates an empty **20-column** `schema_version: 3` table, then appends the row.
+- **`read_ledger`:** returns an **`empty`** JSON shape when **`AI_Insights/`** exists but the ledger file does not (see **`docs/MIGRATION_GUIDE.md`** §History Ledger v3).
+- **E2E reset:** The `_TEST_CUSTOMER` E2E flow (TASK-044) hard-deletes the customer folder (local + Drive) and re-runs `bootstrap_customer`, so the ledger is absent after reset and gets created lazily on the first approved `append_ledger_row`.
 
 ## 3) Google Docs (separate)
 

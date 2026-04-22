@@ -369,10 +369,13 @@ Every run must explicitly cover these fields with either a mutating action or `n
 
 ## History Ledger Integration
 
-After a successful Google Doc write, `Update Customer Notes` appends one row to `*-History-Ledger.md` using the same evidence discipline as the doc mutations:
-- Row columns match the required set in `.cursor/rules/core.mdc` (History Ledger — TASK-007).
-- Data is derived from the post-write doc state + applied mutations from this run.
-- Empty cells for any column without available data — no fabrication.
+After a successful Google Doc write, `Update Customer Notes` appends **one schema v3 row** to `*-History-Ledger.md` via MCP **`append_ledger_row`** using the same evidence discipline as the doc mutations. The full column list, types, and caps live in **`docs/project_spec.md`** § _Ledger writes: `append_ledger` vs `append_ledger_row`_ and are enforced by `prestonotes_mcp/ledger.py` `LEDGER_V3_COLUMNS`. UCN playbook **Step 11** walks through the column-by-column extraction rules.
+
+- **20 snake_case columns** at `schema_version: 3`: `run_date, call_type, account_health, wiz_score, sentiment, coverage, challenges_new, challenges_in_progress, challenges_stalled, challenges_resolved, goals_delta, tools_delta, stakeholders_delta, stakeholders_present, value_realized, next_critical_event, wiz_licensed_products, wiz_license_purchases, wiz_license_renewals, wiz_license_evidence_quality`.
+- **Derived, not extracted.** The four `challenges_*` columns are **derived from `read_challenge_lifecycle`** for the customer (see UCN Step 11 table); never extract them from transcripts. The open-challenges count is derived on read as `len(challenges_in_progress) + len(challenges_stalled)` — it is **not** a stored column.
+- **Typed values.** `wiz_score` is `int`; id-list cells are `list[str]`; everything else is `str`. Missing keys render as empty cells — do not pass placeholder tokens (`"n/a"`, `"None"`).
+- **Write-time rejections** (tool returns `{"ok": false, ...}` with `field` + `value`/`expected`/`matched`): non-enum values for `call_type` / `account_health` / `sentiment` / `wiz_license_evidence_quality`, future `run_date`, regressed `run_date`, id-list fragments with whitespace or empty pieces, `wiz_license_purchases` / `wiz_license_renewals` entries that fail `^\d{4}-\d{2}-\d{2}:[a-z0-9_]+$`, free-text cap violations (`coverage` / `goals_delta` / `tools_delta` / `stakeholders_delta` / `next_critical_event` ≤ 160; `value_realized` ≤ 240), and any cell containing a term from **`FORBIDDEN_EVIDENCE_TERMS`** in `prestonotes_mcp/journey.py` (same SSoT TASK-048 uses for `update_challenge_state`).
+- Empty cells for any column without available data — **no fabrication**; leave the key out and the writer will render `""`.
 - The ledger row is **not** written on rejection or zero-write runs.
 
 ---

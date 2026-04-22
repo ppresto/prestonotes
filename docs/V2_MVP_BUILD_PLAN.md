@@ -131,7 +131,7 @@ Below: **TASK** → **what you’re building** → **you know it’s done when�
 | Task | What you’re building | Validate |
 |------|----------------------|----------|
 | **010** | `update_challenge_state` (and read companion `read_challenge_lifecycle` added by TASK-047) | pytest |
-| **011** | `append_ledger_v2` + migration helper | pytest + fixture ledger |
+| **011** | `append_ledger_row` + migration helper (**superseded by TASK-049** — legacy migration helper deleted, schema v3 supersedes the 24-column v2 model) | pytest + fixture ledger |
 | **012** | Stage-2 synthesizer rule + playbook — **retired by TASK-047**; narrative now lives in **Run Account Summary** | Manual on 5+ call customer |
 | **013** | Exec summary template + **Run Account Summary** (expanded by TASK-047 to carry the Stage-2 narrative) | Manual VP-readable output |
 | **014** | **Run Challenge Review** playbook | **Merged** into **UCN** Phase 0 (orchestrator) and into **Run Account Summary** as an optional section |
@@ -159,7 +159,7 @@ Below: **TASK** → **what you’re building** → **you know it’s done when�
 1. **TASK-009** complete before **TASK-010**.  
 2. **`prestonotes_gdoc/`** + **TASK-003** before trusting **write_doc** in production paths.  
 3. **User approval** before any mutating MCP tool ([`project_spec.md` §2–3](project_spec.md)).  
-4. **TASK-011** before orchestrator uses **`append_ledger_v2`** in anger (§2 ledger subsection).
+4. **TASK-011** before orchestrator uses **`append_ledger_row`** in anger (§2 ledger subsection; schema v3 per TASK-049).
 
 ---
 

@@ -2,7 +2,7 @@
 
 Triggers: `Update Customer Notes for [CustomerName]` · `UCN for [CustomerName]` · informal **`UCN`** when the customer is already set in the thread.
 
-**Default (orchestrator):** Built-in **challenge governance** first (review table + optional persisted challenge status updates you approve), then the multi-advisor pipeline and **one** combined approval — **`.cursor/rules/20-orchestrator.mdc`**. On execute, UCN writes persisted state only: **`update_challenge_state`** (approved rows), **`write_doc`**, **`append_ledger_v2`**, optional **`log_run`** / **`sync_notes`**. The human-readable account narrative (Health line, call spine, milestones, challenge review, stakeholder evolution) now lives in **`Run Account Summary for [CustomerName]`** (**`docs/ai/playbooks/run-account-summary.md`**).
+**Default (orchestrator):** Built-in **challenge governance** first (review table + optional persisted challenge status updates you approve), then the multi-advisor pipeline and **one** combined approval — **`.cursor/rules/20-orchestrator.mdc`**. On execute, UCN writes persisted state only: **`update_challenge_state`** (approved rows), **`write_doc`**, **`append_ledger_row`**, optional **`log_run`** / **`sync_notes`**. The human-readable account narrative (Health line, call spine, milestones, challenge review, stakeholder evolution) now lives in **`Run Account Summary for [CustomerName]`** (**`docs/ai/playbooks/run-account-summary.md`**).
 
 Aliases (same as default): `Update Customer Notes with Challenge Review first for [CustomerName]` · `Lifecycle-first Update Customer Notes for [CustomerName]`
 
@@ -326,41 +326,46 @@ After write, re-run the `read` subcommand to confirm changes are reflected. Save
 
 ### Step 11 of 11 — Append History Ledger row and sync
 
-After a successful Google Doc write:
+After a successful Google Doc write, assemble one **schema v3** row and append it via **MCP `append_ledger_row`**. The canonical column order and typing lives in **`prestonotes_mcp/ledger.py`** (`LEDGER_V3_COLUMNS`) and the full spec is **`docs/project_spec.md`** § _Ledger writes: `append_ledger` vs `append_ledger_row`_. Do **not** handcraft markdown tables in this playbook flow.
 
 1. **Read or create the ledger file:**
-   - Path: `./MyNotes/Customers/[CustomerName]/AI_Insights/[CustomerName]-History-Ledger.md`
-   - If the file does not exist, treat as first-run/no-history and continue. Do **not** handcraft markdown tables in the playbook flow.
+   - Path: `./MyNotes/Customers/[CustomerName]/AI_Insights/[CustomerName]-History-Ledger.md`.
+   - If the file is missing, `append_ledger_row` creates a fresh `schema_version: 3` stub on first append; treat a missing file as first-run / no-history and continue.
 
-2. **Build one new ledger row** using the post-write doc state and evidence from this run:
-   - `Date`: today's date
-   - `Account Health`: computed from challenge severity, sentiment, and coverage (or empty if uncertain)
-   - `Wiz Score`: from doc if available (or empty)
-   - `Sentiment`: from latest transcript tone and user feedback (or empty)
-   - `Coverage`: from doc cloud environment / sensor data (or empty)
-   - `Open Challenges`: count from challenge tracker rows where status is Open or In Progress
-   - `Aging Blockers`: challenges open >30 days with no resolution progress
-   - `Resolved Issues`: challenges resolved in this run
-   - `New Blockers`: challenges added in this run
-   - `Goals Changed`: goals added or moved to accomplishments in this run
-   - `Tools Changed`: tools added/updated/removed in this run (lifecycle syntax)
-   - `Stakeholder Shifts`: contact/role changes detected in this run (or empty)
-   - `Value Realized`: accomplishments/outcomes recognized in this run (or empty)
-   - `Next Critical Event`: from doc or transcripts (or empty)
-   - `Key Drivers`: top business drivers from this run's evidence
-   - `Wiz Licensed Products`: from Deal Stage Tracker rows where stage is "win" or "tech win"
-   - `Wiz License Purchase Dates`: from Deal Stage Tracker or prior ledger (or empty)
-   - `Wiz License Expiration/Renewal`: from Deal Stage Tracker or prior ledger (or empty)
-   - `Wiz License Evidence Quality`: per evidence hierarchy (Definitive > Strong > Indicative > Unknown)
-   - Leave any column **empty** when data is not available. Do not fabricate values.
+2. **Build one new ledger row as a Python dict** keyed by the **20 v3 columns** (the MCP wrapper forwards it as `row_json`). Each column below has exactly one "extract as …" rule. The four `challenges_*` columns are **derived**, not extracted:
 
-3. **Append the row** with MCP **`append_ledger_v2`** (append-only — never edit prior rows).  
-   - If the file is missing, this tool creates an empty v2 ledger scaffold first, then appends the row.
+   | # | Column | How to fill |
+   |---|---|---|
+   | 1 | `run_date` | Extract as **today's ISO date** (`YYYY-MM-DD`). The only place the run date ever appears in a row. |
+   | 2 | `call_type` | Extract as the **most salient `call_type`** across the transcripts covered by this run. Enum: `qbr \| exec_readout \| product_demo \| commercial_close \| technical_pov \| champion_1on1 \| kickoff \| other`. |
+   | 3 | `account_health` | Extract as a synthesis of challenge severity + sentiment + coverage. Enum: `great \| good \| at_risk \| critical`. Leave empty string only if every input is unknown. |
+   | 4 | `wiz_score` | Extract as the **verbatim integer** the customer stated in an in-scope transcript (0..100). **Do not infer.** Empty string if no transcript states one. |
+   | 5 | `sentiment` | Extract as the synthesized tone for the run. Enum: `positive \| neutral \| negative \| mixed`. |
+   | 6 | `coverage` | Extract as one free-text headline (≤ 160 chars) summarizing deployment / scan coverage for the run (e.g. `"Sensor coverage 82% prod AWS; Code GitHub org onboarded"`). |
+   | 7 | `challenges_new` | **Do not extract. Derive from `read_challenge_lifecycle` output for this customer** — ids that transitioned to `identified` within the run window. Pass as `list[str]` of challenge ids. |
+   | 8 | `challenges_in_progress` | **Do not extract. Derive from `read_challenge_lifecycle` output for this customer** — ids whose current state is `identified` or `in_progress`. |
+   | 9 | `challenges_stalled` | **Do not extract. Derive from `read_challenge_lifecycle` output for this customer** — ids whose current state is `stalled`. |
+   | 10 | `challenges_resolved` | **Do not extract. Derive from `read_challenge_lifecycle` output for this customer** — ids that transitioned to `resolved` within the run window. |
+   | 11 | `goals_delta` | Extract as a free-text line (≤ 160 chars) describing goal shifts customers stated this run. Empty string if none. |
+   | 12 | `tools_delta` | Extract as a free-text line (≤ 160 chars) describing tools that came online or were retired this run. |
+   | 13 | `stakeholders_delta` | Extract as a free-text line (≤ 160 chars) describing who moved: departures, promotions, new sponsors. |
+   | 14 | `stakeholders_present` | Extract as a `list[str]` of normalized stakeholder names derived from call-record `participants[]` across the in-window calls (unique, deduped). |
+   | 15 | `value_realized` | Extract as ≤ 240 chars of quantified / concrete outcomes this run. **MUST include at least one quantified element when any in-window transcript contains one** (regex — see `.cursor/rules/21-extractor.mdc` "Ledger cell extraction"). Otherwise free text is fine. |
+   | 16 | `next_critical_event` | Extract as `YYYY-MM-DD: <desc>` when a date is known; otherwise `<desc>` alone (≤ 160 chars). |
+   | 17 | `wiz_licensed_products` | Extract as a `list[str]` of normalized SKU ids actively licensed (e.g. `["wiz_cloud", "wiz_sensor"]`). Source: Deal Stage Tracker rows at "win" / "tech win" + prior ledger. |
+   | 18 | `wiz_license_purchases` | Extract as a `list[str]` of `ISO:sku` pairs newly purchased (e.g. `["2026-03-28:wiz_cloud"]`). Must match `^\d{4}-\d{2}-\d{2}:[a-z0-9_]+$`. Empty list if none. |
+   | 19 | `wiz_license_renewals` | Extract as a `list[str]` of `ISO:sku` pairs renewing. Same format as purchases. |
+   | 20 | `wiz_license_evidence_quality` | Extract as an enum. Enum: `high \| medium \| low`. |
+
+   - **Omit** a key to write an empty cell — the writer accepts absent keys as empty. Do **not** write `"None"`, `"n/a"`, or placeholder tokens.
+   - Free-text cells must obey `.cursor/rules/21-extractor.mdc` "Ledger cell extraction": one internal transcript citation per cell, no harness vocabulary (MCP rejects any match against `FORBIDDEN_EVIDENCE_TERMS` in `prestonotes_mcp/journey.py`), cap enforcement.
+
+3. **Append the row** with MCP **`append_ledger_row(customer_name, row_json=<dict>)`** (append-only — never edit prior rows). On a rejection the tool returns `{"ok": false, "error": "...", "field": "...", "value": "..." | "matched": "..."}`; fix the row locally and retry. Rejections do not write a partial file.
 
 4. **Mirror** the updated ledger to Google Drive:
    - `$GDRIVE_BASE_PATH/Customers/[CustomerName]/AI_Insights/[CustomerName]-History-Ledger.md`
 
-5. **Cross-reference in audit log:** The audit log entry from the write step should note "Ledger row appended: [date]" so the two files link to each other.
+5. **Cross-reference in audit log:** The audit log entry from the write step should note `"Ledger row appended: <run_date>"` so the two files link to each other.
 
 **Tell user:** "Step 11 of 11 — Done. Ledger row appended for [date]. Files synced to Google Drive."
 

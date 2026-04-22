@@ -34,7 +34,7 @@ Follow `docs/ai/playbooks/e2e-test-customer.md` exactly:
 ## Hard rules (any violation is a defect — stop, fix, re-run)
 
 1. **Do not skip steps.** All 10 steps must run. The chat-driven steps (2, 4, 5, 6, 8, 9, 10) invoke real playbooks under the `_TEST_CUSTOMER` E2E override; do not answer in-chat with "simulated" or "prepared" outputs that were never produced by the underlying MCP tools.
-2. **Do not stop for approval.** The `_TEST_CUSTOMER` E2E override in `20-orchestrator.mdc`, `21-extractor.mdc`, and `core.mdc` applies. Execute customer-data write tools (`write_doc`, `append_ledger_v2`, `update_challenge_state`, `write_call_record`, `sync_notes`) directly in order.
+2. **Do not stop for approval.** The `_TEST_CUSTOMER` E2E override in `20-orchestrator.mdc`, `21-extractor.mdc`, and `core.mdc` applies. Execute customer-data write tools (`write_doc`, `append_ledger_row`, `update_challenge_state`, `write_call_record`, `sync_notes`) directly in order.
 3. **Do not substitute session context for artifacts.** If a step's output depends on a file that a prior step was supposed to produce, re-read the file from disk or MCP — do not claim "from context" that the file exists without checking.
 4. **Do not reorder.** The shell seed at step 3 must complete before the chat playbooks at steps 4–6. Step 6 (first UCN) must complete before the shell merge at step 7. The shell merge at step 7 must complete before the extraction and UCN at steps 8–9.
 5. **Shell steps use `./scripts/e2e-test-customer.sh` only.** Older harness scripts that predate `e2e-test-customer.sh` are not part of this flow; never attempt to invoke them.

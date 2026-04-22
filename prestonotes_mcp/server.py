@@ -35,7 +35,9 @@ from prestonotes_mcp.journey import (
     append_challenge_transition,
     challenge_lifecycle_path,
 )
-from prestonotes_mcp.ledger_v2 import append_ledger_v2_row, validate_ledger_v2_row
+from prestonotes_mcp.ledger import LedgerValidationError
+from prestonotes_mcp.ledger import append_ledger_row as _append_ledger_row
+from prestonotes_mcp.ledger import read_ledger as _read_ledger
 from prestonotes_mcp.runtime import AppContext, init_ctx
 from prestonotes_mcp.security import (
     check_call_record_json_size,
@@ -50,7 +52,7 @@ mcp = FastMCP(
     instructions=(
         "prestoNotes MCP v2: customer notes, Google Docs, ledger, sync, call records, lifecycle. "
         "For writes (write_doc, write_call_record, update_challenge_state, "
-        "append_ledger_v2, bootstrap_customer with dry_run=false), sync_notes, sync_transcripts: "
+        "append_ledger_row, bootstrap_customer with dry_run=false), sync_notes, sync_transcripts: "
         "show the user the plan first and obtain approval in chat before calling. "
         "Mutation path: approved mutation JSON → write_doc (prestonotes_gdoc/update-gdoc-customer-notes.py). "
         "Call records: JSON per docs/project_spec §7.1 under MyNotes/Customers/<name>/call-records/. "
@@ -305,32 +307,17 @@ def read_audit_log(customer_name: str) -> str:
 
 @mcp.tool
 def read_ledger(customer_name: str, max_rows: int = 10) -> str:
-    """Read the History Ledger markdown for a customer (full file; prefer small files)."""
-    _ = max_rows  # reserved for future row-limited reads
+    """Read the last ``max_rows`` History Ledger rows for a customer as typed v3
+    rows (TASK-049 §B). Returns JSON with ``path``, ``schema_version: 3``, and
+    a ``rows`` array; each row is a dict with the 20 ``LEDGER_V3_COLUMNS`` keys.
+    Id-list cells are parsed back to ``list[str]``; ``wiz_score`` is parsed to
+    ``int | None``. When no ledger file exists yet under ``AI_Insights`` the
+    response shape ``{"empty": true, "path": ..., "message": ...}`` is
+    preserved from the previous contract."""
     with tool_scope("read_ledger", customer_name=customer_name, max_rows=max_rows):
         validate_customer_name(customer_name)
-        ai = customer_dir(customer_name) / "AI_Insights"
-        if not ai.is_dir():
-            return json.dumps({"error": "AI_Insights not found", "path": str(ai)})
-        ledgers = sorted(ai.glob("*-History-Ledger.md"))
-        if not ledgers:
-            expected = ai / f"{customer_name}-History-Ledger.md"
-            return json.dumps(
-                {
-                    "empty": True,
-                    "path": str(expected),
-                    "message": (
-                        "No History Ledger file yet under AI_Insights; the first successful "
-                        "append_ledger_v2 creates it."
-                    ),
-                }
-            )
-        p = ledgers[0]
-        text = p.read_text(encoding="utf-8", errors="replace")
-        max_chars = 200_000
-        if len(text) > max_chars:
-            text = text[:100000] + "\n\n...[truncated]...\n\n" + text[-50000:]
-        return json.dumps({"path": str(p), "content": text}, ensure_ascii=False)
+        payload = _read_ledger(customer_name, max_rows=max_rows)
+        return json.dumps(payload, ensure_ascii=False)
 
 
 @mcp.tool
@@ -570,17 +557,29 @@ def append_ledger(customer_name: str, doc_id: str, applied_json_path: str) -> st
 
 
 @mcp.tool
-def append_ledger_v2(customer_name: str, row_json: str) -> str:
-    """Append one v2 History Ledger row (24 columns: legacy + call_type, challenges, value_realized, key_stakeholders). Mutates customer data — get user approval in chat first. Creates an empty v2 ledger if the file is missing; if the file exists but the standard table is still 19 columns, the error directs to python -m prestonotes_mcp.tools.migrate_ledger."""
-    with tool_scope("append_ledger_v2", customer_name=customer_name):
+def append_ledger_row(customer_name: str, row_json: str) -> str:
+    """Append one History Ledger row (v3 schema: 20 snake_case columns — see
+    ``prestonotes_mcp.ledger.LEDGER_V3_COLUMNS`` and TASK-049 §A). ``row_json``
+    is a JSON object whose keys are a subset of the v3 columns; missing keys
+    render as empty cells. Accepted value types per column: ``str`` for
+    free-text and enum cells, ``int`` for ``wiz_score``, ``list[str]`` for
+    id-list cells (semicolon-joined on write). Mutates customer data — get
+    user approval in chat first. Creates an empty v3 ledger (schema_version: 3)
+    lazily if the file is missing. Rejections (future ``run_date``, regressed
+    date, non-enum cell, id-list / ISO:sku format errors, harness-vocabulary
+    matches, length-cap violations) return ``{"ok": false, ...payload}`` with
+    a named ``field`` and either ``value``+``expected`` or ``matched``."""
+    with tool_scope("append_ledger_row", customer_name=customer_name):
         validate_customer_name(customer_name)
         if len(row_json) > 400_000:
             raise ValueError("row_json too large")
         data = json.loads(row_json)
         if not isinstance(data, dict):
             raise ValueError("row_json must be a JSON object")
-        validate_ledger_v2_row(data)
-        path = append_ledger_v2_row(customer_name, data)
+        try:
+            path = _append_ledger_row(customer_name, data)
+        except LedgerValidationError as exc:
+            return json.dumps({"ok": False, **exc.payload}, ensure_ascii=False)
         return json.dumps({"ok": True, "path": str(path)})
 
 

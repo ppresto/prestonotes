@@ -48,7 +48,7 @@ PrestoNotes is an AI-powered "account intelligence engine" for a cybersecurity S
 These rules must never be violated. The planner should refuse any task that breaks them.
 
 **Rule 1 — Python executes, AI proposes (including GDoc mutations).**
-The LLM reads, analyzes, and produces **structured output** — including **mutation JSON** that conforms to `prestonotes_gdoc/config/doc-schema.yaml` and `docs/ai/references/customer-notes-mutation-rules.md` (once ported). **Only after explicit user approval** may an agent invoke MCP tools that mutate external or customer state. Python (via MCP: `write_doc`, `append_ledger` / `append_ledger_v2`, call-record tools, etc.) performs **all** file writes, date calculations, and **Google Docs/Drive API** calls. **Never** instruct the model to paste content into the live Doc as a substitute for the mutation pipeline.
+The LLM reads, analyzes, and produces **structured output** — including **mutation JSON** that conforms to `prestonotes_gdoc/config/doc-schema.yaml` and `docs/ai/references/customer-notes-mutation-rules.md` (once ported). **Only after explicit user approval** may an agent invoke MCP tools that mutate external or customer state. Python (via MCP: `write_doc`, `append_ledger` / `append_ledger_row`, call-record tools, etc.) performs **all** file writes, date calculations, and **Google Docs/Drive API** calls. **Never** instruct the model to paste content into the live Doc as a substitute for the mutation pipeline.
 
 **Rule 2 — No transcript context flooding.**
 Primary path: call MCP **`read_call_records`** to load the validated §7.1 JSON records directly (already sorted by `(date, call_id)`); filter by date range or call type when the task allows it. **Optional:** load **at most one** per-call raw `.txt` transcript file when a quote or boundary check requires verbatim text — each file represents **one meeting**, so there is no v1-style “many calls in one 50KB slice.” Do **not** load legacy `_MASTER_TRANSCRIPT_*.txt` wholesale into context during normal workflows; if a master file still exists during migration, treat it as **ingestion/source only** until split into per-call files.
@@ -83,11 +83,41 @@ The old project at `../prestoNotes.orig` is used strictly to copy working code. 
 
 **Deprecated in v2:** MCP tool **`run_pipeline`** (v1: `../prestoNotes.orig/custom-notes-agent/run-main-task.py`) is **not** part of the v2 architecture. Do not register it on the MCP server. Historical playbooks that referenced it remain **reference only** under §12.
 
-### Ledger writes: `append_ledger` vs `append_ledger_v2`
+### Ledger writes: `append_ledger` vs `append_ledger_row`
 
-- **`append_ledger`** — v1 row shape; runs the GDoc **`ledger-append`** flow after a successful **`write_doc`**. Use when the on-disk **“Standard ledger row”** table is still the **19-column** shape or when matching legacy automation.
-- **`append_ledger_v2`** — Appends one row to **`MyNotes/Customers/<Customer>/AI_Insights/<Customer>-History-Ledger.md`**; **`row_json`** must be a JSON object with keys **exactly** the **24** v2 columns (19 header names + **`call_type`**, **`challenges_in_progress`**, **`challenges_resolved`**, **`value_realized`**, **`key_stakeholders`**), all string values. If the standard table is not yet 24 columns, the tool raises **`ValueError`** pointing at **`python -m prestonotes_mcp.tools.migrate_ledger`** (see **`docs/MIGRATION_GUIDE.md`** — History Ledger v2).
-- Keep **`append_ledger`** for **backward compatibility**, tests, and customers not yet migrated. **`TASK-017`** orchestrator step 9 should use **`append_ledger_v2`** after the customer ledger is migrated.
+- **`append_ledger`** — v1 row shape; runs the GDoc **`ledger-append`** flow after a successful **`write_doc`**. Retained for backward compatibility and legacy automation.
+- **`append_ledger_row`** (TASK-049, schema v3) — Appends one row to **`MyNotes/Customers/<Customer>/AI_Insights/<Customer>-History-Ledger.md`**. Python signature is `append_ledger_row(customer_name: str, row: dict[str, str | int | list[str]]) -> Path`; the MCP tool wraps it and forwards the `row` dict from `row_json`. Frontmatter on a lazily-created ledger carries `schema_version: 3`.
+
+**v3 column list (20 columns, in order — canonical copy lives in `prestonotes_mcp/ledger.py` as `LEDGER_V3_COLUMNS`):**
+
+| # | Column | Type | Notes |
+|---|---|---|---|
+| 1 | `run_date` | ISO date (`str`) | UCN run date (today); append-only. |
+| 2 | `call_type` | enum (`str`) | `qbr \| exec_readout \| product_demo \| commercial_close \| technical_pov \| champion_1on1 \| kickoff \| other`. |
+| 3 | `account_health` | enum (`str`) | `great \| good \| at_risk \| critical`. |
+| 4 | `wiz_score` | `int` 0..100 (or empty) | Verbatim customer-stated number; empty if not stated. |
+| 5 | `sentiment` | enum (`str`) | `positive \| neutral \| negative \| mixed`. |
+| 6 | `coverage` | free text ≤ 160 | Deployment / scan coverage headline. |
+| 7 | `challenges_new` | id list (`list[str]`) | **Derived from `challenge-lifecycle.json`** — ids that entered `identified` within the run window. |
+| 8 | `challenges_in_progress` | id list (`list[str]`) | **Derived** — ids whose current state is `identified` or `in_progress`. |
+| 9 | `challenges_stalled` | id list (`list[str]`) | **Derived** — ids whose current state is `stalled`. |
+| 10 | `challenges_resolved` | id list (`list[str]`) | **Derived** — ids that transitioned to `resolved` within the run window. |
+| 11 | `goals_delta` | free text ≤ 160 | Customer goal shifts this run. |
+| 12 | `tools_delta` | free text ≤ 160 | Tools that came online / retired. |
+| 13 | `stakeholders_delta` | free text ≤ 160 | Stakeholder movement (departures, promotions, new sponsors). |
+| 14 | `stakeholders_present` | id list (`list[str]`) | Normalized names derived from call-record `participants[]` within run window. |
+| 15 | `value_realized` | free text ≤ 240 | Quantified / concrete outcomes this run. |
+| 16 | `next_critical_event` | free text ≤ 160 | `YYYY-MM-DD: <desc>` when a date is known; otherwise `<desc>` alone. |
+| 17 | `wiz_licensed_products` | id list (`list[str]`) | Normalized SKU ids (`wiz_cloud`, `wiz_sensor`, `wiz_code`, `wiz_defend`, `wiz_advanced`, …). |
+| 18 | `wiz_license_purchases` | `ISO:sku` list (`list[str]`) | Entries matching `^\d{4}-\d{2}-\d{2}:[a-z0-9_]+$`. |
+| 19 | `wiz_license_renewals` | `ISO:sku` list (`list[str]`) | Same format as purchases. |
+| 20 | `wiz_license_evidence_quality` | enum (`str`) | `high \| medium \| low`. |
+
+**Write-time validation** (hard rejects; the MCP wrapper catches `LedgerValidationError` and returns `{"ok": false, **payload}` — same shape TASK-048 introduced for `update_challenge_state`): enum violations, `run_date` later than `today + 1 day` (UTC), date regression vs the newest existing row, id-list fragments with empty pieces or surrounding whitespace, `wiz_license_purchases` / `wiz_license_renewals` entries that fail the `ISO:sku` regex, `wiz_score` outside 0..100 or not an int, free-text cells that exceed their cap, and any cell (free text or id-list fragment) containing a term from **`FORBIDDEN_EVIDENCE_TERMS`** in `prestonotes_mcp/journey.py` (same SSoT pattern §7.4 uses — the list is not redefined in `ledger.py`; see the pointer there). Missing keys render as empty cells — the validator only rejects invalid *values*, not absent ones.
+
+**`read_ledger` shape.** `read_ledger(customer_name, max_rows)` returns typed v3 rows: `list[str]` for id-list cells, `int` for `wiz_score`, `str` for free-text / enum cells, and `""` for empty cells. The existing `{"empty": true, ...}` response is still returned when the file is missing. The count of open challenges is **derived on read** as `len(row["challenges_in_progress"]) + len(row["challenges_stalled"])` — there is no stored count column.
+
+**No auto-migration.** There were no production customers on the earlier 24-column v2 schema; the `_TEST_CUSTOMER` E2E reset and the `bootstrap-customer` playbook create fresh v3 ledgers on the first `append_ledger_row` call. Any historical ledger files older than v3 on disk are ignored; UCN's first write re-creates the ledger from scratch (append-only rule applies from that first v3 row forward).
 
 ---
 
@@ -110,7 +140,7 @@ The old project at `../prestoNotes.orig` is used strictly to copy working code. 
 
 **Read tools (non-exhaustive; mirror v1 after TASK-002):** `check_google_auth`, `list_customers`, `get_customer_status`, **`discover_doc`**, **`read_doc`**, `read_transcripts`, `read_ledger`, `read_challenge_lifecycle` (TASK-047), `read_audit_log` (tail of the file at `paths.audit_log_rel`, default **`logs/mcp-audit.log`**), `check_product_intelligence`, plus Stage 1+ tools as they land (`read_call_records`, …).
 
-**Write / sync tools (TASK-003+):** `write_doc`, `append_ledger`, `append_ledger_v2` (TASK-011), `log_run`, `sync_notes`, `sync_transcripts`, `bootstrap_customer`, `write_call_record`, `update_challenge_state` (TASK-010), and further backlog items as they land.
+**Write / sync tools (TASK-003+):** `write_doc`, `append_ledger`, `append_ledger_row` (TASK-049, v3 schema), `log_run`, `sync_notes`, `sync_transcripts`, `bootstrap_customer`, `write_call_record`, `update_challenge_state` (TASK-010), and further backlog items as they land.
 
 **MCP resources to port** (same URIs as v1 so agents and tests share one source of truth): `prestonotes://config/doc-schema`, `prestonotes://config/section-sequence`, `prestonotes://config/task-budgets`, `prestonotes://prompts/persona`, `prestonotes://prompts/lens`. Payloads are read from files under **`prestonotes_gdoc/config/`** after port.
 
@@ -264,7 +294,7 @@ call-records/*.json + History-Ledger.md + challenge-lifecycle.json
                               [MCP] read_call_records / read_ledger /
                                     read_challenge_lifecycle (reads only)
                               [MCP] update_challenge_state (during UCN)
-                              [MCP] append_ledger_v2 (during UCN)
+                              [MCP] append_ledger_row (during UCN)
 
 [Stage 3 — Domain Advisors]
 CustomerStateUpdate.json (delta output from extractor)
@@ -278,7 +308,7 @@ CustomerStateUpdate.json (delta output from extractor)
                               [User approval gate]
                                          ↓
                               [MCP] write_doc (Google Doc update)
-                              [MCP] append_ledger_v2
+                              [MCP] append_ledger_row
                               [MCP] log_run (audit trail)
                               [MCP] sync_notes (rsync to Drive)
 
@@ -532,11 +562,8 @@ Tasks are organized into four stages. Build them in order — each stage depends
 ---
 
 **TASK-011 — Extend the ledger schema for challenge lifecycle**
-- **What it builds:** MCP tool **`append_ledger_v2(customer_name, row_json)`**; module **`prestonotes_mcp/ledger_v2.py`** (validation, append, 19→24 migration helpers); CLI **`python -m prestonotes_mcp.tools.migrate_ledger`** with **`--customer`** / **`--fixture`** and optional **`--dry-run`** (see **`docs/MIGRATION_GUIDE.md`**).
-- **Why it matters:** The history ledger is the persistent state of an account over time. Adding challenge lifecycle and value columns gives the journey narrative its raw data.
-- **Reference from old project:** `../prestonotes_mcp/server.py` — the existing `append_ledger` tool. The new v2 version adds columns; existing **19-column** ledgers are upgraded in place by **`migrate_ledger`** (padded cells), not by **`append_ledger_v2`** alone.
-- **Test:** `pytest prestonotes_mcp/tests/test_ledger_v2.py` — write a v2 ledger row, read it back, verify all new columns persist correctly. Run migration script on a fixture ledger file, verify old rows are preserved unchanged.
-- **Files modified:** `prestonotes_mcp/server.py`. New: `prestonotes_mcp/ledger_v2.py`, `prestonotes_mcp/tools/migrate_ledger.py`, `prestonotes_mcp/tests/test_ledger_v2.py`.
+- **Status:** Superseded by **TASK-049** (History Ledger schema v3). The TASK-011 24-column v2 schema, the v1→v2 migration CLI, and the legacy column constants were **removed** in TASK-049; no auto-migration is provided because there were no production v2 customers on disk. See **`docs/MIGRATION_GUIDE.md`** (History Ledger v3) and **`prestonotes_mcp/ledger.py`** **`LEDGER_V3_COLUMNS`** for the current schema.
+- **Historical intent:** extend the on-disk ledger to carry challenge lifecycle + value-realized data next to the original run-window columns.
 
 ---
 
@@ -625,7 +652,7 @@ Tasks are organized into four stages. Build them in order — each stage depends
   6. Run advisors: SOC → APP → VULN → ASM → AI (sequential, each receives `CustomerStateUpdate.json`)
   7. Compile: merge extractor output + advisor recommendations into proposed GDoc mutations
   8. **STOP — present to user:** plain English summary of what will change, specific mutations, new ledger row
-  9. Execute (only after approval): `update_challenge_state` (when Block A approved), then `write_doc` + `append_ledger_v2` (when Block B approved), then optional `log_run`, `sync_notes`. After TASK-047, UCN writes persisted state only — the human-readable account narrative lives in `Run Account Summary`, not in a sidecar.
+  9. Execute (only after approval): `update_challenge_state` (when Block A approved), then `write_doc` + `append_ledger_row` (when Block B approved), then optional `log_run`, `sync_notes`. After TASK-047, UCN writes persisted state only — the human-readable account narrative lives in `Run Account Summary`, not in a sidecar.
 - **Trigger phrase:** `Update Customer Notes for [CustomerName]`
 - **Test (manual):** Run full orchestrator on a customer with one new call record. Verify: the proposed changes are accurate to the call, the user approval gate appears before any write, the GDoc and ledger are updated correctly after approval.
 - **Files created:** `.cursor/rules/20-orchestrator.mdc`, `.cursor/rules/10-task-router.mdc`. Modified: archived old `update-customer-notes.md` playbook.

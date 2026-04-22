@@ -73,7 +73,8 @@ At every step, tell the user what you are doing in plain English. Start each ste
 
 ## Step 4 of 8 — Load ledger and call records
 
-1. **`read_ledger`** MCP with `customer_name=[CustomerName]` and an appropriate `max_rows` (start with **20** unless the user wants deeper history).
+1. **`read_ledger`** MCP with `customer_name=[CustomerName]` and an appropriate `max_rows` (start with **20** unless the user wants deeper history). The tool returns **schema v3** rows (20 snake_case columns per `prestonotes_mcp/ledger.py` `LEDGER_V3_COLUMNS`) with **typed** values — `int` for `wiz_score`, `list[str]` for id-list columns (`challenges_new`, `challenges_in_progress`, `challenges_stalled`, `challenges_resolved`, `stakeholders_present`, `wiz_licensed_products`, `wiz_license_purchases`, `wiz_license_renewals`), and `str` for free-text / enum columns. Empty cells come back as `""`. A missing ledger returns `{"empty": true, ...}` — treat that as first-run / no-history.
+   - **Derived, not stored:** the open-challenges count is computed on read as `len(row["challenges_in_progress"]) + len(row["challenges_stalled"])`. There is no stored count column; do not look for one.
 2. **`read_call_records`** MCP for recent calls (filter by date or limit as supported) to ground challenges, value realized, stakeholder first-seen / last-seen, and the chronological call spine in **structured call metadata** — pair with transcript pulls for nuance. Records are returned sorted by `(date, call_id)`.
 
 **Tell user:** "Step 4 of 8 — Ledger and call records loaded."

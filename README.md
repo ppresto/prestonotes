@@ -155,7 +155,7 @@ Use these **exact trigger phrases** (replace `[Customer]` / `[CustomerName]` wit
 ## MCP tools (cheat sheet)
 
 - **Reads (examples):** **`check_google_auth`**, **`list_customers`**, **`discover_doc`**, **`read_doc`**, **`read_transcripts`**, **`read_call_records`**, **`read_ledger`**, **`read_challenge_lifecycle`**, **`read_audit_log`** (tail of **`logs/mcp-audit.log`** by default), **`wiz_knowledge_search`**, **`sync_notes`**, **`sync_transcripts`**, …
-- **Writes (always show a plan + get approval in chat):** **`write_doc`**, **`append_ledger`** (v1 row via subprocess), **`append_ledger_v2`** (24-column JSON row — migrate ledger first: **`uv run python -m prestonotes_mcp.tools.migrate_ledger --customer "<Name>"`**), **`write_call_record`**, **`update_challenge_state`** (requires `transitioned_at` — the ISO **call date** of the cited transcript, **not** the run date; see **TASK-048**), **`bootstrap_customer`** (`dry_run=false` only after approval), **`log_run`**, …
+- **Writes (always show a plan + get approval in chat):** **`write_doc`**, **`append_ledger`** (v1 row via subprocess), **`append_ledger_row`** (20-column v3 JSON row — see **`prestonotes_mcp/ledger.py`** `LEDGER_V3_COLUMNS` and **`TASK-049`**), **`write_call_record`**, **`update_challenge_state`** (requires `transitioned_at` — the ISO **call date** of the cited transcript, **not** the run date; see **TASK-048**), **`bootstrap_customer`** (`dry_run=false` only after approval), **`log_run`**, …
 
 Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (especially **Rule 3** / customer-local writes). **Auth failures** often include **`run_in_terminal_to_fix`** — paste that command from **`.cursor/mcp.env`** (or **`GCLOUD_AUTH_LOGIN_COMMAND`** there).
 
@@ -210,7 +210,6 @@ To fork the **pattern** (not this PrestoNotes product): copy the tree, then in t
 | **Google / Docs tools fail** | Ensure **`.cursor/mcp.env`** exists (copy from **`mcp.env.example`**). Run **`check_google_auth`**. If the response includes **`run_in_terminal_to_fix`**, paste that **exact** command from **`mcp.env`** in Terminal, finish browser login, retry. |
 | **MCP server fails to start (missing env)** | Create **`.cursor/mcp.env`** from the example; **`mcp.json`** no longer embeds Drive / account variables. |
 | **`Invalid customer_name (pattern)` for `_TEST_CUSTOMER`** | Restart the **prestonotes** MCP server (or reload Cursor) after pulling the fix. If you copied **`prestonotes_mcp/prestonotes-mcp.yaml`** from the example earlier, update **`security.customer_name_pattern`** to allow a leading underscore (see **`TASK-041`**). |
-| **`append_ledger_v2` raises migrate error** | Standard ledger table is still **19** columns. Run **`uv run python -m prestonotes_mcp.tools.migrate_ledger --customer "<Customer>"`** (or **`--fixture`** / **`--dry-run`**). See **`docs/MIGRATION_GUIDE.md`** (History Ledger v2). |
 | **Drive path not found** | Confirm **Google Drive for Desktop** is running; **`GDRIVE_BASE_PATH`** matches your mount; optional **`./scripts/restart-google-drive.sh`**. |
 | **Ruff / pre-commit reformats Python** | Stage the changes and commit again. |
 | **Terraform hooks complain** | You have **`.tf`** files; install Terraform / tflint or narrow the hook in **`.pre-commit-config.yaml`**. |

@@ -137,31 +137,11 @@ The account narrative (Health line, chronological call spine, milestones, challe
 
 **Reads still in use:** `challenge-lifecycle.json` (via `read_challenge_lifecycle`), `read_call_records`, optional `read_ledger`. **Writes still in use:** `update_challenge_state` (approved, per-row, from UCN Phase 0). `write_journey_timeline` was deleted — do not invoke it from any playbook or rule. `scripts/ci/required-paths.manifest` no longer lists `docs/ai/playbooks/run-journey-timeline.md`.
 
-## History Ledger v2 — 19 → 24 columns (TASK-011)
+## History Ledger v3 — 20 snake_case columns (TASK-049)
 
-The on-disk ledger is **`MyNotes/Customers/<Customer>/AI_Insights/<Customer>-History-Ledger.md`**. The markdown table under **`## Standard ledger row`** must have **24** columns before MCP **`append_ledger_v2`** can append a row.
+The on-disk ledger is **`MyNotes/Customers/<Customer>/AI_Insights/<Customer>-History-Ledger.md`**. The markdown table under **`## Standard ledger row`** is **20** columns at **`schema_version: 3`**. The canonical column list lives in **`prestonotes_mcp/ledger.py`** as **`LEDGER_V3_COLUMNS`**; the column-by-column specification (types, sources, caps, enum values) lives in **`docs/project_spec.md`** § _Ledger writes: `append_ledger` vs `append_ledger_row`_.
 
-**Five new columns** (after the existing 19): **`call_type`**, **`challenges_in_progress`**, **`challenges_resolved`**, **`value_realized`**, **`key_stakeholders`**. The MCP tool accepts **`row_json`**: a JSON object whose keys are **exactly** those 24 names (19 use the same display strings as the table header, e.g. **`Date`**, **`Account Health`**, …; the five new keys are snake_case as listed). Every value must be a **string**.
-
-**Migrate an existing 19-column ledger** (in-place rewrite of the standard table; existing cell text preserved, new columns padded with empty strings):
-
-```bash
-uv run python -m prestonotes_mcp.tools.migrate_ledger --customer "YourCustomerFolderName"
-```
-
-Or migrate a specific file:
-
-```bash
-uv run python -m prestonotes_mcp.tools.migrate_ledger --fixture ./path/to/Acme-History-Ledger.md
-```
-
-**`--dry-run`** prints the full migrated markdown to **stdout** and does not write the file. For **`--customer`**, the CLI resolves **`PRESTONOTES_REPO_ROOT`** (from the environment, e.g. **`setEnv.sh`** / Cursor **`mcp.env`**) or falls back to the **current working directory** as the repo root.
-
-**`append_ledger`** (v1 / GDoc subprocess path) remains for backward compatibility until each customer’s ledger is migrated; prefer **`append_ledger_v2`** for new rows once the table is v2. Optional: when **`GDRIVE_BASE_PATH`** is set and the mirrored **`Customers/<Customer>/AI_Insights/`** parent exists, **`append_ledger_v2`** also copies the updated ledger there (same pattern as **`append_ledger`**).
-
-### Lazy ledger file (TASK-023)
-
-If **`AI_Insights/<Customer>-History-Ledger.md`** is missing, the first successful **`append_ledger_v2`** creates **`AI_Insights/`** (if needed) and writes an empty **v2** ledger (YAML, section prose, 24-column header + separator), then appends the row. **`read_ledger`** returns **`{"empty": true, "path": ..., "message": ...}`** when **`AI_Insights/`** exists but no ledger file is present yet (it still errors if **`AI_Insights/`** itself is missing). The `_TEST_CUSTOMER` E2E reset flow (TASK-044) exercises the lazy-create path by hard-deleting the customer folder and re-bootstrapping via the bootstrap playbook; no stand-alone ledger-reset script is required.
+**No auto-migration.** The **`_TEST_CUSTOMER`** E2E reset and the bootstrap-customer playbook create fresh **v3** ledgers on the first **`append_ledger_row`** call. Any historical ledger files on disk older than v3 are ignored; UCN's first write re-creates the ledger from scratch on disk (append-only rule applies from that first v3 row forward).
 
 ## Ruff and `prestonotes_gdoc/`
 
