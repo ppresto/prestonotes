@@ -4,7 +4,9 @@ This document describes the **only** supported AI write to the **Daily Activity 
 
 ## Purpose
 
-After Granola sync (transcript + manual notes in `_MASTER_TRANSCRIPT_*.txt`), an LLM or Cursor session can draft a meeting recap. **`Update Customer Notes`** must add one recap per transcript meeting in lookback that is **not** already present in Daily Activity (see `docs/ai/playbooks/update-customer-notes.md` Step 6 / Step 8). The block is inserted on the **Daily Activity Logs** tab (after an **Anchors - …** line when present), ordered **newest meeting date first** among dated **HEADING_3** blocks, without deleting team notes.
+After Granola sync (transcript + manual notes in `_MASTER_TRANSCRIPT_*.txt`), an LLM or Cursor session can draft a meeting recap. **`Update Customer Notes`** emits **one DAL prepend per call in the lookback window** — not per chosen narrative — as long as that call is **not** already present in Daily Activity (see `docs/ai/playbooks/update-customer-notes.md` Step 6 / Step 8). For a customer with N in-lookback transcripts, `daily_activity_logs.free_text` receives exactly N new date-headed groups (minus duplicates caught by the guard below). The block is inserted on the **Daily Activity Logs** tab (after an **Anchors - …** line when present), ordered **newest meeting date first** among dated **HEADING_3** blocks, without deleting team notes.
+
+The prepend body keeps the existing `YYYY-MM-DD — <call-topic>` heading / `- **Section:**` body structure described in [Schema](#schema) below. If a call in the lookback window has no extractable content (`[No Transcript Data]` block, or transcript body is otherwise empty), UCN records `skipped:dal_prepend call=<date> reason=empty_transcript` in the `appendix.agent_run_log` entry (TASK-050 §F) and writes **no** prepend for that call — placeholder summaries are never written.
 
 ## Transcript-availability guardrail
 

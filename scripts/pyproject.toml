@@ -1,7 +1,7 @@
 [project]
 name = "scripts"
 version = "0.1.0"
-description = "Add your description here"
+description = "PrestoNotes sync and Drive helper scripts (Granola, rsync); uv workspace member alongside root package."
 readme = "README.md"
 requires-python = ">=3.12.3"
 dependencies = []

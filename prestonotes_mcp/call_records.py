@@ -1,17 +1,16 @@
-"""Call record file I/O and JSON Schema validation (project_spec §7.1–7.2)."""
+"""Call record file I/O and JSON Schema validation (project_spec §7.1)."""
 
 from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import jsonschema
 from jsonschema import Draft202012Validator
 
-from prestonotes_mcp.security import customer_dir, validate_customer_name
+from prestonotes_mcp.security import customer_dir
 
 # §7.3 call types
 _CALL_TYPES = frozenset(
@@ -99,47 +98,6 @@ def call_records_path(customer_name: str, call_id: str) -> Path:
     cid = validate_call_id(call_id)
     base = customer_dir(customer_name) / "call-records"
     return (base / f"{cid}.json").resolve()
-
-
-def transcript_index_path(customer_name: str) -> Path:
-    return (customer_dir(customer_name) / "transcript-index.json").resolve()
-
-
-def rebuild_transcript_index(customer_name: str) -> dict[str, Any]:
-    """Build index dict per §7.2 from files on disk."""
-    name = validate_customer_name(customer_name)
-    cdir = customer_dir(customer_name)
-    cr = cdir / "call-records"
-    entries: list[dict[str, Any]] = []
-    if cr.is_dir():
-        for p in sorted(cr.glob("*.json")):
-            if not p.is_file():
-                continue
-            try:
-                data = json.loads(p.read_text(encoding="utf-8"))
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"Invalid JSON in {p}: {exc}") from exc
-            cid = str(data.get("call_id", p.stem))
-            entries.append(
-                {
-                    "call_id": cid,
-                    "date": data.get("date"),
-                    "call_type": data.get("call_type"),
-                    "call_number": data.get("call_number_in_sequence"),
-                    "summary_one_liner": data.get("summary_one_liner", ""),
-                    "record_file": f"call-records/{p.name}",
-                    "indexed": True,
-                }
-            )
-    entries.sort(key=lambda e: (str(e.get("date") or ""), str(e.get("call_id") or "")))
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    return {
-        "customer": name,
-        "last_rebuilt": now,
-        "total_calls": len(entries),
-        "calls": entries,
-        "unindexed_transcript_chunks": [],
-    }
 
 
 def validate_call_type_filter(call_type: str | None) -> str | None:

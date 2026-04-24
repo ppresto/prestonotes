@@ -26,7 +26,7 @@ def validate_customer_name(name: str) -> str:
     n = (name or "").strip()
     if not n:
         raise ValueError("customer_name is required")
-    pat = _security_cfg().get("customer_name_pattern") or r"^[A-Za-z0-9][A-Za-z0-9 _\-]{0,63}$"
+    pat = _security_cfg().get("customer_name_pattern") or r"^[A-Za-z0-9_][A-Za-z0-9 _\-]{0,63}$"
     if not re.match(pat, n):
         raise ValueError(f"Invalid customer_name (pattern): {name!r}")
     if ".." in n or "/" in n or "\\" in n:
@@ -71,16 +71,10 @@ def check_call_record_json_size(payload: str) -> None:
         raise ValueError(f"record_json exceeds max size ({max_b} bytes)")
 
 
-def check_journey_timeline_size(content: str) -> None:
-    max_b = int(_security_cfg().get("max_journey_timeline_bytes", 2_097_152))
-    if len(content.encode("utf-8")) > max_b:
-        raise ValueError(f"journey timeline content exceeds max size ({max_b} bytes)")
-
-
 def _audit_path() -> Path:
     ctx = get_ctx()
     paths = ctx.config.get("paths", {})
-    rel = "tmp/mcp-audit.log"
+    rel = "logs/mcp-audit.log"
     if isinstance(paths, dict) and paths.get("audit_log_rel"):
         rel = str(paths["audit_log_rel"])
     return ctx.path(*rel.split("/"))

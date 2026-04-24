@@ -1,0 +1,42 @@
+---
+url: https://www.wiz.io/customers/niwc-pac-sbs
+source_name: customers
+fetched_at: 2026-03-02T17:52:04Z
+published_at: 
+extraction_mode: static_fetch
+content_hash: 8e26a251ae5e
+---
+
+# A U.S. Navy Cloud Broker enhances cloud security with Wiz | Wiz
+
+Challenge
+The U.S. Navy faced a complex cloud environment that is challenging to manage and secure.
+The Navy lacked a comprehensive view of its cloud environment, which hinders effective risk management.
+Existing DoD vulnerability scanners lacked the ability to effectively identify security risks across cloud workloads.
+Solution
+Wiz’s U.S. Navy customer gained centralized visibility across its cloud platforms for an in-depth understanding of its digital landscape.
+Security and compliance processes have been automated, creating better operational efficiency.
+Wiz’s U.S. Navy customer can now effectively detect and manage security risks, enhancing its overall security posture.
+Advancing technology solutions within the U.S. Navy
+The U.S. Navy, like many organizations within the Department of Defense (DoD), faces the challenge of rapidly bringing advanced capabilities to its personnel on the ground while abiding by strict security regulations. To meet this challenge head-on, one Navy research facility has engaged Strategic Business Systems, Inc. (SBS), a technology firm known for its custom-built solutions for secure environments. Together, Wiz and SBS are helping that Navy customer construct the COSMOS platform, a solution designed to expedite and simplify onboarding and security procedures for cloud workloads. Mike Rohan, director of software and cloud development at SBS, notes that “COSMOS is a revolutionary platform for the DoD, providing mission owners and development teams with the ability to automate onboarding and compliance requirements while hosting their products in DoD cloud environments — all while operating at the speed of commercial.” By incorporating Wiz as the backbone of its security architecture, COSMOS is positioned to transform the way the Navy maintains cloud environments, accelerates product delivery timelines, and upholds security standards.
+Improving the speed and efficiency of everyday operations
+The Navy, like many DoD entities, has difficulty moving platforms and products through the compliance and Authority to Operate (ATO) process at speed. Cybersecurity monitoring and compliance for GovCloud environments present a challenge for Navy Research & Development programs since cloud does not adhere to traditional DoD/DoN IT cyber requirements.  Engineers often spend 12-18 months ensuring their systems are cyber compliant and completing the Risk Management Framework (RMF) documentation/processes to achieve an Authority to Operate (ATO). Adding further complexity, when a R&D program transitions to an operational cloud environment it needs to adhere to new inheritance requirements, which can make for a difficult transition.
+These challenges significantly impact everyday operations. For instance, engineers and software developers have limited access to cloud resources unless they are on the on-premise network by way of a VPN, or if they access those resources from a virtual desktop infrastructure. This model of securing workloads in the cloud is inefficient and leads to operational slowdowns, which affect the output of development teams and limits the potential speed of innovation across the DoD.
+One of the biggest challenges we have in the DoD, specifically within the Navy and other military branches, is the time it takes to get platforms and products into production. With COSMOS, one of the things we're working on is how to streamline those processes as much as we can, by leveraging tools like Wiz and automation, to make sure that that process is as seamless as possible.
+Michael Johnson, Managing Director, Public Sector, SBS
+Previous solutions lacked the tenacity necessary for securing DoD workloads, particularly when operating in a dynamic cloud environment where issues can be easily overlooked despite guardrails in place. With those solutions, DoD agencies face risks such as exposure of resources due to improper orchestration, public exposure of systems, misconfiguration of servers (leading to potential vulnerabilities), and the inability to detect or mitigate risks due to manual processes introducing human error.
+Big benefits: comprehensive risk assessment and automated reporting
+In developing COSMOS, the Navy needed a tool that provided visibility and risk assessment across the many aspects of its cloud environment —
+container scanning
+, automated detection of attack surfaces, Software Bill of Material (SBOM) reports, data loss prevention, and file integrity management. With Wiz, COSMOS has flexibility and comprehensive visibility into any cloud environment — a critical element for the platform. Also, COSMOS needed to effectively prioritize alerts according to risk level and potential remediation paths. These features made Wiz an ideal partner for the Navy as it developed COSMOS.
+Within the COSMOS platform, Wiz provides the security foundation. COSMOS can detect vulnerabilities using Wiz’s agentless vulnerability assessment and push them into a required security vulnerabilities report, automating the reporting process. Moreover, COSMOS has integrated Wiz into its Regulatory Operations (RegOps1) pipeline, achieving continuous monitoring with Wiz’s daily agentless scans of all cloud resources and containers, which feeds the results into the Compliance Management platform to generate Navy RMF artifacts on-demand, simplifying its operations.
+There was no technology in the industry that could provide the level of detail that Wiz does. It's not just the users getting information in a list of vulnerabilities in the system; Wiz provides that context as well as the prioritization of those vulnerabilities. Now I can see the big picture and the vulnerabilities and threats in one centralized system.
+Michael Johnson, Managing Director, Public Sector, SBS
+Reducing onboarding from months to minutes - Securely
+With Wiz, the COSMOS platform has streamlined onboarding processes for new cloud workloads. Michael Johnson of SBS recounted that his team “focused automating as many steps as we can across the security requirements. Being able to integrate Wiz’s capabilities into COSMOS enabled us to take a process that typically requires three months down to 30 minutes.”
+Looking to the future with COSMOS and Wiz
+COSMOS is an extremely advanced zero trust (ZT) cloud computing platform that will help Navy offices move away from traditional IT by providing access to emerging technologies while accelerating speed to capability. COSMOS has implemented a framework to embrace cloud technologies natively and addresses many of the challenges with GovCloud through automating workflows, Risk Management Framework (RMF) security control assignment, and continuous monitoring, while providing a scalable environment that does not limit developer/mission requirements.  This approach directly aligns with the DoN’s Cyber Ready Strategic Intent Memorandum to provide a continuous state of cybersecurity awareness, where the right to operate is earned and managed every day. By streamlining these processes, the COSMOS team expects that DoD workloads can be provided at the speed of commercial operations.
+COSMOS will also use Wiz's capabilities for real-time risk assessments and monthly vulnerability reports. The goal is to identify vulnerabilities quickly so they can be promptly addressed. This approach includes integrating Wiz into their RegOps pipeline for compliance and reporting.
+Aggregating risk assessments by visually depicting the risk trend analysis is very powerful, not only for our own understanding of our environments and their security, but also when conveying our stability and security to the security authorization officials.
+Mike Rohan, Director of Software and Cloud Development, SBS
+Further plans include expanding the Navy’s use of Wiz-enhanced cloud security tools beyond AWS to other platforms, such as Azure. The objective is to enable secure, quick, and efficient deployment of new applications within the U.S Navy while ensuring strict adherence to DoD requirements.

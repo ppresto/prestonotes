@@ -1,0 +1,11 @@
+MEETING: _TEST_CUSTOMER — Executive sponsor monthly readout
+DATE: 2026-04-17T17:10:00.000Z
+ID: test-uuid-20260417-exec
+========================================
+Speaker: John Doe: I'm officially stepping in as your Executive Sponsor for this project moving forward — I want a crisp monthly readout, not a ticket dump.
+Speaker: SE: Perfect. What's materially different since the QBR?
+Speaker: Jane Smith: Coverage is real — we used to drown in 10,000 CVSS criticals. By using the Wiz Security Graph, we prioritized down to just 12 toxic combinations.
+Speaker: John Doe: Platform posture is still 100% Azure; identity is Okta. And yes — the Wiz Score jumped to 92%.
+Speaker: Jane Smith: Commercial reality: the SOC budget was just frozen for Q1, so we can't buy the Splunk integration we talked about. We're not pausing detection work — we're pausing net-new vendor spend.
+Speaker: John Doe: Personal note: Jane is unfortunately leaving the company next week. We need a transition plan that doesn't drop integrations or sensor hygiene.
+Speaker: SE: Agreed. Next 30 days: name interim owners for Jira routing + CLI policies + acquisition guardrails.

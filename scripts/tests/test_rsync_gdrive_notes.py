@@ -11,6 +11,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RSYNC_SCRIPT = REPO_ROOT / "scripts" / "rsync-gdrive-notes.sh"
+PUSH_SCRIPT = REPO_ROOT / "scripts" / "e2e-test-push-gdrive-notes.sh"
 
 
 @pytest.fixture
@@ -26,6 +27,7 @@ def mirror_layout(tmp_path: Path) -> tuple[Path, Path]:
 
 def test_rsync_script_exists() -> None:
     assert RSYNC_SCRIPT.is_file()
+    assert PUSH_SCRIPT.is_file()
 
 
 @pytest.mark.skipif(not shutil.which("rsync"), reason="rsync not installed")
@@ -69,3 +71,29 @@ def test_rsync_applies_customer_scope(mirror_layout: tuple[Path, Path]) -> None:
     local = repo / "MyNotes" / "Customers" / "Acme" / "note.txt"
     assert local.is_file()
     assert local.read_text(encoding="utf-8") == "hello"
+
+
+@pytest.mark.skipif(not shutil.which("rsync"), reason="rsync not installed")
+def test_push_applies_customer_scope(mirror_layout: tuple[Path, Path]) -> None:
+    gdrive, repo = mirror_layout
+    local_customer = repo / "MyNotes" / "Customers" / "Acme"
+    local_customer.mkdir(parents=True)
+    (local_customer / "note.txt").write_text("from-repo", encoding="utf-8")
+
+    env = {
+        **os.environ,
+        "GDRIVE_BASE_PATH": str(gdrive),
+        "PRESTONOTES_REPO_ROOT": str(repo),
+    }
+    proc = subprocess.run(
+        ["bash", str(PUSH_SCRIPT), "Acme"],
+        cwd=str(repo),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr + proc.stdout
+    remote = gdrive / "Customers" / "Acme" / "note.txt"
+    assert remote.is_file()
+    assert remote.read_text(encoding="utf-8") == "from-repo"

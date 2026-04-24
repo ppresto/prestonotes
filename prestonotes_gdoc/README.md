@@ -9,6 +9,7 @@
 | **`update-gdoc-customer-notes.py`** | Docs/Drive API client: discover, read, write, ledger-append subcommands. |
 | **`000-bootstrap-gdoc-customer-notes.py`** | Bootstrap customer folders + Notes doc (used when MCP write tools land). |
 | **`config/`** | `doc-schema.yaml`, `section-sequence.yaml`, `task-budgets.yaml`, `sections/*.yaml`, prompts consumed by MCP resources and the client. |
+| **`config/tools.json`** | **Minimal stub** — v1 had a richer tool registry; v2 names tools in MCP + playbooks directly. **Stage 3** orchestration may expand this file. |
 
 ## What we intentionally do **not** ship in v2
 

@@ -2,7 +2,9 @@
 
 Trigger: **`Extract Call Records for [CustomerName]`**
 
-Purpose: Read **per-call** transcript text under **`MyNotes/Customers/[CustomerName]/Transcripts/`**, produce **`project_spec.md` §7.1** JSON for each meeting, and persist via MCP **`write_call_record`**, then rebuild **`transcript-index.json`** with **`update_transcript_index`**.
+Purpose: Read **per-call** transcript text under **`MyNotes/Customers/[CustomerName]/Transcripts/`**, produce **`project_spec.md` §7.1** JSON for each meeting, and persist via MCP **`write_call_record`**.
+
+> **Fixture customer:** **`_TEST_CUSTOMER`** is a first-class customer name for MCP + scripts (leading underscore is valid). In zsh/bash, quote Drive paths: `scripts/rsync-gdrive-notes.sh "_TEST_CUSTOMER"`.
 
 Supporting rule: **`.cursor/rules/21-extractor.mdc`**  
 Taxonomy: **`docs/ai/references/call-type-taxonomy.md`**
@@ -12,6 +14,12 @@ Taxonomy: **`docs/ai/references/call-type-taxonomy.md`**
 ## Communication rule
 
 Tell the user what you are doing in plain English. Prefix each major step: **`Step X of Y — [action]`**. Follow **`.cursor/rules/15-user-preferences.mdc`** for tone.
+
+## End-of-run chat format
+
+- Follow **`.cursor/rules/15-user-preferences.mdc`**.
+- After multi-step work, include **`### Activity recap`** with records written and files skipped.
+- State approval/write outcome explicitly.
 
 ---
 
@@ -40,24 +48,23 @@ Run **`sync_notes`** with **`[CustomerName]`** (or full repo rsync) so local **`
 
 ---
 
-## Step 3 of 9 — Load index and prior records
+## Step 3 of 9 — Load prior records
 
-1. MCP **`read_transcript_index`** for **`[CustomerName]`**. If missing or error, note “no index yet.”
-2. MCP **`read_call_records`** with **`since_date`** unset (or set to a lower bound) to learn **`call_number_in_sequence`** and content for **deltas**.
+1. MCP **`read_call_records`** with **`since_date`** unset (or set to a lower bound) to learn **`call_number_in_sequence`** and content for **deltas**. `read_call_records` returns records sorted by `(date, call_id)`.
 
 **`call_number_in_sequence` algorithm**
 
-- Sort existing records by **`date`**, then **`call_id`**.
+- Use the sorted output of **`read_call_records`**.
 - Let **`M`** = max **`call_number_in_sequence`** in that list, or **0** if none.
 - For each **new** meeting you add in this run, assign **`call_number_in_sequence = M + 1`**, **`M + 2`**, … in chronological order of the **new** meetings being extracted.
 
-**Tell user:** `Step 3 of 9 — Prior index/records loaded; next sequence starts at [M+1].`
+**Tell user:** `Step 3 of 9 — Prior records loaded; next sequence starts at [M+1].`
 
 ---
 
 ## Step 4 of 9 — Select files to process
 
-- **Default:** All per-call **`.txt`** that do **not** yet have a **`call-records/*.json`** whose **`raw_transcript_ref`** equals that basename (compare basenames to index + **`read_call_records`**).
+- **Default:** All per-call **`.txt`** that do **not** yet have a **`call-records/*.json`** whose **`raw_transcript_ref`** equals that basename (compare basenames to the set returned by **`read_call_records`**).
 - **User override:** If the user names specific files or a date range, restrict to that set.
 
 **Tell user:** `Step 4 of 9 — Will process [list or count] transcript(s).`
@@ -107,13 +114,13 @@ For each meeting, build one JSON object with **all required keys** (see **`prest
 
 Present a **compact table**: `call_id`, `date`, `call_type`, `raw_transcript_ref`, `extraction_confidence`.
 
-**Say:** “I will call **`write_call_record`** once per row, then **`update_transcript_index`**. Approve **all**, **none**, or specify which **`call_id`**s to write.”
+**Say:** “I will call **`write_call_record`** once per row. Approve **all**, **none**, or specify which **`call_id`**s to write.”
 
 **STOP** until the user approves. Do not call **`write_call_record`** before approval.
 
 ---
 
-## Step 8 of 9 — Write records and rebuild index
+## Step 8 of 9 — Write records
 
 For each approved record:
 
@@ -121,11 +128,9 @@ For each approved record:
 
 Then:
 
-2. MCP **`update_transcript_index([CustomerName])`** **once**.
+2. MCP **`read_call_records`** to confirm the new records validated and counts match expectations.
 
-3. MCP **`read_transcript_index`** (and optionally **`read_call_records`**) to confirm counts.
-
-**Tell user:** `Step 8 of 9 — Wrote [N] record(s); index shows [total_calls] calls.`
+**Tell user:** `Step 8 of 9 — Wrote [N] record(s); read_call_records shows [count] total.`
 
 ---
 
@@ -143,10 +148,8 @@ Then:
 | Tool | Role |
 |------|------|
 | **`sync_notes`** | Optional pull from Drive |
-| **`read_transcript_index`** | Prior index |
 | **`read_call_records`** | Prior records + deltas + basename coverage |
 | **`write_call_record`** | Persist each §7.1 JSON (after approval) |
-| **`update_transcript_index`** | Rebuild **`transcript-index.json`** |
 
 Terminal-only alternative: none required for extraction itself; paths are under **`MyNotes/`** in the repo.
 
@@ -155,5 +158,5 @@ Terminal-only alternative: none required for extraction itself; paths are under 
 ## References
 
 - **`docs/project_spec.md`** §7.1–§7.4  
-- **`prestonotes_mcp/call_records.py`** — schema and index rebuild  
+- **`prestonotes_mcp/call_records.py`** — schema and file I/O  
 - **`prestonotes_mcp/tests/test_call_record_tools.py`** — minimal valid record shape  

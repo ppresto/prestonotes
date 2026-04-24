@@ -48,13 +48,8 @@ def repo_ctx(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
-def test_write_read_update_index_round_trip(repo_ctx: Path) -> None:
-    from prestonotes_mcp.server import (
-        read_call_records,
-        read_transcript_index,
-        update_transcript_index,
-        write_call_record,
-    )
+def test_write_read_call_records_round_trip(repo_ctx: Path) -> None:
+    from prestonotes_mcp.server import read_call_records, write_call_record
 
     payload = json.dumps(MINIMAL_RECORD)
     out = write_call_record("AcmeCo", "2026-04-15-discovery-1", payload)
@@ -64,16 +59,7 @@ def test_write_read_update_index_round_trip(repo_ctx: Path) -> None:
     data = json.loads(raw)
     assert data["count"] == 1
     assert data["records"][0]["call_id"] == "2026-04-15-discovery-1"
-
-    idx_raw = update_transcript_index("AcmeCo")
-    idx = json.loads(idx_raw)
-    assert idx["total_calls"] == 1
-    assert idx["calls"][0]["call_id"] == "2026-04-15-discovery-1"
-    assert "call-records/2026-04-15-discovery-1.json" in idx["calls"][0]["record_file"]
-
-    read_back = json.loads(read_transcript_index("AcmeCo"))
-    assert read_back["total_calls"] == 1
-    assert read_back["calls"][0]["summary_one_liner"] == "First discovery call."
+    assert data["records"][0]["summary_one_liner"] == "First discovery call."
 
 
 def test_read_call_records_filters(repo_ctx: Path) -> None:
@@ -115,10 +101,3 @@ def test_write_call_record_schema_validation(repo_ctx: Path) -> None:
     del bad["sentiment"]
     with pytest.raises(ValueError, match="schema|sentiment"):
         write_call_record("AcmeCo", "2026-04-15-discovery-1", json.dumps(bad))
-
-
-def test_read_transcript_index_missing(repo_ctx: Path) -> None:
-    from prestonotes_mcp.server import read_transcript_index
-
-    raw = read_transcript_index("Nobody")
-    assert "error" in json.loads(raw)

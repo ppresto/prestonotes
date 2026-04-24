@@ -6,12 +6,19 @@ Trigger:
 
 Purpose: rapid, recommendation-ready customer snapshot before answering questions or running downstream analysis tasks. This does not write any files — it only loads context and outputs a summary in chat.
 
+> **Fixture customer:** **`_TEST_CUSTOMER`** is a first-class customer name for MCP + scripts (leading underscore is valid). In zsh/bash, quote Drive paths: `scripts/rsync-gdrive-notes.sh "_TEST_CUSTOMER"`.
+
 > **v2 (TASK-007):** Prefer **per-call** `Transcripts/*.txt` (newest first) when present; use **`read_transcripts`** MCP or bounded reads. **`_MASTER_TRANSCRIPT_*.txt`** is a legacy fallback only. Use **`sync_notes`** MCP or `./scripts/rsync-gdrive-notes.sh` before loading.
 
 ---
 
 ## Communication Rule
 At every step, tell the user what you are doing in plain English. Start each step with: `"Step X of 6 — [what I'm doing]"`. Follow the format rules in `15-user-preferences.mdc`.
+
+## End-of-run chat format
+- Follow **`.cursor/rules/15-user-preferences.mdc`** for output style.
+- After multi-step work, include **`### Activity recap`** summarizing loaded sources, notable gaps, and recommended next playbook.
+- If no writes were performed, state that explicitly.
 
 ---
 
@@ -21,6 +28,7 @@ At every step, tell the user what you are doing in plain English. Start each ste
 3. For any Wiz product/licensing/integration/capability detail needed for context:
    - Query Wiz MCP docs first via `wiz_search_wiz_docs` before using secondary sources.
    - If MCP docs are unavailable, mark those details as provisional.
+4. If the user pivots into deep Wiz product questions mid-session, run **`Load Product Intelligence`** before continuing. If cache age is stale, run `mcp-materialize` first, then continue the context answer.
 
 **Tell user:** "Step 1 of 6 — Setup checks passed."
 

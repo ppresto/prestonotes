@@ -6,3 +6,4 @@ ignore: |
   /node_modules/
   /prestonotes_gdoc/
   /scripts/node_modules/
+  /.github/workflows/

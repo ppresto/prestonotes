@@ -19,11 +19,22 @@ MyNotes/
 # Local examples (not tracked; replace in your own clone if needed)
 examples/
 
-# Local logs and share artifacts
+# Local logs and share artifacts (includes default MCP tool-call JSON audit: paths.audit_log_rel)
 logs/
 
 # MCP temp mutation files (write_doc)
 tmp/
+
+# Generated E2E artifacts (under reconstruction; see TASK-044)
+
+# Cursor MCP local secrets (copy from `.cursor/mcp.env.example`)
+.cursor/mcp.env
+# Wiz MCP OAuth (fallback when `wiz-mcp/wiz-mcp.env` is absent; see TASK-025)
+.cursor/wiz-mcp.env
+
+# pytest-cov
+.coverage
+htmlcov/
 
 # GDoc stack scratch (never commit artifacts under the port tree)
 prestonotes_gdoc/tmp/

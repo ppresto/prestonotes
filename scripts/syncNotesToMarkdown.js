@@ -2,7 +2,7 @@
  * Google Apps Script — GDoc / PDF → Markdown under MyNotes on Drive (TASK-006).
  *
  * Deploy: Extensions → Apps Script, paste this file (or merge), then:
- *   1. Project Settings → Script properties → add MYNOTES_ROOT_FOLDER_ID (same value as .cursor/mcp.json).
+ *   1. Project Settings → Script properties → add MYNOTES_ROOT_FOLDER_ID (same value as .cursor/mcp.env).
  *   2. Optional time-based trigger → syncNotesToMarkdown().
  *
  * This does not run under Node; it uses DriveApp / UrlFetchApp / Advanced Drive service.

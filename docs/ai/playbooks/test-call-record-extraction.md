@@ -5,9 +5,11 @@ Trigger:
 - **`Test Call Record Extraction for [CustomerName]`**
 - **`Validate Call Record Extraction for [CustomerName]`** (alias)
 
-Purpose: **Manual QA** after (or alongside) **`Extract Call Records for [CustomerName]`**. Compares **per-call transcript files** to **`call-records/*.json`** and **`transcript-index.json`**, emits the **Stage 1 gate** coverage line, and guides human spot-checks.
+Purpose: **Manual QA** after (or alongside) **`Extract Call Records for [CustomerName]`**. Compares **per-call transcript files** to **`call-records/*.json`**, emits the **Stage 1 gate** coverage line, and guides human spot-checks.
 
-**Upstream:** [`extract-call-records.md`](extract-call-records.md) (TASK-008) · **`.cursor/rules/21-extractor.mdc`** · **`docs/ai/references/call-type-taxonomy.md`** · **`docs/project_spec.md`** §7.1–§7.2
+> **Fixture customer:** **`_TEST_CUSTOMER`** is a first-class customer name for MCP + scripts (leading underscore is valid). In zsh/bash, quote Drive paths: `scripts/rsync-gdrive-notes.sh "_TEST_CUSTOMER"`.
+
+**Upstream:** [`extract-call-records.md`](extract-call-records.md) (TASK-008) · **`.cursor/rules/21-extractor.mdc`** · **`docs/ai/references/call-type-taxonomy.md`** · **`docs/project_spec.md`** §7.1
 
 ---
 
@@ -15,12 +17,17 @@ Purpose: **Manual QA** after (or alongside) **`Extract Call Records for [Custome
 
 Use plain English. Prefix each major step: **`Step X of Y — [action]`**. Follow **`.cursor/rules/15-user-preferences.mdc`**.
 
+## End-of-run chat format
+
+- Follow **`.cursor/rules/15-user-preferences.mdc`**.
+- After multi-step work, finish with **`### Activity recap`** containing coverage outcome, confidence distribution, and any remediation needed.
+
 ---
 
 ## Preconditions
 
 1. **`MyNotes/Customers/[CustomerName]/`** exists (sync via **`sync_notes`** MCP or **`scripts/rsync-gdrive-notes.sh`** if needed).
-2. You can read **`Transcripts/`**, **`call-records/`**, and **`transcript-index.json`** under that folder (repo mirror).
+2. You can read **`Transcripts/`** and **`call-records/`** under that folder (repo mirror).
 
 ---
 
@@ -37,29 +44,29 @@ Run **`sync_notes`** for **`[CustomerName]`** (or full-repo rsync) so local file
 1. List **`MyNotes/Customers/[CustomerName]/Transcripts/`**.
 2. **Meeting pool (default — defines Y):** files matching **`YYYY-MM-DD-*.txt`** (Granola per-call pattern per **`scripts/granola-sync.py`**). Count = **`Y`**.
 3. **Exclude from Y by default:** **`_MASTER_TRANSCRIPT_*.txt`** and other non-`DATE-`-prefixed `.txt` unless the user explicitly asks to include them (then state the revised definition in the report).
+4. **Default 1-month lookback sanity (optional but recommended for `_TEST_CUSTOMER` / E2E):** from the filename prefix `YYYY-MM-DD`, count how many per-call transcripts fall within the **last 30 days** (rolling window, UTC date math is fine). If the user expects “last month of calls” coverage in **`Load Customer Context`** / **`Update Customer Notes`**, call out when **0** per-call transcripts are recent — refresh exports or add newer `YYYY-MM-DD-*.txt` fixtures.
 
 If **`Y = 0`**, stop and tell the user to run **`scripts/granola-sync.py`** / export per-call transcripts first. Do not claim extraction success.
 
-**Tell user:** `Step 2 of 8 — Per-call transcript files counted: Y = [N].`
+**Tell user:** `Step 2 of 8 — Per-call transcript files counted: Y = [N] (recent last-30-days = [R] unless user asked for a different window).`
 
 ---
 
-## Step 3 of 8 — Load index and records
+## Step 3 of 8 — Load records
 
-1. MCP **`read_transcript_index([CustomerName])`**. If the file is missing or JSON has an error, treat **`total_calls = 0`** and note “no index yet.”
-2. MCP **`read_call_records([CustomerName])`** (no filters) for full payloads and **`extraction_confidence`** fields.
+1. MCP **`read_call_records([CustomerName])`** (no filters) for full payloads and **`extraction_confidence`** fields. Records that fail schema validation are excluded from the response — treat that as a discrepancy to surface.
 
-**Tell user:** `Step 3 of 8 — Index and call records loaded.`
+**Tell user:** `Step 3 of 8 — Call records loaded.`
 
 ---
 
-## Step 4 of 8 — Compute **X** (indexed meetings)
+## Step 4 of 8 — Compute **X** (validated records)
 
-**Default definition for X:** `total_calls` from **`transcript-index.json`** (MCP **`read_transcript_index`**), i.e. the number of entries in **`calls`** after a successful **`update_transcript_index`**.
+**Default definition for X:** the **`count`** field returned by **`read_call_records`** — i.e. the number of **`call-records/*.json`** files that validate as §7.1 records.
 
-**Consistency check:** **`X`** should equal the number of **`*.json`** files under **`call-records/`** that validate as §7.1 records. If not, list discrepancies (orphan files, parse failures — suggest re-run **`update_transcript_index`** after fixing JSON).
+**Consistency check:** If raw `*.json` files exist under **`call-records/`** but do not appear in the **`records`** array, list them as schema-invalid (the server logs the schema error per file).
 
-**Tell user:** `Step 4 of 8 — Indexed calls X = [N].`
+**Tell user:** `Step 4 of 8 — Validated call records X = [N].`
 
 ---
 
@@ -102,7 +109,7 @@ X of Y meetings indexed. Confidence distribution: high/medium/low.
 Interpretation:
 
 - **Ideal gate pass:** **`X == Y`** (under the same definitions above), **no** `MISSING_RECORD` / `ORPHAN_REF`, and **`low`** either **0** or explained by the user.
-- **Gate fail:** **`X < Y`** with unexplained gaps, or many **`low`** without rationale — instruct re-run **`Extract Call Records for [CustomerName]`** or manual JSON fixes + **`update_transcript_index`**.
+- **Gate fail:** **`X < Y`** with unexplained gaps, or many **`low`** without rationale — instruct re-run **`Extract Call Records for [CustomerName]`** or manual JSON fixes (re-run this playbook to confirm).
 
 **Tell user:** `Step 7 of 8 — Coverage report printed above.`
 
@@ -120,7 +127,7 @@ Ask the user (or self-check if they are in the loop) for **sample** meetings (pi
 | **Quotes** | Are **`verbatim_quotes`** substrings of the transcript? |
 | **Challenges** | Are **`challenges_mentioned`** grounded in what was said? |
 
-If fixes are needed: edit the relevant **`call-records/<call_id>.json`** (preserve schema), then MCP **`update_transcript_index`**, then re-run **Step 3–7** from this playbook.
+If fixes are needed: edit the relevant **`call-records/<call_id>.json`** (preserve schema), then re-run **Step 3–7** from this playbook.
 
 **Tell user:** `Step 8 of 8 — Test Call Record Extraction complete for [CustomerName].`
 
@@ -131,9 +138,7 @@ If fixes are needed: edit the relevant **`call-records/<call_id>.json`** (preser
 | Tool | Role |
 |------|------|
 | **`sync_notes`** | Optional mirror refresh |
-| **`read_transcript_index`** | **`X`**, `calls[]` metadata |
-| **`read_call_records`** | Full records, **`extraction_confidence`**, **`raw_transcript_ref`** |
-| **`update_transcript_index`** | After manual JSON fixes only (user-approved) |
+| **`read_call_records`** | Full validated records, **`count`**, **`extraction_confidence`**, **`raw_transcript_ref`** |
 
 ---
 
@@ -145,6 +150,6 @@ If the customer folder is missing, MCP **`bootstrap_customer`** (see **`project_
 
 ## References
 
-- **`docs/project_spec.md`** §7.1, §7.2, §9 TASK-009  
-- **`prestonotes_mcp/call_records.py`** — index rebuild, schema  
+- **`docs/project_spec.md`** §7.1, §9 TASK-009  
+- **`prestonotes_mcp/call_records.py`** — schema validation and file I/O  
 - **`prestonotes_mcp/tests/test_call_record_tools.py`** — minimal valid record  

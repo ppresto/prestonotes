@@ -1,0 +1,20 @@
+MEETING: _TEST_CUSTOMER QBR & Monthly Sync (per-call export)
+DATE: 2026-02-21T10:00:00.000Z
+ID: test-uuid-12345
+========================================
+Speaker: Hey everyone, John Doe here. Thanks for jumping on. Jane is also here.
+Speaker: SE: Great to meet you both. We have a lot to cover for this QBR. How are things progressing with the overall Wiz deployment?
+Speaker: John Doe: Huge progress. Jane and her team finally unblocked the sensor deployment. The agent rollout is no longer stalled. We successfully pushed it via DaemonSet. 
+Speaker: Jane Smith: Yep, we got it done. Out of our 1,000 total workloads, we now have 900 successfully scanned. Because of this, we finally decommissioned our legacy Prisma agents, which is going to save us a ton on licensing and reduce agent fatigue on the nodes.
+Speaker: SE: That's amazing coverage and great ROI. Have you seen the impact in the portal?
+Speaker: John Doe: Yes, our Wiz Score jumped to 92% this morning. It's a huge win for us. Also, I am officially stepping in as your Executive Sponsor for this project moving forward.
+Speaker: SE: Awesome. What about the rest of the teams? How are the developers handling the alerts?
+Speaker: Jane Smith: It's been a night and day difference. We used to drown in 10,000 CVSS criticals. By using the Wiz Security Graph, we prioritized down to just 12 toxic combinations. Plus, we finally got the Jira integration working—alerts are now auto-routing directly to the right developer based on our cloud resource tags.
+Speaker: John Doe: And don't forget the AcmeCorp acquisition last week. We plugged in the cloud connector and got 100% visibility into their environments in 15 minutes without deploying a single agent. We actually caught an unencrypted S3 bucket full of PII exposed via an overprivileged IAM role. Wiz DSPM and CIEM paid for itself right there.
+Speaker: SE: That's a massive win. Are you doing any shift-left work yet?
+Speaker: Jane Smith: Yes, we integrated the Wiz CLI into our GitHub Actions pipeline. Devs are catching exposed secrets early without us breaking their builds unnecessarily. We also used the reporting to automate our SOC2 evidence collection, which saved us weeks of manual audit work.
+Speaker: SE: To update my architecture notes, what are you guys using for your identity provider? And are you still entirely on AWS?
+Speaker: Jane Smith: Actually, we migrated. We are 100% Azure now. No AWS at all. And for identity, we are standardizing on Okta for SSO across the board. 
+Speaker: SE: Good to know. Any new roadblocks we need to worry about?
+Speaker: John Doe: Just one. The SOC budget was just frozen for Q1, so we can't buy the Splunk integration we talked about. We really wanted to get that CDR telemetry into the SOC. Oh, and one more thing—Jane is unfortunately leaving the company next week for a new opportunity. 
+Speaker: SE: Sorry to hear that Jane! We will plan around the budget freeze.

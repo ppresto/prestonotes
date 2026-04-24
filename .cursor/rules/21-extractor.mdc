@@ -8,7 +8,9 @@ alwaysApply: false
 ---
 # Extractor (Stage 1)
 
-When the user invokes **`Extract Call Records for [CustomerName]`** (or clearly the same intent), follow **`docs/ai/playbooks/extract-call-records.md`** end-to-end. Do not skip the **approval gate** before **`write_call_record`**.
+When the user invokes **`Extract Call Records for [CustomerName]`** (or clearly the same intent), follow **`docs/ai/playbooks/extract-call-records.md`** end-to-end.
+
+**`_TEST_CUSTOMER` E2E override (test-only):** when this extraction is part of **`Run E2E Test Customer`** for **`_TEST_CUSTOMER`**, skip approval pauses and execute **`write_call_record`** directly. See **`docs/ai/playbooks/e2e-test-customer.md`**.
 
 ## Authority and validation
 
@@ -17,13 +19,39 @@ When the user invokes **`Extract Call Records for [CustomerName]`** (or clearly 
 - **`call_id`:** Must match the **`write_call_record`** argument and **`record_json.call_id`** exactly. Safe basename only (letters, digits, `._-`); no path segments. Prefer **`YYYY-MM-DD-<type>-<n>`** aligned with the filename stem when one meeting maps to one transcript file.
 - **`raw_transcript_ref`:** Basename of the per-call **`.txt`** source (e.g. `2026-04-15-chain-guard.txt`), not a full path.
 
-## Field discipline
+## Field discipline (schema v2 — TASK-051 §A)
 
 - **`participants`:** Only people who appear or are named in the transcript; use `role` / `company` when stated or clearly inferable — otherwise empty string or omit optional keys if your JSON still validates. Do not fabricate executives.
-- **`verbatim_quotes`:** At most **3** entries; each **`quote`** must be a **substring** of the transcript (trim whitespace only).
-- **`challenges_mentioned`:** Use stable ids **`ch-001`**, **`ch-002`**, … for this meeting. **`status`** should follow §7.4 vocabulary when possible (`identified`, `acknowledged`, `in_progress`, `resolved`, `reopened`, `stalled`).
-- **`deltas_from_prior_call`:** If **`read_call_records`** returns prior calls, summarize factual deltas vs the immediately previous chronological record; otherwise `[]`.
-- **`extraction_confidence`:** `high` | `medium` | `low` — document reason in run notes if not `high` (e.g. partial transcript, overlapping meetings in one file).
+- **`verbatim_quotes`:** At most **3** entries; each **`quote`** must be a **substring** of the transcript (trim whitespace only) and **≤ 280 chars**. `speaker` MUST match a `participants[].name` — `write_call_record` rejects orphan speakers and quotes not found in `raw_transcript_ref` under `MyNotes/Customers/<Customer>/Transcripts/`.
+- **`challenges_mentioned`:** `id` matches `^ch-[a-z0-9][a-z0-9-]{1,40}$` (kebab); `description` ≥ 10 chars; **`status`** follows §7.4 vocabulary (`identified`, `acknowledged`, `in_progress`, `resolved`, `reopened`, `stalled`). Prefer meaningful kebab ids (`ch-splunk-budget-freeze`, `ch-champion-exit`) over opaque counters like `ch-001`. Use stable ids across calls when the same issue recurs so UCN / `challenge-lifecycle.json` can reconcile.
+- **`key_topics`:** `minItems: 1`, each item ≥ 3 chars, **unique per call**. Never a hardcoded placeholder.
+- **`products_discussed`:** Enum `Wiz Cloud | Wiz Sensor | Wiz Defend | Wiz DSPM | Wiz CIEM | Wiz Code | Wiz CLI | Wiz Sensor POV`, or `Other: <name>` for non-Wiz products. Pick per-call; never a constant across all records in a corpus.
+- **`action_items[].owner`:** Named individual when the transcript names one; `"SE"` only when the transcript itself says `SE:` and no person is attached.
+- **`sentiment`:** Enum `positive | neutral | cautious | negative`. A call dominated by budget freeze / champion exit is at minimum `cautious`, not `positive`.
+- **`deltas_from_prior_call`:** **Read the prior 3 call-records** via `read_call_records` before drafting the current one so this field reflects real state change (`in_progress → stalled`, `pursue → purchased`, etc.). `[]` only when nothing actually changed.
+- **v2 optional richness arrays:** `goals_mentioned[]`, `risks_mentioned[]`, `metrics_cited[]`, `stakeholder_signals[]`. Populate from a light MEDDPICC pass; empty arrays are valid but ≥ 3 empties force a downgrade of `extraction_confidence` (`high → medium`; ≥ 5 empties → `low`). Accept the downgrade rather than fabricate.
+- **`extraction_confidence`:** `high` | `medium` | `low`. The MCP writer mutates this in-place per the emptiness rule above; document the downgrade reason in run notes.
+
+## Banned defaults (hard reject)
+
+The MCP write path uses `BANNED_CALL_RECORD_DEFAULTS` in `prestonotes_mcp/call_records.py` — a SEPARATE list from `FORBIDDEN_EVIDENCE_TERMS` in `prestonotes_mcp/journey.py`. The journey list is harness-vocabulary for ledger / lifecycle evidence strings; the call-record list is stub-fallback fingerprints observed during the TASK-051 regression:
+
+- `ch-stub` — never use this `challenges_mentioned[].id`.
+- `Fixture narrative` — never use this description.
+- `E2E fixture` — never use this `key_topics` item.
+
+Also avoid: hardcoded `products_discussed` lists, identical `sentiment` across materially different calls, generic `action_items[].owner` (`"SE"`) when a named owner exists. Extract or downgrade — the writer will bounce stub values.
+
+## Sales discovery anchor (MEDDPICC)
+
+Run a light MEDDPICC pass on every transcript and route hits to the v2 arrays — **not** to `summary_one_liner` (format frozen; indexed downstream):
+
+| MEDDPICC letter | v2 field |
+|---|---|
+| **M**etrics | `metrics_cited[]` |
+| **E**conomic buyer / **C**hampion / **D**ecision makers | `stakeholder_signals[]` |
+| **G**oals (from D, I) | `goals_mentioned[]` |
+| **P**ain / risk / blockers | `risks_mentioned[]` |
 
 ## Sentiment (vocabulary)
 
@@ -36,4 +64,62 @@ Use one of: **`positive`**, **`neutral`**, **`cautious`**, **`negative`**. Pick 
 
 ## Output
 
-Produce **compact JSON** objects ready for **`write_call_record`**. After user approval, write **one file per meeting** then call **`update_transcript_index`** once per batch.
+Produce **compact JSON** objects ready for **`write_call_record`**. For normal (non-E2E) runs: after user approval, write **one file per meeting**. For the `_TEST_CUSTOMER` E2E override, execute without waiting for approval.
+
+---
+
+## Challenge lifecycle write rules (TASK-048)
+
+Every **`update_challenge_state`** call UCN makes MUST obey the following. Three of these are also hard-enforced MCP-side (future date, history regression, forbidden evidence vocabulary — see **`prestonotes_mcp/journey.py`**). The rest are extractor-side only; the MCP write path intentionally does not regex-check them, so the extractor is the sole enforcement point.
+
+1. **`transitioned_at` is the call date, not the run date.** Read it from the cited transcript's header (`DATE:` line, ISO form). If the transcript does not expose a parseable call date, the extractor **does not write** that transition and emits one log line: `skip update_challenge_state ch=<id> reason=unknown_call_date`. UCN continues with the rest of its work.
+2. **Evidence format (one transition = one call).** `evidence` MUST be structured as `<YYYY-MM-DD> <call-topic-short>: "<direct quote, ≤ 160 chars>"`. No paraphrase. No multi-call blobs. No meta-process language.
+3. **Honor explicit state directives verbatim.** If a transcript contains a directive from the customer (regex-detectable family: *"treat as X, not Y"*, *"track as X instead of Y"*, *"mark it resolved"*, *"this is no longer stalled"*, *"resolved after the patch cycle"*), the extractor uses the directive's target state verbatim and cites that same line as evidence.
+4. **Resolved sweep at end of run.** After writing all transitions from the current run, for each challenge whose current state is `in_progress` or `stalled`, scan the newest-in-lookback transcript for explicit unblock language (*"no longer stalled"*, *"resolved"*, *"shipped"*, *"done"*, *"we got it"*). If found, write a `resolved` transition at that transcript's call date.
+5. **Collapse rule (no no-op transitions).** Do not call `update_challenge_state` if the proposed `(state, at)` tuple equals the last entry already in `history` for that `challenge_id`.
+6. **Split rule.** If a single extracted challenge actually contains two distinct subjects and the transcript contains explicit split language (*"keep Splunk renewal separate from the budget blocker"*), open two ids (e.g. `ch-soc-budget` and `ch-splunk-integration`) and write them separately.
+7. **Forbidden evidence vocabulary.** `evidence` MUST NOT contain any term from `FORBIDDEN_EVIDENCE_TERMS` in **`prestonotes_mcp/journey.py`** (case-insensitive substring match — that module is the single source of truth; the list in **`.cursor/rules/11-e2e-test-customer-trigger.mdc`** is the operator-facing mirror). The MCP write path rejects violations with `{"error": "evidence contains forbidden harness vocabulary", "field": "evidence", "matched": "<term>"}`; avoid the round-trip by scrubbing before calling.
+
+## Ledger cell extraction (TASK-049)
+
+Every UCN run that reaches Step 11 builds one **schema v3** row for `append_ledger_row`. The column-by-column extraction rules below complement the table in `docs/ai/playbooks/update-customer-notes.md` Step 11 and are enforced partly by the MCP writer (`prestonotes_mcp/ledger.py`) and partly by the extractor.
+
+1. **One transcript line per free-text cell (internal citation).** Every free-text cell you populate (`coverage`, `goals_delta`, `tools_delta`, `stakeholders_delta`, `value_realized`, `next_critical_event`) must trace back to **one** specific line in a transcript covered by this run. Keep the line pointer in your working state / reasoning — do **not** embed the citation in the cell. This is the same evidence discipline that already applies to `update_challenge_state`.
+2. **No harness vocabulary in any cell.** Free-text cells, enum cells, and id-list fragments MUST NOT contain any term from **`FORBIDDEN_EVIDENCE_TERMS`** in `prestonotes_mcp/journey.py` (the same SSoT TASK-047/TASK-048 already point at; the operator-facing mirror is `.cursor/rules/11-e2e-test-customer-trigger.mdc` "Artifact hygiene"). The MCP write path rejects violations with `{"ok": false, "error": "ledger cell contains forbidden harness vocabulary", "field": "<col>", "matched": "<term>"}`; scrub before calling rather than round-tripping.
+3. **`run_date` = today; `call_type` = most salient.** `run_date` is the UCN run date (ISO `YYYY-MM-DD`). `call_type` is the single best-fit enum value across the transcripts covered by the run (`qbr | exec_readout | product_demo | commercial_close | technical_pov | champion_1on1 | kickoff | other`). Enum cells (`call_type`, `account_health`, `sentiment`, `wiz_license_evidence_quality`) may only contain defined enum values — the writer rejects anything else.
+4. **`wiz_score` — verbatim or empty, never inferred.** Populate `wiz_score` only with the **verbatim integer** a customer stated in an in-scope transcript (0..100). If no transcript states a number, leave the key out (empty cell). Do not compute, estimate, or synthesize a score — the writer accepts `int` or absent; anything else is rejected.
+5. **`value_realized` quantified when evidence allows.** If **any** in-scope transcript contains at least one quantified element (regex-family `\$\d | \d+% | \d+\s*(workloads|CVEs|findings|weeks|hours|alerts)`), the `value_realized` cell MUST include at least one such element. If no in-scope transcript contains a quantified element, free-text narrative is fine. This is an extractor-side rule; the MCP writer does not regex-check it.
+6. **Challenge columns are derived, not extracted.** Never populate `challenges_new`, `challenges_in_progress`, `challenges_stalled`, or `challenges_resolved` from transcript text. Derive them from `read_challenge_lifecycle` output for the customer. UCN Step 11 has the exact derivation rules.
+
+## Per-section GDoc extraction (TASK-050 §C)
+
+Every UCN run MUST visit the **15 populatable GDoc fields** below. For each field, the planner either proposes a mutation backed by an in-lookback transcript quote OR records a skip with one of four reasons: `no_in_scope_transcript_signal`, `same_as_current_entry`, `evidence_below_confidence_threshold`, `section_off_by_opt_out`. Skip accounting is what the UCN writer surfaces in the `appendix.agent_run_log` entry (TASK-050 §F). Fields not listed here (e.g. `cloud_environment.csp_regions`, `cloud_environment.idp_sso`, `cloud_environment.sizing`, `challenge_tracker` rows) retain their existing Step 9 / daily UCN rules — they are covered by the four planner coverage guard fields and the table-row policies elsewhere in this rule.
+
+1. **`company_overview.free_text`** — industry + size + platform stance. Quote one transcript line.
+2. **`contacts.free_text`** — every **customer-side** (and materially relevant) person named in in-lookback transcripts; include role if stated; flag departures (e.g. champion exit) explicitly. **When `call-records/*.json` exists**, use `participants[]` and `stakeholder_signals[]` from those records as structured support for the same calls — the agent composes `append_with_history` mutations in UCN Step 8 per `docs/ai/playbooks/update-customer-notes.md` and `docs/ai/gdoc-customer-notes/mutations-account-summary-tab.md` (Contacts section). Do **not** replace that with ad-hoc `/tmp` JSON or non-playbook mutation sidecars.
+3. **`org_structure.free_text`** — identity hub, tenant structure, acquisition relationships.
+4. **`cloud_environment.platforms`** — `tools_list` entries for container orchestrator, compute, serverless.
+5. **`cloud_environment.devops_vcs`** — CI/CD systems named in transcripts.
+6. **`cloud_environment.security_tools`** — SIEMs, agents, CDRs named in transcripts, including retired ones with `(retired)` suffix.
+7. **`cloud_environment.ticketing`** — ticketing tools named.
+8. **`use_cases.free_text`** — one entry per distinct use case covered by a call.
+9. **`workflows.free_text`** — one entry per distinct workflow/process covered.
+10. **`accomplishments.free_text`** — one entry per quantified customer win (workload counts, retired tools, score deltas, acquisition visibility, challenge resolutions).
+11. **`account_motion_metadata.exec_buyer`** — named exec sponsor.
+12. **`account_motion_metadata.champion`** — named champion.
+13. **`account_motion_metadata.technical_owner`** — named technical owner / SE counterpart.
+14. **`account_motion_metadata.sensor_coverage_pct`** — numeric only, verbatim from transcript.
+15. **`account_motion_metadata.critical_issues_open`** — numeric only, verbatim from transcript.
+
+**`account_motion_metadata.mttr_days`** and **`account_motion_metadata.monthly_reporting_hours`** are populated only when a transcript states the number explicitly; otherwise skip with `no_in_scope_transcript_signal`.
+
+The `STRICT_METADATA_FIELDS` constraint from `docs/ai/gdoc-customer-notes/mutations-account-metadata-tab.md` still applies to `exec_buyer` / `champion` / `technical_owner` — only write them when explicitly stated in source evidence; do not infer from role or title hints.
+
+## Challenge Tracker row discipline (TASK-048 §B.1)
+
+The **same "call date wins over run date" rule** applies to a **second write path** that bypasses `update_challenge_state`: UCN's GDoc mutation plan writes **Challenge Tracker** rows directly via **`write_doc`**, and those rows have their own `date` column and `notes_references` evidence string. **`write_doc`** is a generic doc writer and does not validate these — enforcement is extractor-side preflight only.
+
+1. **Challenge Tracker row `date` column** MUST be the ISO call date of the most recent transcript that touched this challenge, **not** the run date.
+2. **`notes_references` `Evidence: YYYY-MM-DD` dates** MUST cite ISO dates that exist in the customer's `MyNotes/Customers/<Customer>/Transcripts/` folder. Preflight: for every `YYYY-MM-DD` referenced in `notes_references`, verify a transcript file with that date prefix exists on disk. If the check fails, skip the row and emit `skip challenge_tracker_row ch=<id> reason=evidence_date_not_in_corpus`.
+3. **Forbidden vocabulary.** `notes_references` MUST NOT contain any term from `FORBIDDEN_EVIDENCE_TERMS` (same list as above). Scrub before the mutation plan is built.
+4. **Parity with lifecycle writes.** Every `update_challenge_state` row in Block A should have a matching Challenge Tracker row in Block B whose `date` and `notes_references` dates come from the same transcript(s). If you cannot satisfy §B.1 #1–#3 for a row, drop the lifecycle row too rather than persist an inconsistent pair (mirrors the lifecycle–tracker parity guard in **`.cursor/rules/20-orchestrator.mdc`** step 7).
