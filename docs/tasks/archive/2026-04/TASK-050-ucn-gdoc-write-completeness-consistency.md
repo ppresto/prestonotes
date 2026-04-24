@@ -7,7 +7,7 @@
 - Writer: `prestonotes_gdoc/update-gdoc-customer-notes.py` (timestamp fix + section fill guarantees + run-log write + cross-section reconciliation + Deal Stage Tracker motion capture)
 - Playbook: `docs/ai/playbooks/update-customer-notes.md` (Steps 6–10 — plan build, reconciliation, write)
 - Rules: `.cursor/rules/20-orchestrator.mdc` (UCN contract), `.cursor/rules/21-extractor.mdc` (per-section extraction rules), `.cursor/rules/11-e2e-test-customer-trigger.mdc` (E2E acceptance bullets)
-- References: `docs/ai/references/customer-notes-mutation-rules.md`, `docs/ai/references/daily-activity-ai-prepend.md`, `docs/ai/references/exec-summary-template.md`
+- References: `docs/ai/gdoc-customer-notes/README.md` (mutation packs), `docs/ai/references/daily-activity-ai-prepend.md`, `docs/ai/references/exec-summary-template.md`
 - Tests: `prestonotes_gdoc/` test suite (append_with_history timestamp, run-log entry shape, cross-section reconciler)
 - Fact-check ground truth: `MyNotes/Customers/_TEST_CUSTOMER/Transcripts/*.txt`, live GDoc `1f3L3c7vbHbQk1URA3ZWH4IpKRM6uvgQp3yGpir6Mz1U`
 

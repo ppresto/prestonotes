@@ -2834,7 +2834,14 @@ def _normalize_challenge_key(text: str) -> str:
     return " ".join(base.split())
 
 
-_LIFECYCLE_ID_RE = re.compile(r"\[lifecycle_id:([a-zA-Z0-9_.-]+)\]", re.IGNORECASE)
+# Canonical anchor: ``[lifecycle_id:<id>]``. Legacy abbreviated form
+# ``lifecycle:<id>`` (observed on 2026-04-21 E2E runs) is accepted for row-
+# status reconciliation so older rows self-heal; writer still emits canonical.
+# Kept in sync with ``prestonotes_gdoc/challenge_lifecycle_parity.py::MARKER_RE``.
+_LIFECYCLE_ID_RE = re.compile(
+    r"(?:\[lifecycle_id:|(?<![a-z])lifecycle:)([a-zA-Z0-9_.-]+)\]?",
+    re.IGNORECASE,
+)
 
 
 def _load_challenge_lifecycle(customer_name: str) -> dict[str, dict]:
@@ -5010,6 +5017,12 @@ def _run_lifecycle_tracker_parity_gate(customer_name: str, section_map: SectionM
     spec.loader.exec_module(mod)
     sec_tr = section_map.get("challenge_tracker")
     rows = list(sec_tr.rows) if sec_tr and sec_tr.rows else []
+    inserted = mod.auto_insert_missing_lifecycle_anchors(repo_root, customer_name, rows)
+    for msg in inserted:
+        print(
+            f"LIFECYCLE_PARITY_AUTOINSERT: added missing lifecycle anchor(s) for {msg}",
+            file=sys.stderr,
+        )
     warns, errs = mod.check_tracker_lifecycle_parity(repo_root, customer_name, rows)
     for w in warns:
         print(w, file=sys.stderr)
@@ -5561,7 +5574,7 @@ def main() -> int:
         default=None,
         help=(
             "Customer folder name (e.g. _TEST_CUSTOMER). When set, runs challenge-lifecycle.json vs "
-            "Challenge Tracker parity checks (see docs/ai/references/customer-notes-mutation-rules.md)."
+            "Challenge Tracker parity checks (see docs/ai/gdoc-customer-notes/mutations-account-summary-tab.md)."
         ),
     )
     p_write.add_argument(

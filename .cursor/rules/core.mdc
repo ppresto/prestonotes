@@ -54,11 +54,11 @@ Only **AI-owned** fields may be written from automation unless the user explicit
 | Use cases / requirements | Yes |
 | Cloud / workflows | Yes where schema allows |
 
-**Human-owned (do not overwrite without explicit user instruction):** Exec account summary narrative blocks defined as human in **`docs/ai/references/customer-notes-mutation-rules.md`**, customer verbatim quotes marked human-only, and any section the playbook marks read-only.
+**Human-owned (do not overwrite without explicit user instruction):** Exec account summary narrative blocks defined as human in **`docs/ai/gdoc-customer-notes/mutations-account-summary-tab.md`** (and hub **`docs/ai/gdoc-customer-notes/README.md`**), customer verbatim quotes marked human-only, and any section the playbook marks read-only.
 
 ### Mutations and diffs
 
-Proposed doc edits must follow **`docs/ai/references/customer-notes-mutation-rules.md`**: structured mutation JSON, section keys from **`prestonotes_gdoc/config/doc-schema.yaml`**, show a clear diff/plan, **stop for approval** before **`write_doc`** (use **`dry_run`** first when available). For Customer Notes writes where the customer folder is known, pass **`customer_name`** into MCP **`write_doc`** so **`challenge-lifecycle.json`** and the **Challenge Tracker** table are parity-checked (see **`docs/ai/references/customer-notes-mutation-rules.md`** — `[lifecycle_id:…]` anchors).
+Proposed doc edits must follow **`docs/ai/gdoc-customer-notes/mutations-global.md`** and the tab packs indexed from **`docs/ai/gdoc-customer-notes/README.md`**: structured mutation JSON, section keys from **`prestonotes_gdoc/config/doc-schema.yaml`**, show a clear diff/plan, **stop for approval** before **`write_doc`** (use **`dry_run`** first when available). For Customer Notes writes where the customer folder is known, pass **`customer_name`** into MCP **`write_doc`** so **`challenge-lifecycle.json`** and the **Challenge Tracker** table are parity-checked (see **`docs/ai/gdoc-customer-notes/mutations-account-summary-tab.md`** — `[lifecycle_id:…]` anchors).
 
 ### History Ledger (`*-History-Ledger.md`)
 

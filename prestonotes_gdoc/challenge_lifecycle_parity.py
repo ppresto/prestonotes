@@ -6,7 +6,16 @@ import json
 import re
 from pathlib import Path
 
-MARKER_RE = re.compile(r"\[lifecycle_id:([a-zA-Z0-9_.-]+)\]", re.IGNORECASE)
+# Canonical anchor: ``[lifecycle_id:<id>]``.
+# Tolerated legacy / abbreviated form: bare ``lifecycle:<id>`` (seen on
+# 2026-04-21 22:10 E2E run where the agent wrote the shorter form into the
+# Challenge Tracker notes cell). The legacy form is accepted for lookup
+# so the reconciler can heal older rows; the writer still emits the
+# canonical bracketed form (see TASK-052 §D).
+MARKER_RE = re.compile(
+    r"(?:\[lifecycle_id:|(?<![a-z])lifecycle:)([a-zA-Z0-9_.-]+)\]?",
+    re.IGNORECASE,
+)
 
 
 def _safe_customer_segment(name: str) -> str:
@@ -52,6 +61,53 @@ def markers_in_tracker(rows: list) -> set[str]:
     return {m.group(1).lower() for m in MARKER_RE.finditer(blob)}
 
 
+def _mentions_lifecycle_id(text: str, lifecycle_id: str) -> bool:
+    """Return True when a row text references a lifecycle id token directly."""
+    token_re = re.compile(
+        rf"(?<![a-zA-Z0-9_.-]){re.escape(lifecycle_id)}(?![a-zA-Z0-9_.-])",
+        re.IGNORECASE,
+    )
+    return bool(token_re.search(text or ""))
+
+
+def auto_insert_missing_lifecycle_anchors(
+    repo_root: Path, customer_name: str, tracker_rows: list
+) -> list[str]:
+    """Insert canonical anchors when rows reference lifecycle ids but miss anchors.
+
+    The preflight auto-repair is intentionally conservative:
+    - only inserts an anchor when the row text already contains the exact id token
+    - keeps existing row text and appends canonical ``[lifecycle_id:<id>]`` in notes
+    """
+    lifecycle_ids = load_lifecycle_challenge_ids(repo_root, customer_name)
+    if not lifecycle_ids:
+        return []
+
+    inserted: list[str] = []
+    for idx, row in enumerate(tracker_rows):
+        row_blob = f"{getattr(row, 'challenge', '')}\n{getattr(row, 'notes_references', '')}"
+        existing_ids = markers_in_tracker([row])
+        missing_for_row: list[str] = []
+        for lifecycle_id in lifecycle_ids:
+            lid = lifecycle_id.lower()
+            if lid in existing_ids:
+                continue
+            if _mentions_lifecycle_id(row_blob, lifecycle_id):
+                missing_for_row.append(lifecycle_id)
+        if not missing_for_row:
+            continue
+
+        notes = str(getattr(row, "notes_references", "") or "").strip()
+        anchors = " ".join(f"[lifecycle_id:{cid}]" for cid in missing_for_row)
+        if notes:
+            sep = "; " if not notes.endswith((";", "|")) else " "
+            setattr(row, "notes_references", f"{notes}{sep}{anchors}".strip())
+        else:
+            setattr(row, "notes_references", anchors)
+        inserted.append(f"row[{idx}] -> {' '.join(missing_for_row)}")
+    return inserted
+
+
 def check_tracker_lifecycle_parity(
     repo_root: Path,
     customer_name: str,
@@ -70,11 +126,11 @@ def check_tracker_lifecycle_parity(
         return [], []
 
     blob = _tracker_blob(tracker_rows).lower()
-    if "[lifecycle_id:" not in blob:
+    if "[lifecycle_id:" not in blob and "lifecycle:" not in blob:
         msg = (
             "LIFECYCLE_PARITY: challenge-lifecycle.json has entries but Challenge Tracker rows "
             "have no [lifecycle_id:…] anchors. Add anchors to challenge or Notes & References "
-            "(see docs/ai/references/customer-notes-mutation-rules.md). "
+            "(see docs/ai/gdoc-customer-notes/mutations-account-summary-tab.md). "
             f"Lifecycle ids: {', '.join(ids)}"
         )
         return [msg], []

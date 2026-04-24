@@ -2,10 +2,14 @@
 
 Master backlog status for PrestoNotes v2. **Canonical task definitions:** [`project_spec.md` §9](../project_spec.md#9-master-task-backlog). **How to run migration work:** [`V2_MVP_BUILD_PLAN.md`](../V2_MVP_BUILD_PLAN.md).
 
+**E2E / `_TEST_CUSTOMER` context (goals, vision, scripts + MCP + playbooks, validation):** [`E2E_TEST_CUSTOMER_GUIDE.md`](../E2E_TEST_CUSTOMER_GUIDE.md) — read before **TASK-044 / TASK-053** (archived **TASK-051** / **TASK-052** for schema + harness history); **TASK-053** is the **TOC** for manual quality sub-tasks (T053-A–G). **LLM copy-paste prompt + preferred order:** [`ai/prompts/e2e-task-execution-prompt.md`](../ai/prompts/e2e-task-execution-prompt.md) (**053 → 044**; harness **TASK-052** archived 2026-04-23; **TASK-051** complete — runtime checklist under **TASK-053 § T053-G**).
+
 ## Current active task
 
 - [ ] **TASK-032** — Follow-ups, gaps, and recommendations (Stage 4 backlog) — [`active/TASK-032-followups-and-cleanup.md`](active/TASK-032-followups-and-cleanup.md)
 - [ ] **TASK-044** — E2E `_TEST_CUSTOMER` rebuild (single script + playbook chain) — [`active/TASK-044-e2e-test-customer-rebuild.md`](active/TASK-044-e2e-test-customer-rebuild.md) · supersedes TASK-042 + TASK-043
+- [ ] **TASK-053** — UCN E2E: **GDoc v1/v2 fill gaps, `sync_notes` / Drive order, manual test recipes** (DAL for v2, metadata, `agent_run_log` verification, per-gap sub-tasks **+ T053-G call-record runtime quality** — **TOC** for quality work **T053-A–G**) — [`active/TASK-053-ucn-gdoc-gaps-e2e-sync-hygiene.md`](active/TASK-053-ucn-gdoc-gaps-e2e-sync-hygiene.md) · push-before-pull discipline in archived **TASK-052** §0; qualitative acceptance from completed **TASK-051** → **§T053-G**.
+- [x] **TASK-063** — **GDoc mutation docs structure** — Customer Notes hub (`docs/ai/gdoc-customer-notes/README.md`) + per-tab mutation packs; index stub at `docs/ai/references/customer-notes-mutation-rules.md`; links meaning + process (`update-customer-notes.md`) + shape (`doc-schema.yaml`) — [`active/TASK-063-gdoc-mutation-docs-structure.md`](active/TASK-063-gdoc-mutation-docs-structure.md)
 
 ### TASK-044 E2E fact-check follow-ups (2026-04-21)
 
@@ -16,13 +20,13 @@ Land **in this order** — each builds on the prior:
 3. [x] **TASK-048** — Challenge lifecycle write discipline (+ Challenge Tracker row date bullet) — [`archive/2026-04/TASK-048-challenge-lifecycle-write-discipline.md`](archive/2026-04/TASK-048-challenge-lifecycle-write-discipline.md) · fixes call-date vs run-date bug across **both** `update_challenge_state` and GDoc Challenge Tracker row writes; forbids stub / harness evidence at MCP write time.
 4. [x] **TASK-049** — History Ledger schema v3 (rationalized, no legacy) — [`archive/2026-04/TASK-049-history-ledger-schema-v3-rationalized.md`](archive/2026-04/TASK-049-history-ledger-schema-v3-rationalized.md) · collapsed 24→20 columns, dropped dup `Value Realized` / `Open Challenges` / `Aging Blockers` / `Resolved Issues` / `New Blockers` / `Key Drivers`; deleted the legacy v1→v2 migration helper outright (no legacy data).
 5. [x] **TASK-050** — UCN GDoc write completeness + internal consistency — [`archive/2026-04/TASK-050-ucn-gdoc-write-completeness-consistency.md`](archive/2026-04/TASK-050-ucn-gdoc-write-completeness-consistency.md) · fixed `timestamp: null` writer bug, landed the cross-section reconciler (Risk ↔ Challenge Tracker ↔ lifecycle), Deal Stage Tracker motion capture, `agent_run_log` append contract; 15 new unit tests green. §C 15-field planner enumeration and §D DAL prepend-per-call are documented in UCN Steps 6–10 + `21-extractor.mdc`; fill-rate / DAL-count / cross-artifact bullets remain runtime-deferred until next `Run E2E Test Customer`.
-6. [ ] **TASK-051** — Call-record context quality (lookback-split design) — [`active/TASK-051-call-record-context-quality.md`](active/TASK-051-call-record-context-quality.md) · dense LLM-grounded schema v2; UCN reads raw transcripts inside 1-month lookback, targeted call-records outside. Lands last so it inherits clean lifecycle + ledger + GDoc state. _Renumbered from TASK-045 on 2026-04-21 to resolve the ID collision with archived `TASK-045-mcp-audit-log-under-logs-dir.md` — see "Conventions" note below._
+6. [x] **TASK-051** — Call-record context quality (lookback-split design) — [`archive/2026-04/TASK-051-call-record-context-quality.md`](archive/2026-04/TASK-051-call-record-context-quality.md) · **COMPLETE 2026-04-23** — schema v2, MCP guardrails, goldens, `lint` gate; qualitative runtime checks → **TASK-053 § T053-G**. _Renumbered from TASK-045 on 2026-04-21 to resolve the ID collision with archived `TASK-045-mcp-audit-log-under-logs-dir.md` — see "Conventions" note below._
 
-**Implementation approach:** new Cursor session per task, use `coder` → `tester` → `doc` subagent workflow per [`.cursor/rules/workflow.mdc`](../../.cursor/rules/workflow.mdc). Task files are self-contained — Problem, Goals, Scope, Non-goals, Acceptance, Verification, Sequencing. Do not parallelize 046–050. (TASK-051 lands after 050.)
+**Implementation approach:** new Cursor session per task, use `coder` → `tester` → `doc` subagent workflow per [`.cursor/rules/workflow.mdc`](../../.cursor/rules/workflow.mdc). Task files are self-contained — Problem, Goals, Scope, Non-goals, Acceptance, Verification, Sequencing. Steps **046–051** of the TASK-044 follow-up sequence are **archived complete** (051 finished 2026-04-23).
 
 **MVP / UX close-out complete:** **TASK-033**, **TASK-034**, **TASK-035**, **TASK-036**, **TASK-037** (approach B manual save), **TASK-038**, **TASK-040**, **TASK-027**, **TASK-041** (MCP customer-name pattern for `_TEST_CUSTOMER`). TASK-043 (prior E2E automation contract) superseded by TASK-044.
 
-**Recently shipped (Wiz MCP cache, 2026-04-20):** **TASK-026**–**TASK-031** — MCP materialization pipeline, external spider, vector ingest root, playbooks + **`wiz-mcp-tools-inventory.md`**. See active files for evidence.
+**Recently shipped (Wiz MCP cache, 2026-04-20):** **TASK-026**–**TASK-031** — MCP materialization pipeline, external spider, vector ingest root, playbooks + **`wiz-mcp-tools-inventory.md`**. Task files: [`docs/tasks/archive/2026-04/`](archive/2026-04/) (search by `TASK-026` … `TASK-031`).
 
 **Also recently shipped:** **TASK-023** / **TASK-024** / **TASK-025** (2026-04-20); optional follow-ups remain in archived task files.
 
@@ -77,19 +81,20 @@ Land **in this order** — each builds on the prior:
 
 ## Wiz MCP cache pipeline (2026-04-20)
 
-- [x] **TASK-026** — Tool inventory + firewall note — [`active/TASK-026-wiz-mcp-phase0-tool-inventory.md`](active/TASK-026-wiz-mcp-phase0-tool-inventory.md) · [`../ai/references/wiz-mcp-tools-inventory.md`](../ai/references/wiz-mcp-tools-inventory.md)
-- [x] **TASK-027** — Discovery catalog / two-wave stop — [`active/TASK-027-wiz-discovery-catalog.md`](active/TASK-027-wiz-discovery-catalog.md)
-- [x] **TASK-028** — MCP materialize — [`active/TASK-028-wiz-mcp-materialize-pipeline.md`](active/TASK-028-wiz-mcp-materialize-pipeline.md)
-- [x] **TASK-029** — External spider + 365d TTL — [`active/TASK-029-external-spider-ttl.md`](active/TASK-029-external-spider-ttl.md)
-- [x] **TASK-030** — Playbooks MCP-only — [`active/TASK-030-playbooks-mcp-only-docs.md`](active/TASK-030-playbooks-mcp-only-docs.md)
-- [x] **TASK-031** — Vector third ingest root — [`active/TASK-031-vector-mcp-ingest-root.md`](active/TASK-031-vector-mcp-ingest-root.md)
-- [x] **TASK-033** — LLM response format + activity recap playbook audit — [`active/TASK-033-llm-response-format-and-activity-recap.md`](active/TASK-033-llm-response-format-and-activity-recap.md)
-- [x] **TASK-034** — MVP five flows readiness (matrix + prerequisites) — [`active/TASK-034-mvp-five-flows-readiness.md`](active/TASK-034-mvp-five-flows-readiness.md)
-- [x] **TASK-035** — Product intelligence read-vs-refresh proof — [`active/TASK-035-product-intelligence-discovery-and-sync-proof.md`](active/TASK-035-product-intelligence-discovery-and-sync-proof.md)
-- [x] **TASK-036** — Tutorial cache -> vector -> search — [`active/TASK-036-tutorial-wiz-cache-to-vector-search.md`](active/TASK-036-tutorial-wiz-cache-to-vector-search.md)
-- [x] **TASK-037** — Persist AI account summary path (manual save mode) — [`active/TASK-037-persist-ai-account-summary-file.md`](active/TASK-037-persist-ai-account-summary-file.md)
-- [x] **TASK-038** — Update Customer Notes source tuning — [`active/TASK-038-update-customer-notes-source-tuning.md`](active/TASK-038-update-customer-notes-source-tuning.md)
-- [x] **TASK-041** — MCP customer-name pattern `_TEST_CUSTOMER` compatibility — [`active/TASK-041-mcp-customer-name-pattern-e2e.md`](active/TASK-041-mcp-customer-name-pattern-e2e.md)
+- [x] **TASK-026** — Tool inventory + firewall note — [`archive/2026-04/TASK-026-wiz-mcp-phase0-tool-inventory.md`](archive/2026-04/TASK-026-wiz-mcp-phase0-tool-inventory.md) · [`../ai/references/wiz-mcp-tools-inventory.md`](../ai/references/wiz-mcp-tools-inventory.md)
+- [x] **TASK-027** — Discovery catalog / two-wave stop — [`archive/2026-04/TASK-027-wiz-discovery-catalog.md`](archive/2026-04/TASK-027-wiz-discovery-catalog.md)
+- [x] **TASK-028** — MCP materialize — [`archive/2026-04/TASK-028-wiz-mcp-materialize-pipeline.md`](archive/2026-04/TASK-028-wiz-mcp-materialize-pipeline.md)
+- [x] **TASK-029** — External spider + 365d TTL — [`archive/2026-04/TASK-029-external-spider-ttl.md`](archive/2026-04/TASK-029-external-spider-ttl.md)
+- [x] **TASK-030** — Playbooks MCP-only — [`archive/2026-04/TASK-030-playbooks-mcp-only-docs.md`](archive/2026-04/TASK-030-playbooks-mcp-only-docs.md)
+- [x] **TASK-031** — Vector third ingest root — [`archive/2026-04/TASK-031-vector-mcp-ingest-root.md`](archive/2026-04/TASK-031-vector-mcp-ingest-root.md)
+- [x] **TASK-033** — LLM response format + activity recap playbook audit — [`archive/2026-04/TASK-033-llm-response-format-and-activity-recap.md`](archive/2026-04/TASK-033-llm-response-format-and-activity-recap.md)
+- [x] **TASK-034** — MVP five flows readiness (matrix + prerequisites) — [`archive/2026-04/TASK-034-mvp-five-flows-readiness.md`](archive/2026-04/TASK-034-mvp-five-flows-readiness.md)
+- [x] **TASK-035** — Product intelligence read-vs-refresh proof — [`archive/2026-04/TASK-035-product-intelligence-discovery-and-sync-proof.md`](archive/2026-04/TASK-035-product-intelligence-discovery-and-sync-proof.md)
+- [x] **TASK-036** — Tutorial cache -> vector -> search — [`archive/2026-04/TASK-036-tutorial-wiz-cache-to-vector-search.md`](archive/2026-04/TASK-036-tutorial-wiz-cache-to-vector-search.md)
+- [x] **TASK-037** — Persist AI account summary path (manual save mode) — [`archive/2026-04/TASK-037-persist-ai-account-summary-file.md`](archive/2026-04/TASK-037-persist-ai-account-summary-file.md)
+- [x] **TASK-038** — Update Customer Notes source tuning — [`archive/2026-04/TASK-038-update-customer-notes-source-tuning.md`](archive/2026-04/TASK-038-update-customer-notes-source-tuning.md)
+- [x] **TASK-040** — Doc README readability pass — [`archive/2026-04/TASK-040-doc-readme-readability-pass.md`](archive/2026-04/TASK-040-doc-readme-readability-pass.md)
+- [x] **TASK-041** — MCP customer-name pattern `_TEST_CUSTOMER` compatibility — [`archive/2026-04/TASK-041-mcp-customer-name-pattern-e2e.md`](archive/2026-04/TASK-041-mcp-customer-name-pattern-e2e.md)
 
 ## Completed
 
@@ -121,6 +126,9 @@ Land **in this order** — each builds on the prior:
 - **TASK-048** — Challenge lifecycle write discipline + Challenge Tracker row date bullet; required `transitioned_at`, MCP hard rejections (future date / history regression / forbidden evidence vocab); `FORBIDDEN_EVIDENCE_TERMS` code SSoT in `prestonotes_mcp/journey.py` (step 3 of TASK-044 E2E fact-check follow-ups) — [`archive/2026-04/TASK-048-challenge-lifecycle-write-discipline.md`](archive/2026-04/TASK-048-challenge-lifecycle-write-discipline.md) (2026-04-21)
 - **TASK-049** — History Ledger schema v3 (rationalized, no legacy); 24→20 columns, single `LEDGER_V3_COLUMNS` (snake_case), `append_ledger_row` with write-time validation + `LedgerValidationError` payload parity to TASK-048, `FORBIDDEN_EVIDENCE_TERMS` reused from `prestonotes_mcp/journey.py`, `migrate_ledger.py` deleted outright (step 4 of TASK-044 E2E fact-check follow-ups; runtime-only acceptance bullets deferred to next `Run E2E Test Customer`) — [`archive/2026-04/TASK-049-history-ledger-schema-v3-rationalized.md`](archive/2026-04/TASK-049-history-ledger-schema-v3-rationalized.md) (2026-04-21)
 - **TASK-050** — UCN GDoc write completeness + internal consistency; `append_with_history` timestamp emission, lifecycle-authoritative Challenge Tracker reconciler (`identified→Open` / `in_progress→In Progress` / `stalled→Stalled` / `resolved→Resolved`), Deal Stage Tracker motion capture (`COMMERCIAL_SKUS` / `DEAL_STAGE_POV_PHRASES` / `DEAL_STAGE_WIN_PHRASES` → `discovery` / `pov` / `win`), one `appendix.agent_run_log` entry per successful UCN run; 15 new unit tests in `prestonotes_gdoc/tests/` (step 5 of TASK-044 E2E fact-check follow-ups; fill-rate / DAL-count / cross-artifact acceptance bullets runtime-deferred) — [`archive/2026-04/TASK-050-ucn-gdoc-write-completeness-consistency.md`](archive/2026-04/TASK-050-ucn-gdoc-write-completeness-consistency.md) (2026-04-21)
+- **TASK-051** — Call-record schema v2 + MCP write guardrails + `call_records lint` + UCN / Account Summary lookback-split wiring + golden corpus (step 6 of TASK-044 E2E fact-check follow-ups; **runtime qualitative acceptance** → **TASK-053 § T053-G**) — [`archive/2026-04/TASK-051-call-record-context-quality.md`](archive/2026-04/TASK-051-call-record-context-quality.md) (2026-04-23)
+- **TASK-052** — E2E `_TEST_CUSTOMER` harness: `prep-v1` / `prep-v2`, `e2e_rebaseline_customer_gdoc.py`, push-before-pull, `materialize --v2`, playbook + CI parity; **deferred** full uninterrupted 8-step proof + §J.3+ → **TASK-053** / **TASK-044** — [`archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md`](archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md) (2026-04-23)
+- **Batch (moved `active/` → `archive/2026-04/`, 2026-04-23):** TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-040, TASK-041 — files live alongside other **2026-04** archives; **INDEX** “Wiz MCP cache pipeline” links above point at these paths.
 
 ## Conventions
 
@@ -128,11 +136,10 @@ Land **in this order** — each builds on the prior:
 - **Archive:** `docs/tasks/archive/YYYY-MM/` when done.
 - **Status markers** inside task files: `[ ] TODO` / `[x] COMPLETE`.
 
-### Resolved ID collision — TASK-045 → TASK-051 (2026-04-21)
+### Resolved ID collision — TASK-045 → TASK-051 (2026-04-21); TASK-051 archived (2026-04-23)
 
-**Status:** resolved 2026-04-21. The active E2E fact-check follow-up originally numbered `TASK-045-call-record-context-quality.md` was renumbered to **TASK-051** to eliminate a duplicate ID with the completed audit-log task.
+**Status:** renumbering resolved 2026-04-21. **TASK-051** (call-record context quality) **completed and archived 2026-04-23** — canonical file: [`archive/2026-04/TASK-051-call-record-context-quality.md`](archive/2026-04/TASK-051-call-record-context-quality.md). **Live E2E / manual call-record quality checklist:** [`active/TASK-053-ucn-gdoc-gaps-e2e-sync-hygiene.md`](active/TASK-053-ucn-gdoc-gaps-e2e-sync-hygiene.md) § **T053-G**.
 
-- **Canonical (active, call-record quality):** [`active/TASK-051-call-record-context-quality.md`](active/TASK-051-call-record-context-quality.md) — dense LLM-grounded call-record schema v2 + UCN lookback-split wiring; step 6 of the TASK-044 follow-up sequence above.
-- **TASK-045 (archived, unrelated):** [`archive/2026-04/TASK-045-mcp-audit-log-under-logs-dir.md`](archive/2026-04/TASK-045-mcp-audit-log-under-logs-dir.md) — MCP audit log relocation under `./logs/`; completed 2026-04-21. The `TASK-045` ID now refers unambiguously to this archived item.
+- **TASK-045 (archived, unrelated audit-log task):** [`archive/2026-04/TASK-045-mcp-audit-log-under-logs-dir.md`](archive/2026-04/TASK-045-mcp-audit-log-under-logs-dir.md) — MCP audit log relocation under `./logs/`; completed 2026-04-21. The `TASK-045` ID refers unambiguously to this item (not call-record quality).
 
-**Rename trail** (for anyone searching history): the renumbered file carries a header note pointing back to the original `TASK-045` ID, and all cross-references in `TASK-046` / `TASK-047` / `TASK-048` / `TASK-049` / `TASK-050` have been updated to point at `TASK-051`. Any lingering text match for "TASK-045" in `docs/tasks/active/` outside that rename-trail note is a stale reference and should be updated to `TASK-051`.
+**Rename trail** (for anyone searching history): the call-record task was originally `TASK-045-call-record-context-quality` and renumbered to **TASK-051** to eliminate a duplicate ID with the audit-log **TASK-045**. Archived follow-ups **046–050** reference **TASK-051** in prose; **active** docs should link to **`archive/2026-04/TASK-051-call-record-context-quality.md`** (or to **TASK-053 § T053-G** for runtime-only bullets).
