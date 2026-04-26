@@ -1,21 +1,20 @@
 # E2E corpus (canonical copy)
 
-This directory is the **durable source** for `_TEST_CUSTOMER` transcript + call-record fixtures used by the E2E flow described in **`docs/tasks/active/TASK-044-e2e-test-customer-rebuild.md`** / **`docs/ai/playbooks/e2e-test-customer.md`**.
+This directory is the **durable source** for `_TEST_CUSTOMER` transcript + call-record fixtures used by the E2E flow described in **`docs/ai/playbooks/tester-e2e-ucn.md`** (eight steps; see also archived intent doc **`docs/tasks/archive/2026-04/TASK-044-e2e-test-customer-rebuild.md`**).
 
 ## Layout
 
 ```text
 v1/Transcripts/YYYY-MM-DD-<call-id>.txt
-v1/call-records/<call-id>.json
-
 v2/Transcripts/...          # commercial expansion (+2 calls: Cloud PO + Sensor POV)
+expected-call-records/      # optional: golden minimum JSON for `call_records lint` / tests (not materialized by apply)
 ```
 
 ## Intent
 
-- **v1** seeds the baseline corpus: 6+ per-call transcripts and matching call-record JSON objects so **Load Customer Context**, **Extract Call Records**, and **Update Customer Notes** have meaningful input the first time through the flow.
-- **v2** layers a commercial expansion on top of v1 (`2026-04-28-wiz-cloud-sku-purchase`, `2026-05-05-wiz-sensor-pov-kickoff`) so round-2 **Extract Call Records** generates new JSON and round-2 **Update Customer Notes** has signal to move **Deal Stage Tracker** / **Account Metadata** and advance challenges (e.g., Splunk renewal lifecycle).
-- **v2 intentionally ships transcripts only.** The round-2 **Extract Call Records** step must generate JSON from those transcripts during the test.
+- **v1** seeds **transcripts only** in `MyNotes/.../Transcripts/`. **Call-record JSON** is not copied from this tree; the **Extract Call Records** playbook produces `call-records/*.json` at runtime.
+- **v2** layers a commercial expansion on top of v1 (`2026-04-28-wiz-cloud-sku-purchase`, `2026-05-05-wiz-sensor-pov-kickoff`). **v2** materialize merges **transcripts only**; round-1 call records on disk are preserved.
+- **expected-call-records/** (if present) is for regression / lint baselines, not for `e2e-test-customer-materialize.py apply`.
 
 ## Refreshing fixtures
 

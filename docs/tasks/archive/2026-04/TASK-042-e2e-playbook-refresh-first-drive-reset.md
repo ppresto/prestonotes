@@ -1,6 +1,6 @@
 # TASK-042 — E2E playbook: refresh-first `_TEST_CUSTOMER` with deterministic Drive reset
 
-> **Archived 2026-04-21:** Superseded by **`docs/tasks/active/TASK-044-e2e-test-customer-rebuild.md`**. The refresh-first reset approach here was kept only partially automated; TASK-044 replaces the whole harness with a single entry script + a rewritten playbook and removes the overlapping scripts/tests cited below.
+> **Archived 2026-04-21:** Superseded by **`docs/tasks/archive/2026-04/TASK-044-e2e-test-customer-rebuild.md`** (archived 2026-04-24). The refresh-first reset approach here was kept only partially automated; TASK-044 replaces the whole harness with a single entry script + a rewritten playbook and removes the overlapping scripts/tests cited below.
 
 **Status:** [x] COMPLETE (superseded)  
 **Opened:** 2026-04-21  
@@ -44,8 +44,8 @@ Make the first step of E2E explicit and verifiable: `_TEST_CUSTOMER` is refreshe
    - Print a warning that first ledger row will be created on the first approved ledger write.
 
 4. Update docs:
-   - `docs/ai/playbooks/e2e-test-customer.md`
-   - `docs/e2e-test-customer.md`
+   - `docs/ai/playbooks/e2e-test-customer.md` *(renamed 2026-04 → `tester-e2e-ucn.md`)*
+   - `docs/e2e-test-customer.md` *(old duplicate stub; do not confuse with `tester-e2e-ucn.md`)*
    - `scripts/README.md`
    to reflect refresh-first contract and phase ordering (Phase 1 playbooks before Phase 2 disk re-materialize).
 

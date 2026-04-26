@@ -47,4 +47,4 @@ Bring v1 **guardrail rules** and **Stage 1 MVP playbooks (three)** into v2: **`l
 
 ---
 
-**Orchestrator:** Archived after `/coder` → `/tester` → `/doc` pipeline for TASK-007.
+**Orchestrator:** Archived after `/coder` → `/code-tester` → `/doc` pipeline for TASK-007.

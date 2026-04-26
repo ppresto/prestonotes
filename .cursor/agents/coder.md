@@ -12,7 +12,7 @@ You are a specialized **execution** subagent. The **main Agent** (planner/orches
 
 ## Inputs (required)
 
-1. The orchestrator’s **Delegation packet** (see `.cursor/rules/workflow.mdc`) must be in your prompt. If **`spec_refs`**, **`legacy_reference`**, or **`task_file`** is missing, reply **`blocked`** and ask for a complete packet.
+1. The orchestrator’s **Delegation packet** (format reference: `docs/archive/cursor-rules-retired/workflow.mdc`) must be in your prompt. If **`spec_refs`**, **`legacy_reference`**, or **`task_file`** is missing, reply **`blocked`** and ask for a complete packet.
 2. Read **`docs/project_spec.md`** for architecture constraints (at minimum the sections cited in **`spec_refs`**).
 3. Read the **entire** assigned task file from disk at **`task_file`** — do not implement from a partial summary alone.
 
@@ -34,7 +34,7 @@ Return a **single** structured block the orchestrator can forward verbatim:
 - task_file: <path>
 - files_changed: [<paths>]
 - summary: <2–5 sentences>
-- handoff_for_next: <bullets for /tester: flaky areas, new test dirs, env assumptions, or "none">
+- handoff_for_next: <bullets for /code-tester: flaky areas, new test dirs, env assumptions, or "none">
 - commands_run: [<exact commands>]
 - scope_vs_task: <bullets: which task checklist items were satisfied / deferred / blocked>
 ```

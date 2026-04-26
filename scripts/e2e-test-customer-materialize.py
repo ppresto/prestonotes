@@ -2,16 +2,16 @@
 """Materialize `_TEST_CUSTOMER` E2E transcript corpus from `tests/fixtures/e2e/` into `MyNotes/`.
 
 Subcommands:
-  to-fixtures   Copy current MyNotes Transcripts + call-records → tests/fixtures/e2e/_TEST_CUSTOMER/v1/
-  apply         Replace per-call corpus from v1 (and optionally v2 transcripts).
+  to-fixtures   Copy current MyNotes Transcripts → tests/fixtures/e2e/_TEST_CUSTOMER/v1/ (no call-records; those come from Extract)
+  apply         Copy v1 (and optional v2) Transcripts from fixtures; optionally clear call-records on v1 only (never copy JSON from v1)
 
 Environment:
   PRESTONOTES_REPO_ROOT  optional; defaults to cwd.
 
 Typical flow:
-  1. uv run python scripts/e2e-test-customer-materialize.py to-fixtures   # snapshot baseline into tests/
-  2. uv run python scripts/e2e-test-customer-materialize.py apply --v2 # restore + add commercial transcripts
-  3. ./scripts/e2e-test-customer.sh   # bump dates, seed lifecycle, report (unchanged)
+  1. uv run python scripts/e2e-test-customer-materialize.py to-fixtures   # snapshot transcripts into tests/ (v1/Transcripts only)
+  2. uv run python scripts/e2e-test-customer-materialize.py apply --v2 # v2 merge (transcripts only)
+  3. ./scripts/e2e-test-customer.sh   # bump dates, report (unchanged)
 """
 
 from __future__ import annotations
@@ -68,17 +68,21 @@ def _copy_files_only(src: Path, dst: Path, pattern: str) -> int:
     return n
 
 
-def _clear_per_call_corpus(transcripts_dir: Path, call_records_dir: Path) -> None:
-    """Remove prior per-call transcripts and JSON call records so ``apply`` is idempotent.
+def _clear_per_call_corpus(
+    transcripts_dir: Path, call_records_dir: Path, *, clear_call_records: bool = True
+) -> None:
+    """Remove prior per-call transcripts (and optionally JSON call records) so ``apply`` is idempotent.
 
-    Without this, a second ``apply`` (e.g. ``--v2`` after ``bump-dates``) leaves bumped
-    basenames alongside fresh v1 copies and ``bump-dates`` hits duplicate rename targets.
+    v1 ``apply`` clears both dirs, then copies only transcripts from the v1 fixture (no JSON from tests/). v2 ``apply`` clears **only** transcripts, then merges
+    v1+v2 fixture transcripts while **preserving** round-1 ``call-records/*.json`` (TASK-052 / Extract).
     """
     transcripts_dir.mkdir(parents=True, exist_ok=True)
     call_records_dir.mkdir(parents=True, exist_ok=True)
     for p in sorted(transcripts_dir.glob("*.txt")):
         if p.is_file():
             p.unlink()
+    if not clear_call_records:
+        return
     for p in sorted(call_records_dir.glob("*.json")):
         if p.is_file():
             p.unlink()
@@ -86,14 +90,13 @@ def _clear_per_call_corpus(transcripts_dir: Path, call_records_dir: Path) -> Non
 
 def cmd_to_fixtures(root: Path) -> int:
     cdir = _customer_dir(root)
-    t_src, cr_src = cdir / "Transcripts", cdir / "call-records"
+    t_src = cdir / "Transcripts"
     v1 = _fixture_v1(root)
     if v1.exists():
         shutil.rmtree(v1)
     v1.mkdir(parents=True)
     _copy_tree(t_src, v1 / "Transcripts")
-    _copy_tree(cr_src, v1 / "call-records")
-    print(f"Wrote fixture v1 baseline under {v1}")
+    print(f"Wrote fixture v1 baseline (Transcripts only) under {v1}")
     return 0
 
 
@@ -104,11 +107,16 @@ def cmd_apply(root: Path, *, v2: bool) -> int:
         raise FileNotFoundError(f"Run to-fixtures first; missing {v1}")
 
     t_dst, cr_dst = cdir / "Transcripts", cdir / "call-records"
-    _clear_per_call_corpus(t_dst, cr_dst)
+    # v2: keep existing call-records (round-1 extract output). v1: clear both dirs.
+    _clear_per_call_corpus(t_dst, cr_dst, clear_call_records=not v2)
 
     n_tx = _copy_files_only(v1 / "Transcripts", t_dst, "*.txt")
-    n_cr = _copy_files_only(v1 / "call-records", cr_dst, "*.json")
-    print(f"Applied v1: {n_tx} transcript(s), {n_cr} call record(s)")
+    if v2:
+        print(f"Applied v1 (transcripts only, call-records preserved): {n_tx} transcript(s)")
+    else:
+        print(
+            f"Applied v1: {n_tx} transcript(s); call-records/ cleared (re-populate with Extract, not from fixtures)"
+        )
 
     if v2:
         p2 = _fixture_v2(root)
@@ -117,7 +125,7 @@ def cmd_apply(root: Path, *, v2: bool) -> int:
         n_tx2 = _copy_files_only(p2 / "Transcripts", t_dst, "*.txt")
         print(
             "Applied v2: "
-            f"{n_tx2} transcript(s), 0 call record(s) (v2 JSON extraction is intentionally runtime-generated)"
+            f"{n_tx2} transcript(s), 0 new call record JSON (v2 extraction is runtime-generated)"
         )
 
     return 0
@@ -127,7 +135,10 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    sub.add_parser("to-fixtures", help="Snapshot MyNotes corpus into tests/fixtures/.../v1/")
+    sub.add_parser(
+        "to-fixtures",
+        help="Snapshot MyNotes/Transcripts into tests/fixtures/.../v1/ (no call-records)",
+    )
 
     p_ap = sub.add_parser("apply", help="Copy v1 (+ optional v2) into MyNotes")
     p_ap.add_argument(

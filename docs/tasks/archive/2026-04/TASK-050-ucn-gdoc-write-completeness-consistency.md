@@ -172,7 +172,7 @@ Rewrite Step 7 of `docs/ai/playbooks/update-customer-notes.md` ("Propose targete
 ### G) E2E fixture + acceptance updates
 
 - `.cursor/rules/11-e2e-test-customer-trigger.mdc` "Artifact hygiene" block (added in TASK-047) gets one more bullet: "After UCN, `appendix.agent_run_log` MUST have one new entry; `exec_account_summary.*` entries MUST have `timestamp` set."
-- `docs/ai/playbooks/e2e-test-customer.md` manual verification checklist gets three bullets:
+- `docs/ai/playbooks/tester-e2e-ucn.md` manual verification checklist gets three bullets:
     - [ ] Every populated `append_with_history` entry has a non-null `timestamp`.
     - [ ] Challenge Tracker row `status` matches `challenge-lifecycle.json` `current_state` for every row referencing a lifecycle id.
     - [ ] `appendix.agent_run_log` has exactly 2 new entries (one per UCN round) after the E2E completes.
@@ -243,7 +243,7 @@ TASK-051  call-record quality
     - `docs/ai/references/customer-notes-mutation-rules.md` — new `### Deal Stage Tracker — SKU signal mapping` subsection under § Mutation Actions Reference documents `COMMERCIAL_SKUS` / `DEAL_STAGE_POV_PHRASES` / `DEAL_STAGE_WIN_PHRASES` and the `upsell → discovery / pov / win` promotion rules + row-level side effects + rank guard.
     - `.cursor/rules/20-orchestrator.mdc` — UCN contract Execute Step 2 now cites the §B lifecycle reconciler (writer rewrites Challenge Tracker row `status` to match lifecycle JSON) and the §F agent_run_log append (one entry per successful run; none on rejection).
     - `.cursor/rules/11-e2e-test-customer-trigger.mdc` — Artifact hygiene block adds the TASK-050 §G bullet: "After UCN, `appendix.agent_run_log` MUST have one new entry; `exec_account_summary.*` entries MUST have `timestamp` set."
-    - `docs/ai/playbooks/e2e-test-customer.md` — manual verification checklist adds the three §G bullets (timestamp on every populated append_with_history entry; Challenge Tracker status vs lifecycle parity; exactly 2 new agent_run_log entries after the E2E).
+    - `docs/ai/playbooks/tester-e2e-ucn.md` — manual verification checklist adds the three §G bullets (timestamp on every populated append_with_history entry; Challenge Tracker status vs lifecycle parity; exactly 2 new agent_run_log entries after the E2E).
     - `docs/ai/references/daily-activity-ai-prepend.md` — opening paragraph rewritten for prepend-per-call (one prepend per in-lookback call, not per narrative); empty-transcript skip routes to the `agent_run_log` `skipped:dal_prepend call=<date> reason=empty_transcript` line.
     - `docs/ai/references/exec-summary-template.md` — **no change** — the `<value> [YYYY-MM-DD]` shape is a GDoc Exec Account Summary rendering detail, not user-facing in the Account Summary template (this file describes the `Run Account Summary` artifact, not the GDoc).
 - Post-task `_TEST_CUSTOMER` GDoc fill-rate count vs acceptance: **runtime-deferred — re-check after next Run E2E Test Customer.**

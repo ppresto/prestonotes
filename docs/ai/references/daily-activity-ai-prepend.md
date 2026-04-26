@@ -67,7 +67,9 @@ Use `--dry-run` first. The write path ensures an H1 **Daily Activity Logs** exis
 
 ## Meeting summary templates (LLM)
 
-See `docs/ai/references/granola-meeting-summary-templates.md` for the SE/AM runbook (templates **T1–T5**): account, discovery, technical eval, QBR/EBR, general — pick one template per run and trim unused sections before sending to the LLM.
+See `docs/ai/references/granola-meeting-summary-templates.md` for the SE/AM runbook (templates **T1–T5** by call type: account, discovery, technical eval, QBR/EBR, general). Pick one template per run, trim unused sections before sending to the LLM, then map to **Format B** in the templates doc for `body_markdown`.
+
+**Why formats can look different run-to-run:** The **writer** enforces a small **markdown subset** and heading rules (this doc); the **LLM** supplies the section labels and bullets per the chosen T1–T5 template.
 
 ## Related
 

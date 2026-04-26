@@ -1,6 +1,6 @@
 # Meeting summary templates — SE/AM runbook (post-Granola sync)
 
-> **v2 note:** Legacy reference from v1 — **not** loaded by `update-gdoc-customer-notes.py`. Use or revise when you define Granola → Daily Activity workflows; prefer linking from a playbook in `docs/ai/playbooks/` once v2 behavior is settled.
+> **v2 note:** Not loaded by `update-gdoc-customer-notes.py` at runtime — the **agent** follows this file and [`daily-activity-ai-prepend.md`](daily-activity-ai-prepend.md) when drafting `prepend_daily_activity_ai_summary` per the UCN playbook.
 
 <!--
   HOW TO USE

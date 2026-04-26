@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # rsync-gdrive-notes.sh — mirror Google Drive for Desktop "MyNotes" into the repo's MyNotes/ (TASK-006).
 #
+# Recommended workflow: pull (this script) → run MCP / playbooks (creates ledger, lifecycle, logs on
+# first use) → push (../e2e-test-push-gdrive-notes.sh) so Drive holds the last finished state. Pull
+# uses "protect" filters so local files not yet on Drive are not removed by --delete; push copies
+# them to Drive. JSON is included in both directions.
+#
 # Usage:
 #   ./scripts/rsync-gdrive-notes.sh                  # full MyNotes tree
 #   ./scripts/rsync-gdrive-notes.sh "CustomerName"   # only Customers/<CustomerName>/
@@ -13,7 +18,12 @@
 
 set -uo pipefail
 
-PROJECT_ROOT="${PRESTONOTES_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${_SCRIPT_DIR}/lib/gdrive-auth-hint.sh"
+PROJECT_ROOT="${PRESTONOTES_REPO_ROOT:-$(cd "${_SCRIPT_DIR}/.." && pwd)}"
+prestonotes_source_mcp_env "${PROJECT_ROOT}"
+
 LOCAL_PATH="$PROJECT_ROOT/MyNotes"
 
 GDRIVE_PATH="${GDRIVE_BASE_PATH:-$HOME/Google Drive/My Drive/MyNotes}"
@@ -41,7 +51,8 @@ fi
 
 if [[ ! -d "$GDRIVE_PATH" ]]; then
   echo "GDRIVE path not found: $GDRIVE_PATH" >&2
-  echo "Set GDRIVE_BASE_PATH to your Drive-mounted MyNotes folder (see README)." >&2
+  echo "Set GDRIVE_BASE_PATH to your Drive-mounted MyNotes folder (see README). Start Google Drive for Desktop if needed." >&2
+  prestonotes_gdrive_auth_hint
   exit 1
 fi
 
@@ -53,20 +64,35 @@ RSYNC_EXCLUDES=(
   --exclude='_seed_from_*/'
 )
 
-# `_TEST_CUSTOMER` is a committed E2E fixture customer in many dev setups. Google Drive may lag
-# behind the repo's local per-call transcripts / call records. Without these excludes,
-# `rsync --delete` would remove locally-added fixture files that are not yet on Drive.
-if [[ "${CUSTOMER_NAME:-}" == "_TEST_CUSTOMER" ]]; then
-  RSYNC_EXCLUDES+=(
-    --exclude='Transcripts/[0-9][0-9][0-9][0-9]-*.txt'
-    --exclude='call-records/*.json'
-  )
-fi
+# Receiver-side "protect" (rsync `P` rule): do not DELETE these on the local repo if Google Drive
+# does not have a copy yet — but if Drive *does* have a copy, normal transfer still updates local.
+# This matches the desired flow: pull latest from Drive, edit locally, push; without losing files
+# mid-pipeline. Do NOT use `--exclude` here: that would block *receiving* a newer file from Drive.
+# See `man rsync` (protect / risk filter rules).
+RSYNC_PROTECT=(
+  --filter='P Customers/*/AI_Insights/*-History-Ledger.md'
+  --filter='P AI_Insights/*-History-Ledger.md'
+  --filter='P Customers/*/AI_Insights/challenge-lifecycle.json'
+  --filter='P AI_Insights/challenge-lifecycle.json'
+  --filter='P Customers/*/pnotes_agent_log.md'
+  --filter='P pnotes_agent_log.md'
+  --filter='P pnotes_agent_log.archive.md'
+)
 
+# E2E (`_TEST_CUSTOMER`): do **not** special-case rsync here. Reset / re-seed transcripts and
+# call-records with `scripts/e2e-test-customer-materialize.py apply` (v1 or v2) from
+# `tests/fixtures/e2e/_TEST_CUSTOMER/`, invoked by `./scripts/e2e-test-customer.sh prep-v1` / `prep-v2`.
+# After a normal pull, that materialize step replaces the per-call corpus from fixtures; push when
+# you need Drive to match the repo (same as any customer).
+
+# Include JSON so `AI_Insights/challenge-lifecycle.json` and other .json round-trip; push already
+# included *.json — pull must match for stable state. Per-file "protect" above prevents --delete
+# from wiping a local-only JSON before the next push.
 RSYNC_INCLUDES=(
   --include='*/'
   --include='*.md'
   --include='*.txt'
+  --include='*.json'
   --include='*.pdf'
   --include='*.png'
   --include='*.gif'
@@ -90,6 +116,7 @@ if [[ -n "$CUSTOMER_NAME" ]]; then
   echo "Pulling Customers/$CUSTOMER_NAME/ from Google Drive -> local MyNotes ..."
   mkdir -p "$DST"
   if ! rsync "${RSYNC_FLAGS[@]}" \
+    "${RSYNC_PROTECT[@]}" \
     "${RSYNC_EXCLUDES[@]}" \
     "${RSYNC_INCLUDES[@]}" \
     "$SRC" "$DST"; then
@@ -99,6 +126,7 @@ if [[ -n "$CUSTOMER_NAME" ]]; then
 else
   echo "Pulling full MyNotes tree from Google Drive -> local MyNotes ..."
   if ! rsync "${RSYNC_FLAGS[@]}" \
+    "${RSYNC_PROTECT[@]}" \
     "${RSYNC_EXCLUDES[@]}" \
     "${RSYNC_INCLUDES[@]}" \
     "$GDRIVE_PATH/" "$LOCAL_PATH/"; then

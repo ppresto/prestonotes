@@ -5,7 +5,7 @@ This file is the **table of contents (TOC)** for E2E **quality** work: sub-tasks
 **Status:** Active (documentation + E2E manual hygiene; no code owner yet).  
 **Related:** [TASK-052 (complete — archive)](../archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md) (harness §0 push-before-pull + `prep-v1`/`prep-v2`; historical detail), [TASK-051 (complete — archive)](../archive/2026-04/TASK-051-call-record-context-quality.md) (schema v2 + lookback split shipped; **runtime checklist** → §T053-G below).
 
-**Canonical E2E context (read first):** [`docs/E2E_TEST_CUSTOMER_GUIDE.md`](../../E2E_TEST_CUSTOMER_GUIDE.md) — vision, [§0.2](../../E2E_TEST_CUSTOMER_GUIDE.md#02-how-scripts-mcp-tools-and-playbooks-fit-together) (shell vs MCP vs playbooks), **§3.6** (search the guide for “UCN completeness”; GDoc / DAL / metadata expectations), [§5 validation](../../E2E_TEST_CUSTOMER_GUIDE.md#5-how-to-validate-an-e2e-run).
+**Canonical E2E context (read first):** [`.cursor/agents/tester.md`](../../../.cursor/agents/tester.md) — vision §1, layers §3, artifacts §7, validation §8, post-write diff §6.
 
 ---
 
@@ -13,12 +13,12 @@ This file is the **table of contents (TOC)** for E2E **quality** work: sub-tasks
 
 | Question | Answer |
 | --- | --- |
-| **Link to vision** | Deliver a **GDoc** and **AI Account Summary** a human can ship without rewrite ([`E2E_TEST_CUSTOMER_GUIDE` §1](../../E2E_TEST_CUSTOMER_GUIDE.md#1-what-we-are-actually-trying-to-do)). v1+v2 E2E must show **each transcript represented** in DAL (and related sections) with **full metadata** and consistent lifecycle — not a partial doc because the agent **skipped** DAL or `sync_notes` **reverted** local state. |
+| **Link to vision** | Deliver a **GDoc** and **AI Account Summary** a human can ship without rewrite ([`.cursor/agents/tester.md` §1](../../../.cursor/agents/tester.md)). Full eight-step E2E must show **each transcript represented** in DAL (and related sections) with **full metadata** and consistent lifecycle — not a partial doc because the agent **skipped** DAL or `sync_notes` **reverted** local state. |
 | **Why this task (specifically)** | Separates **content** gaps (missing v2 DAL, sparse metadata) from **process** bugs (**pull** overwriting newer `call-records` / lifecycle). Without documenting both, we blame UCN for what is actually **push/pull order** ([TASK-052 §0](../archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md)). |
 | **Pros of closing the gaps** | E2E reflects **real** customer experience; UCN/Extract debugging gets clear **per-section** test recipes; fewer “it wrote nothing” scares when Drive was stale. |
 | **Cons / risks** | UCN is **heuristic** — DAL can still be skipped if not **explicit** in the prompt. Golden `expected-call-records` for v2 calls may be added over time, increasing maintenance. `read_doc` may not list `appendix.agent_run_log` in JSON — verify in the **GDoc UI**. |
 | **How to test *only* this task** | **Sync discipline:** (1) Edit `challenge-lifecycle.json` or a call-record in repo; (2) `e2e-test-push-gdrive-notes.sh "_TEST_CUSTOMER"`; (3) `sync_notes` / pull; (4) `diff` — file should not revert. **T053-A/B (DAL):** one transcript at a time, extract if needed, UCN with explicit “prepend DAL for 2026-04-28” (then 5/5); `read_doc` or UI check. **T053-C (metadata):** UCN with named metadata fields, before/after `read_doc`. Do **not** need full `prep-v1` for a narrow repro if Transcripts are already on disk. |
-| **Provenance note** | Live GDoc `read` in this file used a **doc id** from a session discover — **do not** treat that id as canonical; **discover** at run time (see E2E guide and [TASK-052 §0.6](../archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md)). |
+| **Provenance note** | Live GDoc `read` in this file used a **doc id** from a session discover — **do not** treat that id as canonical; **discover** at run time (see [`.cursor/agents/tester.md`](../../../.cursor/agents/tester.md) and [TASK-052 §0.6](../archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md)). |
 
 ---
 
@@ -120,7 +120,7 @@ Use **Step 6 coverage table → Step 8 mutations** in [`docs/ai/playbooks/update
 
 ### T053-G — Call-record runtime quality & UCN read discipline (from TASK-051)
 
-**When:** after **Extract** + **`call_records lint`** green and (optionally) full `Run E2E Test Customer`. **Where:** complements [§5](../../E2E_TEST_CUSTOMER_GUIDE.md#5-how-to-validate-an-e2e-run), [§10](../../E2E_TEST_CUSTOMER_GUIDE.md#10-ucn-challenge-tracker-and-lifecycle-how-data-flows-and-where-it-can-drop), and [§11](../../E2E_TEST_CUSTOMER_GUIDE.md#11-drift-item-task-template-for-the-next-agent-or-nested-prompt) of the E2E guide — **no** fixture-specific numeric gates in CI; operator judgment on a live or materialized corpus.
+**When:** after **Extract** + **`call_records lint`** green and (optionally) full `Run E2E Test Customer`. **Where:** complements [`.cursor/agents/tester.md`](../../../.cursor/agents/tester.md) §8 (validation), §10 (lifecycle), §11 (drift template) — **no** fixture-specific numeric gates in CI; operator judgment on a live or materialized corpus.
 
 - **Corpus variance (LLM output):** Round-1 + round-2 `call-records/*.json` show **distinct** `key_topics` and **distinct** `challenges_mentioned[].id` where transcripts warrant it; `products_discussed` reflects actual SKUs per call (not a repeated default list).
 - **Sentiment:** at least one **`cautious`** (or equivalent honest tone) where exec/QBR content warrants it — goldens illustrate shape; live runs still need eyeballing.

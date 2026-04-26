@@ -48,9 +48,25 @@ def repo_ctx(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
+def _seed_transcript(repo_ctx: Path, customer: str, basename: str, body: str) -> None:
+    """TASK-051 §C: write_call_record now requires raw_transcript_ref to
+    exist on disk and every verbatim quote to be a transcript substring.
+    Tests that exercise write_call_record seed a minimal transcript here.
+    """
+    d = repo_ctx / "MyNotes" / "Customers" / customer / "Transcripts"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / basename).write_text(body, encoding="utf-8")
+
+
 def test_write_read_call_records_round_trip(repo_ctx: Path) -> None:
     from prestonotes_mcp.server import read_call_records, write_call_record
 
+    _seed_transcript(
+        repo_ctx,
+        "AcmeCo",
+        "2026-04-15-discovery-call.txt",
+        "Speaker: Jane Smith: We need visibility.\n",
+    )
     payload = json.dumps(MINIMAL_RECORD)
     out = write_call_record("AcmeCo", "2026-04-15-discovery-1", payload)
     assert json.loads(out).get("ok") is True
@@ -65,6 +81,12 @@ def test_write_read_call_records_round_trip(repo_ctx: Path) -> None:
 def test_read_call_records_filters(repo_ctx: Path) -> None:
     from prestonotes_mcp.server import read_call_records, write_call_record
 
+    _seed_transcript(
+        repo_ctx,
+        "Beta",
+        "2026-04-15-discovery-call.txt",
+        "Speaker: Jane Smith: We need visibility.\n",
+    )
     r1 = {**MINIMAL_RECORD, "call_id": "2026-01-01-discovery-1", "date": "2026-01-01"}
     r2 = {
         **MINIMAL_RECORD,

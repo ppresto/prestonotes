@@ -9,7 +9,7 @@
 **Who this is for:** Solutions Engineers using Cursor with **MyNotes**, Google Drive–backed notes, and optional Wiz search.
 
 - You can jump to each **MVP playbook** from one list and match it to what you type in chat.
-- You can scan **Full**, **Partial**, or **Gap** for those five flows plus vector RAG, using the same labels as **[`docs/tasks/active/TASK-034-mvp-five-flows-readiness.md`](docs/tasks/active/TASK-034-mvp-five-flows-readiness.md)**.
+- You can scan **Full**, **Partial**, or **Gap** for those five flows plus vector RAG, using the same labels as **[`docs/tasks/archive/2026-04/TASK-034-mvp-five-flows-readiness.md`](docs/tasks/archive/2026-04/TASK-034-mvp-five-flows-readiness.md)**.
 - You get a **short checklist** of what to configure before you ask the model to run customer or Wiz-heavy work so tools do not fail without a clear reason.
 
 ---
@@ -50,7 +50,20 @@ Each item is the playbook file under **`docs/ai/playbooks/`** (use the trigger p
 | Run account summary (narrative in chat today) | **[`run-account-summary.md`](docs/ai/playbooks/run-account-summary.md)** |
 | Update customer notes (plan + approval before Doc updates) | **[`update-customer-notes.md`](docs/ai/playbooks/update-customer-notes.md)** |
 
-Readiness detail and follow-up tasks: **[`TASK-034-mvp-five-flows-readiness.md`](docs/tasks/active/TASK-034-mvp-five-flows-readiness.md)**.
+Readiness detail and follow-up tasks: **[`TASK-034-mvp-five-flows-readiness.md`](docs/tasks/archive/2026-04/TASK-034-mvp-five-flows-readiness.md)**.
+
+## E2E `_TEST_CUSTOMER` harness
+
+For repeatable E2E loops, use the shell harness and keep prep behavior centralized in one place:
+
+- **Entry point:** `./scripts/e2e-test-customer.sh`
+  - `prep-v1`: rebaseline Notes doc, pull Drive, clear logs + `AI_Insights/`, materialize v1, bump dates, push.
+  - `prep-v2`: **push local first**, then pull, materialize v2 (transcripts only), bump, push.
+  - `list-steps` / `run-step <1-8>`: canonical eight-step map for full-run and debugger mode.
+- **Cleanup ownership:** greenfield cleanup (`pnotes_agent_log*` + `AI_Insights/*`) is owned by `prep-v1` (`clean_local_harness_artifacts`), not spread across multiple scripts.
+- **Artifact survival rule:** round-1 outputs must be on Drive before any v2 pull. `prep-v2` enforces this by pushing first.
+- **Materialize v2 behavior:** `scripts/e2e-test-customer-materialize.py apply --v2` preserves existing `call-records/*.json`; it only merges v2 transcript seeds.
+- **Current caveat:** `prestonotes_gdoc/e2e_rebaseline_customer_gdoc.py` still performs a copy-trash-rename flow, so the Notes `doc_id` may change; re-`discover_doc` after prep. Historical harness spec: `docs/tasks/archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md` §0 (optional same-`doc_id` in-place rebaseline remains deferred).
 
 ### Capability at a glance
 
@@ -165,7 +178,7 @@ Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (espe
 
 - **Wiz cache refresh:** trigger **`Refresh Wiz Doc Cache`** → **`docs/ai/playbooks/refresh-wiz-doc-cache.md`** (`mcp-materialize`, `spider-ext`, manifest).  
 - **Broad product context:** **`Load Product Intelligence`** → **`docs/ai/playbooks/load-product-intelligence.md`** (reads `docs/` + `mcp_materializations/` when present).  
-- **Sub-agents:** **`coder`**, **`tester`**, **`doc`** under **[`.cursor/agents/`](.cursor/agents/)**; orchestration in **[`.cursor/rules/workflow.mdc`](.cursor/rules/workflow.mdc)**.
+- **Sub-agents (optional):** **`coder`**, **`code-tester`**, **`doc`**, **`tester`** under **[`.cursor/agents/`](.cursor/agents/)**. Default engineering behavior is **inline in the main chat** (see **[`.cursor/rules/core.mdc`](.cursor/rules/core.mdc)**). Historical “subagent pipeline” text (if you need packet templates) is archived at **[`docs/archive/cursor-rules-retired/workflow.mdc`](docs/archive/cursor-rules-retired/workflow.mdc)**.
 
 ---
 
@@ -179,10 +192,10 @@ Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (espe
 | **[`docs/tasks/INDEX.md`](docs/tasks/INDEX.md)** | What shipped / what’s next |
 | **[`scripts/README.md`](scripts/README.md)** | **`granola-sync`**, **`rsync-gdrive-notes`**, flags, Drive helpers |
 | **[`docs/ai/references/`](docs/ai/references/)** | Ingestion weights, mutation rules, taxonomies, templates |
-| **[`.cursor/rules/10-task-router.mdc`](.cursor/rules/10-task-router.mdc)** / **[`20-orchestrator.mdc`](.cursor/rules/20-orchestrator.mdc)** | Routes **`Update Customer Notes for [Name]`** toward the orchestrator; multi-advisor flow and approval gates (see **`workflow.mdc`**). |
+| **[`.cursor/rules/10-task-router.mdc`](.cursor/rules/10-task-router.mdc)** / **[`20-orchestrator.mdc`](.cursor/rules/20-orchestrator.mdc)** | Routes **`Update Customer Notes for [Name]`** toward the orchestrator; multi-advisor flow and UCN approval gates. |
 | Domain advisors **`23`–`27`** | **[`.cursor/rules/23-domain-advisor-soc.mdc`](.cursor/rules/23-domain-advisor-soc.mdc)** … **`27-domain-advisor-ai.mdc`** — SOC / APP / VULN / ASM / AI context for structured updates. |
 
-**Cursor:** subagents **`coder` / `tester` / `doc`** live under **[`.cursor/agents/`](.cursor/agents/)**; orchestration rules in **[`.cursor/rules/workflow.mdc`](.cursor/rules/workflow.mdc)** (default **`/coder` → `/tester` → `/doc`**, or **`same session, inline`** when you want one chat). The former **migration-mode** Cursor rule was **retired** at Phase 3 close-out; a read-only copy lives under **[`docs/archive/cursor-rules-retired/`](docs/archive/cursor-rules-retired/)**. Ongoing porting discipline: **`docs/MIGRATION_GUIDE.md`** and **`workflow.mdc`**.
+**Cursor:** subagents **`coder` / `code-tester` / `doc`** and **`tester`** ( **`_TEST_CUSTOMER`** E2E harness only) live under **[`.cursor/agents/`](.cursor/agents/)**; the repo no longer ships an always-on “subagent pipeline” Cursor rule (archived copy: **[`docs/archive/cursor-rules-retired/workflow.mdc`](docs/archive/cursor-rules-retired/workflow.mdc)**). The former **migration-mode** Cursor rule was **retired** at Phase 3 close-out; a read-only copy lives under **[`docs/archive/cursor-rules-retired/`](docs/archive/cursor-rules-retired/)**. Ongoing porting discipline: **`docs/MIGRATION_GUIDE.md`**.
 
 ---
 

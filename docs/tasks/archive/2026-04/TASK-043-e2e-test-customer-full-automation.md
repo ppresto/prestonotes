@@ -1,24 +1,24 @@
 # TASK-043 — E2E `_TEST_CUSTOMER`: single-playbook full automation (no generated run-sheet dependency)
 
-> **Archived 2026-04-21:** Superseded by **`docs/tasks/active/TASK-044-e2e-test-customer-rebuild.md`**. This task documented the "single playbook, no run-sheet" contract but left the shell script incapable of doing delete+bootstrap+restart-Drive, and never enforced that the agent chain through the Cursor playbook steps. TASK-044 fixes both problems by replacing the harness.
+> **Archived 2026-04-21:** Superseded by **`docs/tasks/archive/2026-04/TASK-044-e2e-test-customer-rebuild.md`** (archived 2026-04-24). This task documented the "single playbook, no run-sheet" contract but left the shell script incapable of doing delete+bootstrap+restart-Drive, and never enforced that the agent chain through the Cursor playbook steps. TASK-044 fixes both problems by replacing the harness.
 
 **Status:** [x] COMPLETE (superseded)  
 **Opened:** 2026-04-21  
-**Depends on:** `docs/ai/playbooks/e2e-test-customer.md`, `scripts/e2e-test-customer.sh`, `scripts/e2e-reset-test-customer-drive.sh`, `scripts/e2e-test-customer-verify.py`, `.cursor/rules/11-e2e-test-customer-trigger.mdc`.  
+**Depends on:** `docs/ai/playbooks/tester-e2e-ucn.md`, `scripts/e2e-test-customer.sh`, `scripts/e2e-reset-test-customer-drive.sh`, `scripts/e2e-test-customer-verify.py`, `.cursor/rules/11-e2e-test-customer-trigger.mdc`.  
 **Supersedes scope in:** `TASK-042` (refresh-first reset is kept, operator/checklist complexity is removed).
 
 ## Problem
 
 The current E2E flow is split between:
 
-- `docs/ai/playbooks/e2e-test-customer.md` (operator intent), and
+- `docs/ai/playbooks/tester-e2e-ucn.md` (operator intent), and
 - generated `docs/ai/playbooks/e2e-test-customer-run.md` (checklist + pass/fail table).
 
 That split is adding friction and hiding the real requirement: `_TEST_CUSTOMER` is deterministic test data, so the run should be one end-to-end automated harness with explicit sequencing and no approval pauses.
 
 ## Required end-state
 
-1. **Single source of truth:** `docs/ai/playbooks/e2e-test-customer.md` fully defines the run order. No dependency on generated run-sheet files.
+1. **Single source of truth:** `docs/ai/playbooks/tester-e2e-ucn.md` fully defines the run order. No dependency on generated run-sheet files.
 2. **Full reset every Drive run:** delete + bootstrap `_TEST_CUSTOMER`, restart Drive mount, confirm visibility, then rsync/materialize/refresh/push.
 3. **No approval gates in this E2E path:** `_TEST_CUSTOMER` E2E runs end-to-end without per-write chat approvals.
 4. **Fully automated phase2:** add phase2 transcripts, run extract, run UCN, continue to account summary.
@@ -70,7 +70,7 @@ Expand `scripts/e2e-test-customer-verify.py` so it becomes the validation gate. 
 ## Acceptance
 
 - [x] Canonical sequence documented as delete -> bootstrap -> mount refresh -> prep -> round1 -> phase2 -> round2 -> summary -> verify.
-- [x] `docs/ai/playbooks/e2e-test-customer.md` is the single execution source; no generated run-sheet dependency in default flow.
+- [x] `docs/ai/playbooks/tester-e2e-ucn.md` is the single execution source; no generated run-sheet dependency in default flow.
 - [x] `_TEST_CUSTOMER` E2E path is documented/routed as no-approval pause in dedicated rule overrides.
 - [x] Approval behavior remains unchanged for non-test customers (override scoped to `_TEST_CUSTOMER` E2E trigger).
 - [ ] `scripts/e2e-test-customer-verify.py` returns a report with actionable failure reasons I can investigate.
@@ -92,8 +92,8 @@ Expand `scripts/e2e-test-customer-verify.py` so it becomes the validation gate. 
 ## Output / Evidence
 
 - Playbook + docs:
-  - `docs/ai/playbooks/e2e-test-customer.md`
-  - `docs/e2e-test-customer.md`
+  - `docs/ai/playbooks/e2e-test-customer.md` *(renamed 2026-04 → `tester-e2e-ucn.md`)*
+  - `docs/e2e-test-customer.md` *(old duplicate stub at repo root)*
   - `scripts/README.md`
 - Scripts:
   - `scripts/e2e-test-customer.sh`

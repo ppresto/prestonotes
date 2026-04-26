@@ -1,0 +1,46 @@
+{
+  "call_id": "2026-02-21-exec_qbr-1",
+  "date": "2026-02-21",
+  "call_type": "exec_qbr",
+  "call_number_in_sequence": 1,
+  "duration_minutes": 45,
+  "participants": [
+    {"name": "John Doe", "role": "Exec Sponsor"},
+    {"name": "Jane Smith", "role": "Platform Lead"}
+  ],
+  "summary_one_liner": "QBR covering sensor rollout, acquisition, SOC budget freeze, and champion exit.",
+  "key_topics": [
+    "sensor DaemonSet rollout",
+    "SOC budget freeze",
+    "champion transition"
+  ],
+  "challenges_mentioned": [
+    {"id": "ch-splunk-budget-freeze", "description": "Q1 SOC budget frozen; Splunk CDR blocked.", "status": "identified"},
+    {"id": "ch-champion-exit", "description": "Champion leaving next week.", "status": "identified"}
+  ],
+  "products_discussed": ["Wiz Cloud", "Wiz Sensor", "Wiz DSPM"],
+  "action_items": [
+    {"owner": "Jane Smith", "action": "Hand off runbooks before departure", "due": "2026-02-28"}
+  ],
+  "sentiment": "cautious",
+  "deltas_from_prior_call": [],
+  "verbatim_quotes": [
+    {"speaker": "John Doe", "quote": "Yes, our Wiz Score jumped to 92% this morning."}
+  ],
+  "raw_transcript_ref": "2026-02-21-test-customer-qbr.txt",
+  "extraction_date": "2026-02-22",
+  "extraction_confidence": "high",
+  "goals_mentioned": [
+    {"description": "Sustain 900/1000 workload scan coverage", "category": "adoption"}
+  ],
+  "risks_mentioned": [
+    {"description": "Champion (Jane) departing next week", "severity": "high"}
+  ],
+  "metrics_cited": [
+    {"metric": "Wiz Score", "value": "92%"}
+  ],
+  "stakeholder_signals": [
+    {"name": "John Doe", "signal": "sponsor_engaged"},
+    {"name": "Jane Smith", "signal": "champion_exit"}
+  ]
+}

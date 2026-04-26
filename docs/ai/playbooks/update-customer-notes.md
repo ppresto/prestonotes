@@ -270,7 +270,7 @@ Before building the change plan, present **numbered questions** to the user for 
 
 If no conflicts or ambiguities exist, skip this step and say so.
 
-[STOP — wait for user answers before continuing. Use their responses as evidence for the change plan.]
+[STOP — wait for user answers before continuing. Use their responses as evidence for the change plan. For `_TEST_CUSTOMER` E2E runs triggered by `.cursor/rules/11-e2e-test-customer-trigger.mdc`, do not pause; record `clarification_gate: none` and continue.]
 
 **Tell user:** "Step 7 of 11 — I have [N] questions before I build the plan. [questions]. Please answer and I'll use your responses as evidence."
 
@@ -306,6 +306,27 @@ Run the planner coverage guard: every run must explicitly cover `exec_account_su
 15. `account_motion_metadata.critical_issues_open`
 
 `account_motion_metadata.mttr_days` and `account_motion_metadata.monthly_reporting_hours` are populated only when a transcript states the number explicitly; otherwise skip with `no_in_scope_transcript_signal`. Per-field extraction rules live in `.cursor/rules/21-extractor.mdc` § **Per-section GDoc extraction**; skip-reason accounting is what the writer surfaces in the agent run log (§F / Step 10 below).
+
+**Coverage artifact (required):** build and persist a machine-friendly planner outcome for Step 8 before approval: each key field is either `mutate` or `skip` with one of the allowed skip reasons. This can be embedded in the approved mutations bundle metadata and/or surfaced in the run log fields, but it must be explicit and reproducible (no silent skip).
+
+**Deterministic planner contract (TASK-072, required):** include a top-level `planner_contract` object in the same JSON file as `mutations` and run preflight before Step 9/10.
+
+- **DAL contract (`planner_contract.dal`):**
+  - `expected_missing_count` (int): count of meetings from Step 6 missing list.
+  - `expected_missing_keys` (`list[str]`): normalized keys (`YYYY-MM-DD:<slug>`) for missing meetings.
+  - `skips` (`list[{meeting_key, reason}]`): only for allowed skip cases (e.g. empty transcript).
+- **Deal Stage contract (`planner_contract.deal_stage`):**
+  - `expected_skus` (`list[str]` from `cloud|sensor|defend|code`) that should move or be explicitly accounted for this run.
+  - `no_change_with_reason` (`list[{sku, reason}]`) when expected SKU is intentionally unchanged.
+- **Hard gate command (must pass):**
+
+```bash
+uv run python scripts/ucn-planner-preflight.py \
+  --mutations "./MyNotes/Customers/[CustomerName]/AI_Insights/ucn-approved-mutations.json" \
+  --json-output
+```
+
+If preflight prints `planner_contract_failed` / non-zero, do **not** proceed to Step 9/10. Fix the mutation plan first.
 
 **Contacts — LLM-built `contacts.free_text` (required; no sidecar mutation generators):**
 
@@ -360,17 +381,21 @@ Display the proposed changes grouped by section using the diff preview format fr
 
 **Tell user:** "Step 9 of 11 — Here are the changes I want to make. Please review and say yes, no, or tell me which ones to keep."
 
-[STOP — wait for user approval before continuing. Do not write anything until the user says yes.]
+[STOP — wait for user approval before continuing. Do not write anything until the user says yes. For `_TEST_CUSTOMER` E2E runs under `.cursor/rules/11-e2e-test-customer-trigger.mdc`, record `approval: bypassed per 11-e2e` and continue without a user pause.]
 
 **If user rejects (all or some):** Follow the rejection logging process below (section "When User Rejects Changes").
 
 ### Step 10 of 11 — Apply approved changes
 
-Save the approved change plan to **`./MyNotes/Customers/[CustomerName]/AI_Insights/ucn-approved-mutations.json`** (or another path **under that customer folder** so it rsyncs to Google Drive — avoid disposable `/tmp` paths as the only copy).
+Save the approved change plan to **`./MyNotes/Customers/[CustomerName]/AI_Insights/ucn-approved-mutations.json`** (or another path **under that customer folder** so it rsyncs to Google Drive — avoid disposable `/tmp` paths as the only copy). For production recovery, `write_doc` also caches an always-latest copy and state under `AI_Insights/ucn-recovery/` (`latest-mutations.json`, `latest-write-state.json`).
 
 **In Cursor,** MCP **`write_doc`** with `doc_id`, `mutations_json`, and `dry_run=true` until the user approves, then `dry_run=false`. **In Terminal:**
 
 ```bash
+uv run python scripts/ucn-planner-preflight.py \
+  --mutations "./MyNotes/Customers/[CustomerName]/AI_Insights/ucn-approved-mutations.json" \
+  --json-output
+
 uv run prestonotes_gdoc/update-gdoc-customer-notes.py write \
   --doc-id "<DOC_ID>" \
   --config prestonotes_gdoc/config/doc-schema.yaml \
@@ -389,11 +414,11 @@ For first-time testing, add `--dry-run`.
 
 After write, re-run the `read` subcommand to confirm changes are reflected. Save the post-write doc state for the ledger row.
 
-**Tell user:** "Step 10 of 11 — Changes written to Google Doc. Here's what changed: [summary]. Here's what I skipped and why: [summary]. Reconciled [N] Challenge Tracker rows against the lifecycle. Advanced [N] Deal Stage rows. Appended one `agent_run_log` entry."
+**Tell user:** "Step 10 of 11 — Changes written to Google Doc. Here's what changed: [summary]. Here's what I skipped and why: [summary]. Reconciled [N] Challenge Tracker rows against the lifecycle. Advanced [N] Deal Stage rows. Appended one `agent_run_log` entry with mutate/skip coverage outcomes."
 
 ### Step 11 of 11 — Append History Ledger row and sync
 
-After a successful Google Doc write, assemble one **schema v3** row and append it via **MCP `append_ledger_row`**. The canonical column order and typing lives in **`prestonotes_mcp/ledger.py`** (`LEDGER_V3_COLUMNS`) and the full spec is **`docs/project_spec.md`** § _Ledger writes: `append_ledger` vs `append_ledger_row`_. Do **not** handcraft markdown tables in this playbook flow.
+After a successful Google Doc write, assemble one **schema v3** row and append it via **MCP `append_ledger_row`**. The canonical column order and typing lives in **`prestonotes_mcp/ledger.py`** (`LEDGER_V3_COLUMNS`) and the full spec is **`docs/project_spec.md`** § _Ledger writes: `append_ledger` vs `append_ledger_row`_. Do **not** handcraft markdown tables in this playbook flow. Treat this write→ledger chain as one completion unit: if the doc write succeeded but the ledger append did not, the run remains incomplete until the ledger outcome is resolved and reported.
 
 1. **Read or create the ledger file:**
    - Path: `./MyNotes/Customers/[CustomerName]/AI_Insights/[CustomerName]-History-Ledger.md`.
@@ -428,6 +453,7 @@ After a successful Google Doc write, assemble one **schema v3** row and append i
    - Free-text cells must obey `.cursor/rules/21-extractor.mdc` "Ledger cell extraction": one internal transcript citation per cell, no harness vocabulary (MCP rejects any match against `FORBIDDEN_EVIDENCE_TERMS` in `prestonotes_mcp/journey.py`), cap enforcement.
 
 3. **Append the row** with MCP **`append_ledger_row(customer_name, row_json=<dict>)`** (append-only — never edit prior rows). On a rejection the tool returns `{"ok": false, "error": "...", "field": "...", "value": "..." | "matched": "..."}`; fix the row locally and retry. Rejections do not write a partial file.
+   - If append fails **after** `write_doc` succeeded, run recovery before ending the run: call MCP **`read_ucn_recovery_state`** (inspect `status`, `last_ledger_error`, `ledger_attempt_count`) and then **`recover_ledger_from_latest(customer_name, doc_id, dry_run=false)`**. The run is not complete while state is `write_succeeded_ledger_pending` or `recovery_failed`.
 
 4. **Mirror** the updated ledger to Google Drive:
    - `$GDRIVE_BASE_PATH/Customers/[CustomerName]/AI_Insights/[CustomerName]-History-Ledger.md`

@@ -198,4 +198,13 @@ TASK-050 §E: on every approved UCN write, the writer scans each applied `exec_a
 - Rows whose `challenge` key is not one of `COMMERCIAL_SKUS` are untouched (e.g. a manually seeded ASM row).
 - If no `upsell_path` mutations applied this run, Deal Stage Tracker is not touched — use `update_table_row` manually per § Mutation Actions Reference when you need a one-off stage change.
 
+**TASK-072 deterministic planner contract (required in UCN plan):**
+
+- Add `planner_contract.deal_stage.expected_skus` (`cloud|sensor|defend|code`) for SKUs expected to move this run.
+- For each expected SKU, provide one trigger path:
+  - `upsell_auto` via an `exec_account_summary.upsell_path` line containing a recognized token, or
+  - explicit `deal_stage_tracker` table mutation (`update_table_row` / `add_table_row`), or
+  - `no_change_with_reason` with evidence-backed reason.
+- Validate with `scripts/ucn-planner-preflight.py`; if `deal_stage_trigger_missing:*` appears, do not write.
+
 ---

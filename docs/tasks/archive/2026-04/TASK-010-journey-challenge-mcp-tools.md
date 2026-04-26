@@ -6,7 +6,7 @@
 |--------|--------|
 | **Phase** | **Complete** (2026-04-19) |
 | **Spec reference** | [`project_spec.md` §9 — TASK-010](../../project_spec.md#task-010--add-journey-timeline-and-challenge-lifecycle-mcp-tools) |
-| **Execution** | **`/coder` → `/tester` → `/doc`** subagent pipeline (isolated context per step) |
+| **Execution** | **`/coder` → `/code-tester` → `/doc`** subagent pipeline (isolated context per step) |
 
 ## Goal
 

@@ -8,6 +8,7 @@ import re
 import subprocess
 import uuid
 from datetime import datetime, timezone
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,7 @@ from prestonotes_mcp.call_records import (
     call_records_path,
     read_call_record_files,
     validate_call_id,
+    validate_call_record_against_transcript,
     validate_call_record_object,
     validate_call_type_filter,
 )
@@ -92,6 +94,94 @@ def _rel_path(p: str) -> Path:
     except ValueError as exc:
         raise ValueError("path must stay inside the repository") from exc
     return path
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    tmp.write_text(content, encoding="utf-8")
+    tmp.replace(path)
+
+
+def _atomic_write_json(path: Path, payload: dict[str, Any] | list[Any]) -> None:
+    _atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+
+
+def _ucn_recovery_dir(customer_name: str) -> Path:
+    return customer_dir(customer_name) / "AI_Insights" / "ucn-recovery"
+
+
+def _ucn_recovery_mutations_path(customer_name: str) -> Path:
+    return _ucn_recovery_dir(customer_name) / "latest-mutations.json"
+
+
+def _ucn_recovery_state_path(customer_name: str) -> Path:
+    return _ucn_recovery_dir(customer_name) / "latest-write-state.json"
+
+
+def _ucn_recovery_ledger_row_path(customer_name: str) -> Path:
+    return _ucn_recovery_dir(customer_name) / "latest-ledger-row.json"
+
+
+def _load_json_file(path: Path) -> Any | None:
+    if not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _store_ucn_recovery_mutations(customer_name: str, mutations_json: str) -> str:
+    mut_payload: Any
+    mut_payload = json.loads(mutations_json)
+    mut_path = _ucn_recovery_mutations_path(customer_name)
+    _atomic_write_json(mut_path, mut_payload)
+    return str(mut_path)
+
+
+def _update_ucn_recovery_state(
+    customer_name: str,
+    *,
+    status: str,
+    doc_id: str,
+    mutation_sha256: str | None = None,
+    write_exit_code: int | None = None,
+    write_output_tail: str | None = None,
+    last_ledger_error: str | None = None,
+    ledger_attempt_increment: bool = False,
+    ledger_source: str | None = None,
+) -> Path:
+    state_path = _ucn_recovery_state_path(customer_name)
+    existing = _load_json_file(state_path)
+    if not isinstance(existing, dict):
+        existing = {}
+    attempts = int(existing.get("ledger_attempt_count") or 0)
+    if ledger_attempt_increment:
+        attempts += 1
+    payload: dict[str, Any] = {
+        "customer_name": customer_name,
+        "status": status,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "doc_id": doc_id,
+        "mutation_sha256": mutation_sha256 or existing.get("mutation_sha256", ""),
+        "mutations_path": str(_ucn_recovery_mutations_path(customer_name)),
+        "ledger_attempt_count": attempts,
+        "write_exit_code": write_exit_code
+        if write_exit_code is not None
+        else existing.get("write_exit_code"),
+        "write_output_tail": write_output_tail
+        if write_output_tail is not None
+        else existing.get("write_output_tail", ""),
+        "last_ledger_error": last_ledger_error
+        if last_ledger_error is not None
+        else existing.get("last_ledger_error", ""),
+        "ledger_source": ledger_source
+        if ledger_source is not None
+        else existing.get("ledger_source", ""),
+    }
+    _atomic_write_json(state_path, payload)
+    return state_path
 
 
 # ---------------------------------------------------------------------------
@@ -501,6 +591,16 @@ def write_doc(
         if dry_run:
             args.append("--dry-run")
         cn = (customer_name or "").strip()
+        mut_hash = sha256(mutations_json.encode("utf-8")).hexdigest()
+        if cn and not dry_run:
+            validate_customer_name(cn)
+            _store_ucn_recovery_mutations(cn, mutations_json)
+            _update_ucn_recovery_state(
+                cn,
+                status="pending_write",
+                doc_id=doc_id,
+                mutation_sha256=mut_hash,
+            )
         if cn:
             args.extend(["--customer-name", cn])
         proc = run_uv_script("prestonotes_gdoc/update-gdoc-customer-notes.py", *args)
@@ -510,6 +610,15 @@ def write_doc(
         except OSError:
             pass
         if proc.returncode != 0:
+            if cn and not dry_run:
+                _update_ucn_recovery_state(
+                    cn,
+                    status="write_failed",
+                    doc_id=doc_id,
+                    mutation_sha256=mut_hash,
+                    write_exit_code=proc.returncode,
+                    write_output_tail=out[-4000:],
+                )
             return json.dumps(
                 {
                     "error": "write failed",
@@ -517,6 +626,15 @@ def write_doc(
                     "output": out[-12000:],
                     **google_auth_terminal_fix_fields(ctx.config),
                 }
+            )
+        if cn and not dry_run:
+            _update_ucn_recovery_state(
+                cn,
+                status="write_succeeded_ledger_pending",
+                doc_id=doc_id,
+                mutation_sha256=mut_hash,
+                write_exit_code=proc.returncode,
+                write_output_tail=out[-4000:],
             )
         return json.dumps({"exit_code": proc.returncode, "output": out[-12000:]})
 
@@ -546,6 +664,14 @@ def append_ledger(customer_name: str, doc_id: str, applied_json_path: str) -> st
         )
         out = (proc.stdout or "") + (proc.stderr or "")
         if proc.returncode != 0:
+            _update_ucn_recovery_state(
+                customer_name,
+                status="recovery_failed",
+                doc_id=doc_id,
+                last_ledger_error=out[-4000:],
+                ledger_attempt_increment=True,
+                ledger_source="append_ledger",
+            )
             return json.dumps(
                 {
                     "exit_code": proc.returncode,
@@ -553,6 +679,14 @@ def append_ledger(customer_name: str, doc_id: str, applied_json_path: str) -> st
                     **google_auth_terminal_fix_fields(ctx.config),
                 }
             )
+        _update_ucn_recovery_state(
+            customer_name,
+            status="complete",
+            doc_id=doc_id,
+            last_ledger_error="",
+            ledger_attempt_increment=True,
+            ledger_source="append_ledger",
+        )
         return json.dumps({"exit_code": proc.returncode, "output": out[-8000:]})
 
 
@@ -576,11 +710,128 @@ def append_ledger_row(customer_name: str, row_json: str) -> str:
         data = json.loads(row_json)
         if not isinstance(data, dict):
             raise ValueError("row_json must be a JSON object")
+        _atomic_write_json(_ucn_recovery_ledger_row_path(customer_name), data)
         try:
             path = _append_ledger_row(customer_name, data)
         except LedgerValidationError as exc:
+            _update_ucn_recovery_state(
+                customer_name,
+                status="recovery_failed",
+                doc_id=str(
+                    (_load_json_file(_ucn_recovery_state_path(customer_name)) or {}).get(
+                        "doc_id", ""
+                    )
+                ),
+                last_ledger_error=json.dumps(exc.payload, ensure_ascii=False),
+                ledger_attempt_increment=True,
+                ledger_source="append_ledger_row",
+            )
             return json.dumps({"ok": False, **exc.payload}, ensure_ascii=False)
+        _update_ucn_recovery_state(
+            customer_name,
+            status="complete",
+            doc_id=str(
+                (_load_json_file(_ucn_recovery_state_path(customer_name)) or {}).get("doc_id", "")
+            ),
+            last_ledger_error="",
+            ledger_attempt_increment=True,
+            ledger_source="append_ledger_row",
+        )
         return json.dumps({"ok": True, "path": str(path)})
+
+
+@mcp.tool
+def read_ucn_recovery_state(customer_name: str) -> str:
+    """Read latest UCN write/ledger recovery state for a customer (no mutation)."""
+    with tool_scope("read_ucn_recovery_state", customer_name=customer_name):
+        validate_customer_name(customer_name)
+        state_path = _ucn_recovery_state_path(customer_name)
+        mutations_path = _ucn_recovery_mutations_path(customer_name)
+        ledger_row_path = _ucn_recovery_ledger_row_path(customer_name)
+        state = _load_json_file(state_path)
+        return json.dumps(
+            {
+                "ok": True,
+                "state_path": str(state_path),
+                "mutations_path": str(mutations_path),
+                "ledger_row_path": str(ledger_row_path),
+                "state_exists": state_path.is_file(),
+                "mutations_exists": mutations_path.is_file(),
+                "ledger_row_exists": ledger_row_path.is_file(),
+                "state": state if isinstance(state, dict) else {},
+            },
+            ensure_ascii=False,
+        )
+
+
+@mcp.tool
+def recover_ledger_from_latest(customer_name: str, doc_id: str, dry_run: bool = False) -> str:
+    """Recover ledger write using cached latest UCN mutations in AI_Insights/ucn-recovery."""
+    with tool_scope(
+        "recover_ledger_from_latest",
+        customer_name=customer_name,
+        doc_id=doc_id,
+        dry_run=dry_run,
+    ):
+        validate_customer_name(customer_name)
+        doc_id = (doc_id or "").strip()
+        if not doc_id:
+            raise ValueError("doc_id required")
+        from prestonotes_mcp.runtime import get_ctx
+
+        ctx = get_ctx()
+        cfg = _doc_schema_path(ctx)
+        mut_path = _ucn_recovery_mutations_path(customer_name)
+        if not mut_path.is_file():
+            return json.dumps(
+                {
+                    "ok": False,
+                    "error": "missing_cached_mutations",
+                    "mutations_path": str(mut_path),
+                }
+            )
+        args = [
+            "ledger-append",
+            "--customer",
+            customer_name,
+            "--doc-id",
+            doc_id,
+            "--config",
+            cfg,
+            "--applied-json",
+            str(mut_path.relative_to(repo_root())),
+        ]
+        if dry_run:
+            args.append("--dry-run")
+        proc = run_uv_script("prestonotes_gdoc/update-gdoc-customer-notes.py", *args)
+        out = (proc.stdout or "") + (proc.stderr or "")
+        if proc.returncode != 0:
+            _update_ucn_recovery_state(
+                customer_name,
+                status="recovery_failed",
+                doc_id=doc_id,
+                last_ledger_error=out[-4000:],
+                ledger_attempt_increment=True,
+                ledger_source="recover_ledger_from_latest",
+            )
+            return json.dumps(
+                {
+                    "ok": False,
+                    "exit_code": proc.returncode,
+                    "output": out[-8000:],
+                    **google_auth_terminal_fix_fields(ctx.config),
+                }
+            )
+        if not dry_run:
+            _update_ucn_recovery_state(
+                customer_name,
+                status="complete",
+                doc_id=doc_id,
+                last_ledger_error="",
+                ledger_attempt_increment=True,
+                ledger_source="recover_ledger_from_latest",
+            )
+        return json.dumps({"ok": True, "exit_code": proc.returncode, "output": out[-8000:]})
 
 
 @mcp.tool
@@ -650,7 +901,44 @@ def write_call_record(customer_name: str, call_id: str, record_json: str) -> str
         if str(data.get("call_id", "")).strip() != cid:
             raise ValueError("record_json.call_id must match call_id argument")
         validate_call_record_object(data)
+        # TASK-051 §C: verify every verbatim quote is a substring of the
+        # referenced transcript before writing. Missing transcript is a
+        # hard reject (we never want the extractor to invent quotes under a
+        # missing-file loophole). The _TEST_CUSTOMER approval-bypass override
+        # in 20-orchestrator.mdc / 21-extractor.mdc is orthogonal to data
+        # quality — this check runs for every customer, fixture included.
+        validate_call_record_against_transcript(data, customer_name)
         path = call_records_path(customer_name, cid)
+        # TASK-051 §C: anti-regression. Refuse to overwrite a high-confidence
+        # record with a thinner one (strictly fewer populated fields across
+        # the signal-bearing keys).
+        if path.is_file():
+            try:
+                prior = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                prior = None
+            if isinstance(prior, dict) and str(prior.get("extraction_confidence")) == "high":
+                signal_keys = (
+                    "key_topics",
+                    "challenges_mentioned",
+                    "products_discussed",
+                    "action_items",
+                    "goals_mentioned",
+                    "risks_mentioned",
+                    "metrics_cited",
+                    "stakeholder_signals",
+                    "verbatim_quotes",
+                    "deltas_from_prior_call",
+                )
+
+                def _populated(r: dict[str, Any]) -> int:
+                    return sum(1 for k in signal_keys if r.get(k))
+
+                if _populated(data) < _populated(prior):
+                    raise ValueError(
+                        "anti-regression: new record has fewer populated fields "
+                        "than existing high-confidence record on disk"
+                    )
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         return json.dumps({"ok": True, "path": str(path)})

@@ -9,4 +9,4 @@
 | **013** | `exec-summary-template.md`, `run-account-summary.md` | TASK-007 patterns |
 | **014** | `run-challenge-review.md` | TASK-010 |
 
-**Execution order:** 011 → 012 → 013 → 014 (sequential). Each task: **`/coder` → `/tester` → `/doc`**, then archive + INDEX update.
+**Execution order:** 011 → 012 → 013 → 014 (sequential). Each task: **`/coder` → `/code-tester` → `/doc`**, then archive + INDEX update.

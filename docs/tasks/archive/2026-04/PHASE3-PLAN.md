@@ -49,7 +49,7 @@
 | **B** | **TASK-017** | **`/coder`** | `.cursor/rules/20-orchestrator.mdc`, **new** `.cursor/rules/10-task-router.mdc` (route **`Update Customer Notes for [Name]`** to orchestrator per §9). Wire `alwaysApply` / `globs` so router + orchestrator do not fight **`workflow.mdc`**. |
 | **C** | **TASK-018** | **`/coder`** | `docs/ai/playbooks/run-exec-briefing.md` + trigger **`Run Exec Briefing for [CustomerName]`** in [`project_spec.md` §11](../../../project_spec.md#11-trigger-phrase-reference-mvp) if missing. |
 | **D** | **TASK-019** | **`/coder`** | `docs/ai/playbooks/debug-pipeline.md`; **`scripts/ci/required-paths.manifest`** entries for new playbooks/rules; note in plan when **`update-customer-notes.md`** stays canonical vs orchestrator-only (§9 says “Modified: archived old” — prefer **keep** playbook as fallback until manual archive). |
-| **E** | **`/tester`** | After each wave | `bash .cursor/skills/test.sh`, `bash .cursor/skills/lint.sh`, `bash scripts/ci/check-repo-integrity.sh`. |
+| **E** | **`/code-tester`** | After each wave | `bash .cursor/skills/test.sh`, `bash .cursor/skills/lint.sh`, `bash scripts/ci/check-repo-integrity.sh`. |
 | **F** | **`/doc`** | After tester green | README “MVP playbooks” table + [`docs/tasks/INDEX.md`](../../INDEX.md) Stage 3 checkboxes; [`docs/V2_MVP_BUILD_PLAN.md`](../../../V2_MVP_BUILD_PLAN.md) §11 pointer. |
 | **G** | **Phase 3 close-out cleanup** | **`/coder`** | Keep **`syncNotesToMarkdown.js`** name aligned with deployed Apps Script; archive **`99-migration-mode.mdc`** to **`docs/archive/cursor-rules-retired/`**; refresh historical **biome** mentions in task archive. |
 
@@ -59,9 +59,9 @@
 - **Writes:** Orchestrator **step 9** only after explicit user approval in chat; same contract as existing **`write_doc`** / **`append_ledger_v2`** rules in **`core.mdc`**.
 - **ASM (TASK-016):** Rule text must describe **`architecture_diagram_paths`** and image read (base64) **without** implementing MCP binary read unless already available — prefer “use **`read_doc`** / file tools for paths under repo **`MyNotes/`**” pattern.
 
-### Wave E (`/tester`) — done
+### Wave E (`/code-tester`) — done
 
-**Verification:** `test.sh`, `lint.sh`, `check-repo-integrity.sh`, `uv run pre-commit run --all-files` — exit 0 (see tester Output Contract).
+**Verification:** `test.sh`, `lint.sh`, `check-repo-integrity.sh`, `uv run pre-commit run --all-files` — exit 0 (see code-tester Output Contract).
 
 ### Wave F (`/doc`) — done
 

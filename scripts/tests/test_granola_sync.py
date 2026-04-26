@@ -63,7 +63,7 @@ def test_sync_v6_cache_object_wrapper_writes_file(
         cache_path=cache,
         customers_base=mynotes,
         dry_run=False,
-        emit_notes_without_transcript=False,
+        notes_fallback=False,
         default_customer=None,
     )
     assert len(r["written"]) == 1
@@ -95,7 +95,7 @@ def test_sync_transcript_value_as_json_string_writes_file(
         cache_path=cache,
         customers_base=mynotes,
         dry_run=False,
-        emit_notes_without_transcript=False,
+        notes_fallback=False,
         default_customer=None,
     )
     assert len(r["written"]) == 1
@@ -114,7 +114,7 @@ def test_sync_v6_cache_object_nested_state_writes_file(
         cache_path=cache,
         customers_base=mynotes,
         dry_run=False,
-        emit_notes_without_transcript=False,
+        notes_fallback=False,
         default_customer=None,
     )
     assert len(r["written"]) == 1
@@ -130,7 +130,7 @@ def test_sync_writes_one_file_per_meeting(tmp_path: Path, monkeypatch: pytest.Mo
         cache_path=cache,
         customers_base=mynotes,
         dry_run=False,
-        emit_notes_without_transcript=False,
+        notes_fallback=False,
         default_customer=None,
     )
     assert len(r["written"]) == 1
@@ -154,7 +154,7 @@ def test_idempotent_second_run_no_duplicate_files(
         cache_path=cache,
         customers_base=mynotes,
         dry_run=False,
-        emit_notes_without_transcript=False,
+        notes_fallback=False,
         default_customer=None,
     )
     tdir = mynotes / "Customers" / "Acme Corp" / "Transcripts"
@@ -165,7 +165,7 @@ def test_idempotent_second_run_no_duplicate_files(
         cache_path=cache,
         customers_base=mynotes,
         dry_run=False,
-        emit_notes_without_transcript=False,
+        notes_fallback=False,
         default_customer=None,
     )
     second = list(tdir.glob("*.txt"))
@@ -188,7 +188,7 @@ def test_internal_folder_routes_to_internal_customer(
         cache_path=cache,
         customers_base=mynotes,
         dry_run=False,
-        emit_notes_without_transcript=False,
+        notes_fallback=False,
         default_customer=None,
     )
     assert len(r["written"]) == 1
@@ -217,7 +217,7 @@ def test_fixture_customer_name_with_leading_underscore(
         cache_path=cache,
         customers_base=mynotes,
         dry_run=False,
-        emit_notes_without_transcript=False,
+        notes_fallback=False,
         default_customer=None,
     )
     assert len(r["written"]) == 1
@@ -252,12 +252,105 @@ def test_collision_distinct_meetings_same_title_day(
         cache_path=cache,
         customers_base=mynotes,
         dry_run=False,
-        emit_notes_without_transcript=False,
+        notes_fallback=False,
         default_customer=None,
     )
     assert len(r["written"]) == 2
     paths = {Path(x["path"]) for x in r["written"]}
     assert len(paths) == 2
+
+
+def test_sync_notes_fallback_writes_notes_when_no_transcript_segments(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Granola v6 often has documents without ``state.transcripts[id``] — notes still export."""
+    inner = {
+        "documents": {
+            "meet-notes-only": {
+                "title": "Customer Call",
+                "created_at": "2026-04-21T12:00:00Z",
+                "folders": [{"id": "f1", "name": "Acme Corp"}],
+                "notes_plain": "Alice:\nDiscussed roll-out plan.\nBob:\nAgreed on next steps.",
+            }
+        },
+        "transcripts": {},
+    }
+    cache = tmp_path / "cache-v6.json"
+    cache.write_text(json.dumps({"cache": inner}), encoding="utf-8")
+    mynotes = tmp_path / "MyNotes"
+    monkeypatch.delenv("GRANOLA_DEFAULT_CUSTOMER", raising=False)
+
+    r = g.sync_granola_to_mynotes(
+        cache_path=cache,
+        customers_base=mynotes,
+        dry_run=False,
+        notes_fallback=True,
+        default_customer=None,
+    )
+    assert len(r["written"]) == 1
+    assert r["written"][0].get("body_source") == "notes"
+    body = Path(r["written"][0]["path"]).read_text(encoding="utf-8")
+    assert "Discussed roll-out plan" in body
+
+
+def test_pick_customer_from_title_prefix_when_folders_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    inner = {
+        "documents": {
+            "meet-1": {
+                "title": "Acme Corp — Quarterly review",
+                "created_at": "2026-04-21T12:00:00Z",
+                "folders": None,
+                "notes_plain": "Discussed rollout.",
+            }
+        },
+        "transcripts": {},
+    }
+    cache = tmp_path / "cache-v6.json"
+    cache.write_text(json.dumps({"cache": inner}), encoding="utf-8")
+    mynotes = tmp_path / "MyNotes"
+    monkeypatch.delenv("GRANOLA_DEFAULT_CUSTOMER", raising=False)
+
+    r = g.sync_granola_to_mynotes(
+        cache_path=cache,
+        customers_base=mynotes,
+        dry_run=False,
+        notes_fallback=True,
+        default_customer=None,
+    )
+    assert len(r["written"]) == 1
+    assert "Customers/Acme Corp/Transcripts" in r["written"][0]["path"].replace("\\", "/")
+
+
+def test_sync_transcript_only_skips_without_segments(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    inner = {
+        "documents": {
+            "meet-notes-only": {
+                "title": "Customer Call",
+                "created_at": "2026-04-21T12:00:00Z",
+                "folders": [{"id": "f1", "name": "Acme Corp"}],
+                "notes_plain": "Some notes only.",
+            }
+        },
+        "transcripts": {},
+    }
+    cache = tmp_path / "cache-v6.json"
+    cache.write_text(json.dumps({"cache": inner}), encoding="utf-8")
+    mynotes = tmp_path / "MyNotes"
+    monkeypatch.delenv("GRANOLA_DEFAULT_CUSTOMER", raising=False)
+
+    r = g.sync_granola_to_mynotes(
+        cache_path=cache,
+        customers_base=mynotes,
+        dry_run=False,
+        notes_fallback=False,
+        default_customer=None,
+    )
+    assert r["written"] == []
+    assert any(s.get("reason") == "no_transcript_or_notes" for s in r["skipped"])
 
 
 def test_cli_notify_writes_log_and_stdout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -275,6 +368,7 @@ def test_cli_notify_writes_log_and_stdout(tmp_path: Path, monkeypatch: pytest.Mo
             "notify",
             "--log-dir",
             str(log_dir),
+            "--write-last-json",
             "--cache",
             str(cache),
             "--customers-base",
@@ -290,7 +384,16 @@ def test_cli_notify_writes_log_and_stdout(tmp_path: Path, monkeypatch: pytest.Mo
     assert "Discovery Call" in proc.stdout
     assert (log_dir / "granola-sync.log").is_file()
     assert "Discovery Call" in (log_dir / "granola-sync.log").read_text(encoding="utf-8")
-    assert "[NEW]" in (log_dir / "granola-sync.log").read_text(encoding="utf-8")
+    log_text = (log_dir / "granola-sync.log").read_text(encoding="utf-8")
+    assert "Granola sync" in log_text
+    assert "RUN_START:" in log_text
+    assert "Status meanings" in log_text
+    assert "SYNC_NEW:" in log_text or "SYNC_UPD:" in log_text
+    assert "#   RUN:" in log_text
+    assert "RUN:" in log_text
+    assert "Discovery Call" in log_text
+    assert "body=transcript" in log_text or "body=notes" in log_text
+    assert "END:" in log_text
     last = json.loads((log_dir / "granola-sync-last.json").read_text(encoding="utf-8"))
     assert last["written"] and last["written"][0].get("is_new") is True
 

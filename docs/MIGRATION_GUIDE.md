@@ -55,7 +55,7 @@ v2 expects **one raw `.txt` per meeting** under `MyNotes/Customers/<Customer>/Tr
 
 - Reads the Granola desktop cache on macOS (default: `~/Library/Application Support/Granola/cache-v4.json`, then `cache-v3.json`), or **`GRANOLA_CACHE_PATH`**.
 - Unwraps the nested JSON shape (`cache` string → inner `state` with `documents` and `transcripts`) consistent with common community parsers.
-- For each meeting document that has transcript segments (or notes if **`--emit-notes-without-transcript`**), writes **one file** under  
+- For each meeting document that has **segment transcripts** in `state.transcripts[id]` (when present) or, by default, **Granola notes** (`notes_plain` / `notes_markdown`) when the transcript index has no entry (typical Granola v6), writes **one file** under  
   `{GDRIVE_BASE_PATH}/Customers/<folder-name>/Transcripts/`.
 - **Folder → customer:** uses the **first** entry in each document’s `folders[]` Granola field; the folder **`name`** must match the customer directory name (sanitized). Folder names matching **`GRANOLA_INTERNAL_FOLDER_NAMES`** (default: `internal`) map to the customer directory **`Internal`** (override with **`GRANOLA_INTERNAL_CUSTOMER_NAME`**).
 - **Idempotency:** re-running overwrites the same path when the file’s `granola_meeting_id` header matches; otherwise a disambiguating suffix is added if two meetings share the same date + title slug.

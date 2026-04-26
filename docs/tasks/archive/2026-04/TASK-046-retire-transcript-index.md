@@ -48,7 +48,7 @@ One less artifact, one less drift surface, zero behavior change. Every real work
 - `docs/ai/playbooks/run-journey-timeline.md` — drop Step 1 `read_transcript_index`. Replace the `total_calls < 2` gate with `records_count < 2` computed from `read_call_records`.
 - `docs/ai/playbooks/run-account-summary.md` — drop the Step 2 "ordering" index read; rely on `read_call_records` response ordering.
 - `docs/ai/playbooks/test-call-record-extraction.md` — replace "X = `total_calls` from transcript-index.json" with "X = count of validated records returned by `read_call_records`".
-- `docs/ai/playbooks/e2e-test-customer.md` — drop `transcript-index.json` from the verification checklist and the v1 / v2 step descriptions.
+- `docs/ai/playbooks/tester-e2e-ucn.md` — drop `transcript-index.json` from the verification checklist and the v1 / v2 step descriptions.
 
 ### C) Rules
 
@@ -111,7 +111,7 @@ One less artifact, one less drift surface, zero behavior change. Every real work
   - `run-journey-timeline.md` — dropped Step 1 index call; replaced `total_calls < 2` gate with `count < 2` from `read_call_records`; trimmed metadata + MCP tool table.
   - `run-account-summary.md` — removed Step 3 `read_transcript_index` call.
   - `test-call-record-extraction.md` — redefined X as `count` from `read_call_records`; removed all index tool references + MCP table rows.
-  - `e2e-test-customer.md` — dropped `transcript-index.json` from the verification checklist and from v1/v2 step descriptions.
+  - `tester-e2e-ucn.md` — dropped `transcript-index.json` from the verification checklist and from v1/v2 step descriptions.
 - **Removed from rules:**
   - `.cursor/rules/20-orchestrator.mdc` — pruned `update_transcript_index` from TASK-044 override; reworded Step 2 to read validated records via `read_call_records`.
   - `.cursor/rules/21-extractor.mdc` — removed `update_transcript_index` from TASK-044 override and Output section.
@@ -128,7 +128,7 @@ One less artifact, one less drift surface, zero behavior change. Every real work
   - `README.md` — removed `read_transcript_index` / `update_transcript_index` from the MCP cheat sheet.
   - `scripts/README.md` — updated the `e2e-test-customer-materialize.py` description.
   - `tests/fixtures/e2e/_TEST_CUSTOMER/README.md` — removed `v1/transcript-index.json` layout line.
-  - `docs/tasks/active/TASK-044-e2e-test-customer-rebuild.md` — removed the "rebuild `transcript-index.json`" bullets from v1 and v2 step descriptions so the harness doc matches the new behavior.
+  - `docs/tasks/archive/2026-04/TASK-044-e2e-test-customer-rebuild.md` — removed the "rebuild `transcript-index.json`" bullets from v1 and v2 step descriptions so the harness doc matches the new behavior.
 - **E2E run after removal:** Not executed in this task; `Run E2E Test Customer` will delete the stale `MyNotes/Customers/_TEST_CUSTOMER/transcript-index.json` on its next invocation (per §F). Post-task operator should run it once to confirm.
 
 ## Handoff / follow-ups

@@ -10,7 +10,7 @@ alwaysApply: false
 
 When the user invokes **`Extract Call Records for [CustomerName]`** (or clearly the same intent), follow **`docs/ai/playbooks/extract-call-records.md`** end-to-end.
 
-**`_TEST_CUSTOMER` E2E override (test-only):** when this extraction is part of **`Run E2E Test Customer`** for **`_TEST_CUSTOMER`**, skip approval pauses and execute **`write_call_record`** directly. See **`docs/ai/playbooks/e2e-test-customer.md`**.
+**`_TEST_CUSTOMER` E2E override (test-only):** when this extraction is part of **`Run E2E Test Customer`** for **`_TEST_CUSTOMER`**, skip approval pauses and execute **`write_call_record`** directly. See **`docs/ai/playbooks/tester-e2e-ucn.md`**.
 
 ## Authority and validation
 

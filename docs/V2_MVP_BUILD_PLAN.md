@@ -4,7 +4,8 @@ This document is the **operational guide** for migrating and rebuilding from `..
 
 - **[`examples/BUILD_ADVISORY.md`](../examples/BUILD_ADVISORY.md)** — vertical slices, task order, session habits _(if `examples/` is gitignored locally, open the file from your working tree or history)_  
 - **[`docs/project_spec.md`](project_spec.md)** — full architecture, §9 task definitions, §11 MVP triggers  
-- **[`.cursor/rules/workflow.mdc`](../.cursor/rules/workflow.mdc)** — main Agent as planner/orchestrator; phase flow, approval gates, delegation to `/coder`, `/tester`, `/doc`  
+- **[`.cursor/rules/core.mdc`](../.cursor/rules/core.mdc)** — default main-Agent habits (inline implementation by default)  
+- **[`docs/archive/cursor-rules-retired/workflow.mdc`](../docs/archive/cursor-rules-retired/workflow.mdc)** — archived subagent “pipeline” packet templates (optional; use only if you explicitly invoke `/coder` → `/code-tester` → `/doc`)  
 
 **Rule of thumb:** Do **not** skip ahead of §9 ordering. Do **not** start Stage 2 work until **TASK-009** (Stage 1 validation) is done — see **Part 5** in [`examples/BUILD_ADVISORY.md`](../examples/BUILD_ADVISORY.md).
 
@@ -53,27 +54,29 @@ flowchart TB
 
 ## 3. Planner workflow (every task)
 
-Per **workflow.mdc** (orchestrator):
+Per **`.cursor/rules/core.mdc`** (planner habits) — default is **inline** in the main chat:
 
 | Phase | Who | What |
 |-------|-----|------|
-| **1 — Spec/Plan** | Planner | Read `project_spec.md` §9 for this task; read [`MIGRATION_GUIDE.md`](MIGRATION_GUIDE.md) if porting; create **`docs/tasks/active/<slug>.md`**; get your **approval** before code. |
-| **2 — Code** | `/coder` subagent | Implements from the task file + spec (TDD where specified). |
-| **3 — Verify** | `/tester` subagent | `pytest`, `ruff`, hooks per §10. |
-| **4 — Doc** | `/doc` subagent | README / docs match what shipped. |
+| **1 — Spec/Plan** | Planner | Read `project_spec.md` for architecture constraints; read [`MIGRATION_GUIDE.md`](MIGRATION_GUIDE.md) if porting; create/update **`docs/tasks/active/<slug>.md`**; get your **approval** before code. |
+| **2 — Code** | Main Agent (default) | Implement from the task file + spec (TDD where specified) **in this chat**. Optional: delegate to **`/coder`** if you want an isolated sub-session. |
+| **3 — Verify** | Main Agent (default) | Run the repo’s quality commands yourself (e.g. `bash .cursor/skills/test.sh`, `bash .cursor/skills/lint.sh`, plus task-specific checks). Optional: delegate to **`/code-tester`**. |
+| **4 — Doc** | Main Agent (default) | Update README / docs when user-visible behavior changed. Optional: delegate to **`/doc`**. |
 | **5 — Ready** | Planner | Archive task file to `docs/tasks/archive/YYYY-MM/`; update [`docs/tasks/INDEX.md`](tasks/INDEX.md). |
 
-**Escalation:** If verify fails 3 times, stop and ask you for manual intervention (workflow.mdc).
+**Escalation:** If verification fails repeatedly with no progress, stop and ask you for manual intervention (see **`.cursor/rules/core.mdc`** habits).
+
+**Optional subagent packet format (historical):** [`docs/archive/cursor-rules-retired/workflow.mdc`](../docs/archive/cursor-rules-retired/workflow.mdc)
 
 ---
 
 ## 4. Session habits (avoid losing the thread)
 
-1. **One active task file** in `docs/tasks/active/` — top of file: **Next action** (update after each step).  
+1. **Active task files** in `docs/tasks/active/` may run **in parallel**; each file should still have a crisp **Next action** (update after each step) and `docs/tasks/INDEX.md` should reflect what is in flight.  
 2. **Start sessions** with:
 
    ```text
-   Read `docs/tasks/INDEX.md` as the orchestrator and report: (1) active task (2) phase (3) next action
+   Read `docs/tasks/INDEX.md` as the orchestrator and report: (1) active task(s) (2) which one you are advancing this session (3) phase (4) next action
    ```
 
 3. **Prefer one TASK per Cursor session** for migration work (BUILD_ADVISORY Part 3).  

@@ -19,5 +19,5 @@ def test_update_customer_notes_orchestrator_rules_tracked() -> None:
         assert len(head) >= 3, f"{rel} must have YAML frontmatter"
         front = head[1]
         assert "alwaysApply: false" in front, (
-            f"{rel} must not be always-on (conflicts with workflow.mdc)"
+            f"{rel} must not be always-on (orchestrator + router are opt-in via globs)"
         )

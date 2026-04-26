@@ -30,9 +30,20 @@ Tell the user what you are doing in plain English. Prefix each major step: **`St
 
 ---
 
-## Step 1 of 9 — Optional sync
+## Step 1 of 9 — Optional sync (canonical Drive and repo ordering)
 
-Run **`sync_notes`** with **`[CustomerName]`** (or full repo rsync) so local **`MyNotes/`** matches Drive.
+**This step applies to every Extract run** (single customer, full E2E, or ad hoc). The goal is a **safe** order so you do not lose work on disk.
+
+1. **Pull first (default)** when you want the repo mirror to match what is already on **Google Drive** (e.g. another machine updated Notes, or you edited on Drive): run **`sync_notes`** with **`[CustomerName]`** *or* **`./scripts/rsync-gdrive-notes.sh [CustomerName]`** so local **`MyNotes/Customers/[CustomerName]/`** is up to date before you read transcripts and write new **`call-records/*.json`**.
+
+2. **After** you have **new or updated** local files under that customer folder—especially new **`call-records/*.json`** that do not exist on Drive yet—**push to Drive before the next pull**:  
+   **`./scripts/e2e-test-push-gdrive-notes.sh [CustomerName]`**  
+   (Despite the name, this is the **scoped** repo → Drive push for **any** customer, not only E2E; see `scripts/README.md`.)  
+   **Why:** `rsync-gdrive-notes.sh` **pulls** with **`--delete`** on the receiver; files present only in the repo copy can be **deleted** on pull if the Drive sender does not have them yet. **Push-first** matches **TASK-052** / `e2e-test-customer` **`prep-v2`** ordering when you need round-trip integrity.
+
+3. If you need both (edit locally *and* pick up remote changes), order is typically: **pull → extract → write call records → push**—never **pull** in between local-only JSON work without an intervening **push** if you need to keep that JSON.
+
+E2E troubleshooting and other playbooks should **link here** instead of duplicating this block.
 
 **Tell user:** `Step 1 of 9 — Sync complete (or skipped).`
 
@@ -82,29 +93,57 @@ For each selected file:
 
 ---
 
-## Step 6 of 9 — Build §7.1 JSON (draft)
+## Step 6 of 9 — Build §7.1 JSON (draft — schema v2 field-by-field checklist)
 
-For each meeting, build one JSON object with **all required keys** (see **`prestonotes_mcp/call_records.py`** / spec §7.1):
+For each meeting, build one JSON object that **varies per call** and is grounded in transcript evidence. The canonical schema lives in **`prestonotes_mcp/call_records.py`** (`CALL_RECORD_SCHEMA`); the spec example is in **`docs/project_spec.md` §7.1**. MCP **`write_call_record`** will reject every violation listed below — extract real values or downgrade **`extraction_confidence`**.
 
-| Key | Notes |
-|-----|--------|
-| **`call_id`** | New unique id, e.g. **`2026-04-15-campaign-2`** — must be filesystem-safe and match the file you will write |
-| **`date`** | **`YYYY-MM-DD`** from transcript metadata or filename |
-| **`call_type`** | Per **`call-type-taxonomy.md`** |
-| **`call_number_in_sequence`** | From Step 3 algorithm |
-| **`duration_minutes`** | Integer if known; else **`0`** |
-| **`participants`** | Array of objects (see test fixture shape) |
-| **`summary_one_liner`** | One sentence |
-| **`key_topics`** | Array of short strings |
-| **`challenges_mentioned`** | Array with **`id`**, **`description`**, **`status`** |
-| **`products_discussed`** | e.g. `["Wiz Cloud", "Wiz Sensor"]` |
-| **`action_items`** | Array of **`owner`**, **`action`**, **`due`** (use empty string if unknown) |
-| **`sentiment`** | **`positive`** \| **`neutral`** \| **`cautious`** \| **`negative`** |
-| **`deltas_from_prior_call`** | Array (empty if first call) |
-| **`verbatim_quotes`** | Max 3; **`speaker`**, **`quote`** substring of transcript |
-| **`raw_transcript_ref`** | **Basename** of the `.txt` source |
-| **`extraction_date`** | Today **`YYYY-MM-DD`** (session date) |
-| **`extraction_confidence`** | **`high`** \| **`medium`** \| **`low`** |
+### Banned defaults (hard reject)
+
+- **No `ch-stub`**, **no `Fixture narrative`**, **no `E2E fixture`** — these are the stub fingerprints from the TASK-051 regression and will bounce at write time (`prestonotes_mcp/call_records.py` → `BANNED_CALL_RECORD_DEFAULTS`).
+- **No hardcoded `products_discussed`.** The DSPM/PII call gets **`Wiz DSPM`** / **`Wiz CIEM`**; the shift-left call gets **`Wiz Code`** and/or **`Wiz CLI`**; the runtime hardening call gets **`Wiz Sensor`**. Do not stamp `["Wiz Cloud", "Wiz Sensor"]` on every record.
+- **No identical `sentiment` across materially different calls.** Exec readout or QBR where budget freeze / champion exit dominate must be at least **`cautious`** — not **`positive`**.
+
+### Sales discovery anchor (MEDDPICC)
+
+Before you commit field-by-field, run a light **MEDDPICC / MEDDIC** pass across the transcript (**M**etrics, **E**conomic buyer, **D**ecision criteria, **D**ecision process, **I**dentify pain, **C**hampion, **C**ompetition, **P**aper process). Each hit gets its own schema v2 field:
+
+- **Metrics** → `metrics_cited[]` entries (`metric`, `value`, optional `context`). Examples: Wiz Score 92%, 900/1000 workloads scanned, 10k CVSS → 12 toxic combos.
+- **Economic buyer / Champion / Decision makers** → `stakeholder_signals[]` entries (`name`, optional `role`, `signal`: `sponsor_engaged` / `champion_exit` / `new_contact` / `decision_maker` / `detractor`).
+- **Goals** → `goals_mentioned[]` entries (`description`, optional `category`: `adoption` / `commercial` / `operational` / `security_posture` / `stakeholder`).
+- **Pain / risk / blockers** → `risks_mentioned[]` entries (`description`, `severity`: `low` / `med` / `high`, optional `evidence_quote`).
+
+Output from this anchor goes to the v2 fields **only** — do **not** rewrite `summary_one_liner` (that field's format is frozen and indexed downstream).
+
+### Field-by-field checklist
+
+| Key | Rule (schema v2) | `_TEST_CUSTOMER` fixture example |
+|-----|------------------|----------------------------------|
+| **`call_id`** | Filesystem-safe; must match the write argument and `record_json.call_id` exactly. | `2026-04-08-technical_deep_dive-4` |
+| **`date`** | `YYYY-MM-DD` from transcript `DATE:` header or filename. | `2026-04-08` (DSPM/PII call) |
+| **`call_type`** | Enum per `call-type-taxonomy.md`: `discovery`, `technical_deep_dive`, `campaign`, `exec_qbr`, `poc_readout`, `renewal`, `internal`. | DSPM/PII → `technical_deep_dive`; exec readout → `exec_qbr` |
+| **`call_number_in_sequence`** | From Step 3 algorithm (`M + 1`, `M + 2`, …). | `4` |
+| **`duration_minutes`** | Integer if stated; else `0`. | `30` |
+| **`participants[]`** | Only people who actually appear in the transcript (name, optional `role` / `company` / `is_new`). Every `verbatim_quotes[].speaker` MUST match a `participants[].name`. | `[{name: "John Doe", role: "Exec Sponsor"}, {name: "Jane Smith", role: "Platform Lead"}, {name: "SE"}]` |
+| **`summary_one_liner`** | One sentence; **format frozen** — do NOT move MEDDPICC signals here. | `"Post-acquisition DSPM guardrails review; AcmeCorp PII bucket caught and remediated."` |
+| **`key_topics[]`** | `minItems: 1`, each item `minLength: 3`; **unique per call**. Never `["E2E fixture"]`. | `["AcmeCorp acquisition onboarding", "DSPM PII bucket finding", "Okta tenant consolidation"]` |
+| **`challenges_mentioned[]`** | `id` matches `^ch-[a-z0-9][a-z0-9-]{1,40}$` (kebab); `description` `minLength: 10`; `status` uses §7.4 vocabulary. Never `ch-stub` / `"Fixture narrative"`. | `[{id: "ch-splunk-budget-freeze", description: "SOC budget frozen for Q1 blocks Splunk connector purchase.", status: "stalled"}, {id: "ch-champion-exit", description: "Jane Smith leaving next week; transition plan needed.", status: "in_progress"}]` |
+| **`products_discussed[]`** | Enum: `Wiz Cloud \| Wiz Sensor \| Wiz Defend \| Wiz DSPM \| Wiz CIEM \| Wiz Code \| Wiz CLI \| Wiz Sensor POV`, or `Other: <name>` for non-Wiz products. **Call-specific** — not a constant. | DSPM/PII → `["Wiz DSPM", "Wiz CIEM"]`; shift-left → `["Wiz Code", "Wiz CLI"]`; runtime hardening → `["Wiz Sensor"]`; procurement readout → `["Wiz Cloud", "Other: Splunk"]` |
+| **`action_items[]`** | Each `owner` `minLength: 1`; prefer a named individual when the transcript names one. Generic `"SE"` only when the transcript actually says `SE:` and no person is attached. | `[{owner: "Jane Smith", action: "Capture top 5 misconfigurations before handoff", due: "2026-04-15"}]` |
+| **`sentiment`** | Enum `positive \| neutral \| cautious \| negative`. Exec readout / QBR with budget freeze + champion exit ⇒ `cautious` at minimum. | Exec readout → `cautious`; DSPM/PII → `positive`; procurement readout → `neutral` |
+| **`deltas_from_prior_call[]`** | **Read the prior 3 records** via `read_call_records` before drafting this one. Populate when real state changed (Splunk: `in_progress → stalled`, Cloud: `pursue → purchased`, Sensor: `evaluate → POV`). `[]` only when there is genuinely no change. | `[{field: "ch-splunk-budget-freeze.status", from: "in_progress", to: "stalled"}]` |
+| **`verbatim_quotes[]`** | `maxItems: 3`; each `quote` `maxLength: 280`, **whitespace-normalized substring** of the referenced transcript; `speaker` MUST be in `participants[].name`. MCP rejects otherwise. | `[{speaker: "Jane Smith", quote: "We actually caught an unencrypted S3 bucket full of PII exposed via an overprivileged IAM role."}]` |
+| **`raw_transcript_ref`** | **Basename** of the `.txt` source under `Transcripts/`. Must exist on disk or write is rejected. | `"2026-04-08-dspm-pii-guardrails.txt"` |
+| **`extraction_date`** | Today `YYYY-MM-DD` (session date). | `2026-04-20` |
+| **`extraction_confidence`** | Enum `high \| medium \| low`. **Auto-downgrade:** if ≥ 3 of `{goals_mentioned, risks_mentioned, metrics_cited, stakeholder_signals, deltas_from_prior_call}` are empty, the writer downgrades `high → medium`; ≥ 5 empty forces `low`. Accept the downgrade — don't fabricate richness to preserve a `high`. | `high` for a multi-signal QBR; `medium` for a single-topic hardening sync; `low` for a scrappy procurement readout |
+| **`goals_mentioned[]`** *(v2)* | Optional; each entry `{description, evidence_quote?, category?}`. Aggregated by Account Summary's **Goals** / **Upsell Path**. | `[{description: "Sensor coverage ≥ 95% across prod Azure", category: "adoption"}]` |
+| **`risks_mentioned[]`** *(v2)* | Optional; each entry `{description, severity: low\|med\|high, evidence_quote?}`. Feeds Account Summary **Risk**. | `[{description: "SOC budget freeze blocks Splunk connector", severity: "med"}]` |
+| **`metrics_cited[]`** *(v2)* | Optional; each entry `{metric, value, context?}`. Replaces "ledger re-derivation from transcripts" downstream. | `[{metric: "Wiz Score", value: "92%"}, {metric: "workloads scanned", value: "900/1000"}]` |
+| **`stakeholder_signals[]`** *(v2)* | Optional; each entry `{name, role?, signal: sponsor_engaged\|champion_exit\|new_contact\|decision_maker\|detractor, note?}`. Captures people-movement without inflating `participants`. | `[{name: "John Doe", role: "Exec Sponsor", signal: "sponsor_engaged"}, {name: "Jane Smith", signal: "champion_exit", note: "leaving next week"}]` |
+
+### Size and anti-regression
+
+- Each record must serialize ≤ 2.5 KB (`CALL_RECORD_MAX_BYTES = 2560`); `write_call_record` rejects anything larger. Target corpus average ≤ 1.5 KB (the lint CLI flags above that).
+- `write_call_record` refuses to overwrite an existing `high`-confidence record with one that has strictly fewer populated signal fields. Re-extract properly rather than thin an earlier good record.
 
 **Tell user:** `Step 6 of 9 — Drafted [N] call record(s). Here are one-liners: [bullets].`
 

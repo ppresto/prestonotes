@@ -77,6 +77,8 @@ At every step, tell the user what you are doing in plain English. Start each ste
    - **Derived, not stored:** the open-challenges count is computed on read as `len(row["challenges_in_progress"]) + len(row["challenges_stalled"])`. There is no stored count column; do not look for one.
 2. **`read_call_records`** MCP for recent calls (filter by date or limit as supported) to ground challenges, value realized, stakeholder first-seen / last-seen, and the chronological call spine in **structured call metadata** — pair with transcript pulls for nuance. Records are returned sorted by `(date, call_id)`.
 
+**Call-record schema v2 preference (TASK-051 §D).** Account Summary is the sole full-history consumer of `call-records/*.json` — Journey Timeline was retired in TASK-047 and its narrative is absorbed here. For anything **outside the active lookback window** (stakeholder evolution, historical metric trends, older goals / risks, prior challenge context), prefer the schema v2 structured fields on each call-record — **`metrics_cited`**, **`stakeholder_signals`**, **`goals_mentioned`**, **`risks_mentioned`** — over re-reading the raw transcript. Those fields are the compressed memory of the call and were shaped specifically so Account Summary's **Stakeholders**, **Goals**, **Risk**, and **Value Realized** sections can aggregate across the full corpus without pulling transcripts back into context.
+
 **Tell user:** "Step 4 of 8 — Ledger and call records loaded."
 
 ---

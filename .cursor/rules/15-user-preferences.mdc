@@ -5,7 +5,7 @@ alwaysApply: true
 ---
 # User preferences
 
-- **Orchestration default:** Use **`/coder` → `/tester` → `/doc`** subagents (isolated sub-sessions) for implementation work **unless** I say **`same session, inline`** for that task (case-insensitive; comma optional).
+- **Orchestration default:** Work **inline in this chat** for implementation (I am not using the default subagent pipeline right now). If I explicitly invoke **`/coder`**, **`/code-tester`**, **`/doc`**, or **`/tester`**, follow that subagent’s file. Use **`/tester`** only for **`_TEST_CUSTOMER`** harness work (E2E), not as a substitute for normal implementation unless I ask for it.
 - **Commits and PRs:** Full sentences, concrete summary of what changed and why; no secrets or machine-specific paths.
 - **Dates:** When the user or environment provides an authoritative “today,” use that calendar year consistently (avoid defaulting to an outdated year).
 - **Markdown:** Prefer readable tables and clear headings; keep playbook steps numbered and copy-pasteable where shell is shown.

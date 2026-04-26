@@ -8,6 +8,18 @@
 | **Meaning** | What to write, rubrics, routing, quality gates | **This directory** (`mutations-*.md`) |
 | **Process** | UCN / extract steps, approvals | `docs/ai/playbooks/update-customer-notes.md` |
 
+## SSoT: section semantics
+
+Use one semantic home per tab and keep process/rules as pointers:
+
+| If you are changing... | Authoritative file | Other files should do |
+| --- | --- | --- |
+| Account Summary section meaning (Goals/Risk/Upsell intent, Contacts evidence, Cloud routing rubric, Challenge Tracker semantics) | `mutations-account-summary-tab.md` | Playbooks/rules link to this file instead of restating full rubric text. |
+| Account Metadata strictness and numeric evidence requirements | `mutations-account-metadata-tab.md` | Keep playbooks/rules to workflow pointers and invariants. |
+| Daily Activity prepend behavior | `mutations-daily-activity-tab.md` | Keep DAL formatting details in references linked from that tab doc. |
+| Cross-tab mechanics (actions matrix, JSON schema, quality gate, planner guard) | `mutations-global.md` | Do not copy per-section prose here. |
+| UCN execution order / approvals | `docs/ai/playbooks/update-customer-notes.md` | Link back to the tab docs for section semantics. |
+
 ## Mutation reference files (edit here when tuning writes)
 
 | File | Scope |

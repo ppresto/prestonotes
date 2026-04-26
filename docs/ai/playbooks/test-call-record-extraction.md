@@ -28,6 +28,13 @@ Use plain English. Prefix each major step: **`Step X of Y — [action]`**. Follo
 
 1. **`MyNotes/Customers/[CustomerName]/`** exists (sync via **`sync_notes`** MCP or **`scripts/rsync-gdrive-notes.sh`** if needed).
 2. You can read **`Transcripts/`** and **`call-records/`** under that folder (repo mirror).
+3. (Recommended) Run the **schema v2 lint CLI** first — it is the one automated gate for call-record quality (TASK-051):
+
+   ```bash
+   uv run python -m prestonotes_mcp.call_records lint [CustomerName]
+   ```
+
+   Exit 0 means the corpus passes schema v2 + size checks (avg ≤ 1536 bytes / max ≤ 2560 bytes, no banned defaults `ch-stub` / `Fixture narrative` / `E2E fixture`, no forbidden evidence vocabulary). Non-zero exit prints the offending records — fix them (re-run **`Extract Call Records for [CustomerName]`** or hand-edit) before leaning on the human spot-check in Step 8.
 
 ---
 
@@ -124,8 +131,11 @@ Ask the user (or self-check if they are in the loop) for **sample** meetings (pi
 | **Call type** | Does **`call_type`** match **`call-type-taxonomy.md`** for that meeting? |
 | **Date** | Does **`date`** match transcript header or filename date? |
 | **Participants** | Any invented names? Missing obvious execs who spoke? |
-| **Quotes** | Are **`verbatim_quotes`** substrings of the transcript? |
-| **Challenges** | Are **`challenges_mentioned`** grounded in what was said? |
+| **Quotes** | Are **`verbatim_quotes`** substrings of the transcript, ≤ 3 items, each ≤ 280 chars, with `speaker` matching a `participants[].name`? (The `lint` CLI checks the substring rule; the human check is whether the attribution is the *right* participant.) |
+| **Challenges** | Are **`challenges_mentioned`** grounded in what was said? `id` must be kebab (`^ch-[a-z0-9][a-z0-9-]{1,40}$`) — no `ch-stub`. |
+| **Products** | Does **`products_discussed`** match the SKUs actually discussed (DSPM call → `Wiz DSPM` / `Wiz CIEM`, shift-left → `Wiz Code` / `Wiz CLI`, runtime → `Wiz Sensor`), or is it a flat default on every record? |
+| **Schema v2 signal fields (TASK-051)** | When the call contains real signal, are **`metrics_cited`** (KPIs like Wiz Score, coverage %, workload counts), **`stakeholder_signals`** (sponsor_engaged / champion_exit / new_contact / decision_maker / detractor), **`goals_mentioned`**, and **`risks_mentioned`** populated? Empty `[]` is legal when there is no evidence — empty across **every** record is the fingerprint of stub output. |
+| **Sentiment variance** | Across the sampled corpus, does `sentiment` vary with tone (e.g. exec readout or QBR with budget freeze → `cautious`), or is every record `positive`? |
 
 If fixes are needed: edit the relevant **`call-records/<call_id>.json`** (preserve schema), then re-run **Step 3–7** from this playbook.
 
@@ -150,6 +160,8 @@ If the customer folder is missing, MCP **`bootstrap_customer`** (see **`project_
 
 ## References
 
-- **`docs/project_spec.md`** §7.1, §9 TASK-009  
-- **`prestonotes_mcp/call_records.py`** — schema validation and file I/O  
-- **`prestonotes_mcp/tests/test_call_record_tools.py`** — minimal valid record  
+- **`docs/project_spec.md`** §7.1, §9 TASK-009
+- **`prestonotes_mcp/call_records.py`** — schema v2 validation, transcript grounding, size cap, banned defaults, lint CLI
+- **`prestonotes_mcp/tests/test_call_record_tools.py`** — minimal valid record
+- **`prestonotes_mcp/tests/test_call_record_v2_validation.py`** — schema v2 guardrails (kebab challenge ids, quote substring, size cap, confidence downgrade, anti-regression)
+- **`docs/tasks/archive/2026-04/TASK-051-call-record-context-quality.md`** — v2 goals, acceptance, lookback split

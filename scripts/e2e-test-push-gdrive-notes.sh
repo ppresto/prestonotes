@@ -11,7 +11,12 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="${PRESTONOTES_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${_SCRIPT_DIR}/lib/gdrive-auth-hint.sh"
+PROJECT_ROOT="${PRESTONOTES_REPO_ROOT:-$(cd "${_SCRIPT_DIR}/.." && pwd)}"
+prestonotes_source_mcp_env "${PROJECT_ROOT}"
+
 LOCAL_PATH="$PROJECT_ROOT/MyNotes"
 GDRIVE_PATH="${GDRIVE_BASE_PATH:-$HOME/Google Drive/My Drive/MyNotes}"
 
@@ -40,7 +45,8 @@ fi
 
 if [[ ! -d "$GDRIVE_PATH" ]]; then
   echo "GDRIVE path not found: $GDRIVE_PATH" >&2
-  echo "Set GDRIVE_BASE_PATH to your Drive-mounted MyNotes folder (see README)." >&2
+  echo "Set GDRIVE_BASE_PATH to your Drive-mounted MyNotes folder (see README). Start Google Drive for Desktop if needed." >&2
+  prestonotes_gdrive_auth_hint
   exit 1
 fi
 

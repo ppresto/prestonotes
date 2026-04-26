@@ -57,7 +57,7 @@ Consequence: we maintain a playbook, a rule, an MCP write tool, a size guard, a 
 - `.cursor/rules/core.mdc`, `.cursor/rules/21-extractor.mdc` — scrub any residual `write_journey_timeline` references.
 - `.cursor/rules/11-e2e-test-customer-trigger.mdc` — drop `write_journey_timeline` from the "mutation tools bypass approval" list.
 - `docs/ai/playbooks/update-customer-notes.md` — drop "mandatory journey sidecar" language if present.
-- `docs/ai/playbooks/e2e-test-customer.md` — remove the Step 6 / Step 9 references to "close with mandatory `write_journey_timeline`".
+- `docs/ai/playbooks/tester-e2e-ucn.md` — remove the Step 6 / Step 9 references to "close with mandatory `write_journey_timeline`".
 
 ### C) Enrich Run Account Summary (the new home for the narrative)
 
@@ -83,10 +83,10 @@ Consequence: we maintain a playbook, a rule, an MCP write tool, a size guard, a 
 
 ### E) Scrub harness vocabulary from agent context
 
-- `.cursor/rules/20-orchestrator.mdc`, `.cursor/rules/21-extractor.mdc`, `.cursor/rules/core.mdc`, `.cursor/rules/11-e2e-test-customer-trigger.mdc` — change any `TASK-044 override` language to `_TEST_CUSTOMER` E2E override (see `docs/ai/playbooks/e2e-test-customer.md`)`. The rule mechanics do not depend on the task id; only the cross-reference did.
+- `.cursor/rules/20-orchestrator.mdc`, `.cursor/rules/21-extractor.mdc`, `.cursor/rules/core.mdc`, `.cursor/rules/11-e2e-test-customer-trigger.mdc` — change any `TASK-044 override` language to `_TEST_CUSTOMER` E2E override (see `docs/ai/playbooks/tester-e2e-ucn.md`)`. The rule mechanics do not depend on the task id; only the cross-reference did.
 - `.cursor/rules/11-e2e-test-customer-trigger.mdc` — add a rule block titled **"Artifact hygiene"**:
   > Customer artifacts (GDoc, History Ledger, challenge-lifecycle.json, Account Summary, call-records) must be indistinguishable from a real-customer run. **Do not** mention any `TASK-NNN` identifier, `round 1`, `round 2`, `v1 corpus`, `v2 corpus`, `phase`, `E2E`, `harness`, `fixture`, or any test-only vocabulary. Section dates are **call / milestone dates**, never the run date. Metadata headers (when a section explicitly called "Metadata" exists) may carry the run date labeled as "Generated: YYYY-MM-DD".
-- `docs/ai/playbooks/e2e-test-customer.md` — neutralize the "round 1 / round 2" vocabulary in instructions to the agent, or move that vocabulary to "operator-facing only" sections clearly outside the agent's artifact-writing context.
+- `docs/ai/playbooks/tester-e2e-ucn.md` — neutralize the "round 1 / round 2" vocabulary in instructions to the agent, or move that vocabulary to "operator-facing only" sections clearly outside the agent's artifact-writing context.
 
 ### F) Data-on-disk cleanup
 

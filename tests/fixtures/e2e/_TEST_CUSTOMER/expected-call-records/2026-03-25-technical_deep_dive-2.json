@@ -1,0 +1,45 @@
+{
+  "call_id": "2026-03-25-technical_deep_dive-2",
+  "date": "2026-03-25",
+  "call_type": "technical_deep_dive",
+  "call_number_in_sequence": 2,
+  "duration_minutes": 30,
+  "participants": [
+    {"name": "Jane Smith", "role": "Platform Lead"},
+    {"name": "John Doe", "role": "Exec Sponsor"}
+  ],
+  "summary_one_liner": "Runtime sensor hardening; noisy kubelet finding class contained by graph prioritization.",
+  "key_topics": [
+    "kubelet noisy finding class",
+    "interim SIEM routing"
+  ],
+  "challenges_mentioned": [
+    {"id": "ch-kubelet-noise", "description": "Noisy finding class spiked after kubelet upgrade.", "status": "in_progress"}
+  ],
+  "products_discussed": ["Wiz Sensor"],
+  "action_items": [
+    {"owner": "Jane Smith", "action": "Capture top 3 routing rules", "due": "2026-03-28"}
+  ],
+  "sentiment": "neutral",
+  "deltas_from_prior_call": [
+    {"field": "ch-splunk-budget-freeze.status", "from": "identified", "to": "stalled"}
+  ],
+  "verbatim_quotes": [
+    {"speaker": "Jane Smith", "quote": "One noisy finding class spiked after a kubelet upgrade"}
+  ],
+  "raw_transcript_ref": "2026-03-25-runtime-sensor-hardening.txt",
+  "extraction_date": "2026-03-26",
+  "extraction_confidence": "high",
+  "goals_mentioned": [
+    {"description": "Document SIEM routing rules before champion exit", "category": "operational"}
+  ],
+  "risks_mentioned": [
+    {"description": "Splunk connector remains blocked", "severity": "med"}
+  ],
+  "metrics_cited": [
+    {"metric": "toxic combinations", "value": "12", "context": "from 10,000 CVSS"}
+  ],
+  "stakeholder_signals": [
+    {"name": "Jane Smith", "signal": "champion_exit"}
+  ]
+}

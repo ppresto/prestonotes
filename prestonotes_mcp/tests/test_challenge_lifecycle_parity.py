@@ -65,6 +65,50 @@ def test_parity_ok_when_all_markers(tmp_path: Path, parity_mod) -> None:
     assert not warns and not errs
 
 
+def test_parity_accepts_legacy_bare_lifecycle_anchor(tmp_path: Path, parity_mod) -> None:
+    """TASK-052: the 22:10 E2E row used bare ``lifecycle:ch-soc-budget``
+    instead of the canonical ``[lifecycle_id:ch-soc-budget]``. Reconciler
+    MARKER_RE must accept both so row-status rewrite can heal older rows.
+    """
+    cust = "ParityCust4"
+    (tmp_path / "MyNotes" / "Customers" / cust / "AI_Insights").mkdir(parents=True)
+    life = {"ch-soc-budget": {"current_state": "stalled", "history": []}}
+    (
+        tmp_path / "MyNotes" / "Customers" / cust / "AI_Insights" / "challenge-lifecycle.json"
+    ).write_text(json.dumps(life), encoding="utf-8")
+    rows = [
+        SimpleNamespace(
+            challenge="Splunk CDR — SOC budget blocks purchase",
+            notes_references="lifecycle:ch-soc-budget | evidence in procurement and QBR calls",
+        )
+    ]
+    warns, errs = parity_mod.check_tracker_lifecycle_parity(tmp_path, cust, rows)
+    assert not warns and not errs, (warns, errs)
+    found = parity_mod.markers_in_tracker(rows)
+    assert "ch-soc-budget" in found
+
+
+def test_missing_anchor_auto_inserted(tmp_path: Path, parity_mod) -> None:
+    """TASK-052: auto-insert canonical anchors when id is present without marker."""
+    cust = "ParityCust5"
+    (tmp_path / "MyNotes" / "Customers" / cust / "AI_Insights").mkdir(parents=True)
+    life = {"ch-soc-budget": {"current_state": "stalled", "history": []}}
+    (
+        tmp_path / "MyNotes" / "Customers" / cust / "AI_Insights" / "challenge-lifecycle.json"
+    ).write_text(json.dumps(life), encoding="utf-8")
+    rows = [
+        SimpleNamespace(
+            challenge="ch-soc-budget procurement blocker",
+            notes_references="mentioned in this week's readout",
+        )
+    ]
+    inserted = parity_mod.auto_insert_missing_lifecycle_anchors(tmp_path, cust, rows)
+    assert inserted
+    assert "[lifecycle_id:ch-soc-budget]" in rows[0].notes_references
+    warns, errs = parity_mod.check_tracker_lifecycle_parity(tmp_path, cust, rows)
+    assert not warns and not errs
+
+
 def test_write_doc_forwards_customer_name(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from unittest.mock import patch
 

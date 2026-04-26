@@ -16,4 +16,16 @@ done < "${MANIFEST}"
 if [[ "${missing}" -ne 0 ]]; then
   exit 1
 fi
+
+retired_tool_hits="$(
+  rg -n "update_transcript_index|append_ledger_v2|write_journey_timeline" \
+    "${ROOT}/docs/ai" "${ROOT}/docs/project_spec.md" "${ROOT}/.cursor/rules" \
+    --glob '!**/archive/**' || true
+)"
+if [[ -n "${retired_tool_hits}" ]]; then
+  echo "Retired MCP tool references found in active docs/rules:" >&2
+  echo "${retired_tool_hits}" >&2
+  exit 1
+fi
+
 echo "Repo integrity OK."

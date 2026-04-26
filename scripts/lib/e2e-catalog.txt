@@ -1,0 +1,85 @@
+# _TEST_CUSTOMER E2E — operator catalog
+#
+# Single file for: trigger phrases, eight-step harness, workflow modes.
+# This is the operator-facing SSoT consumed by list-catalog/list-all/list-steps.
+# Any user-visible trigger, step name/order, or e2e_workflow mode change starts here.
+#
+# Kept in sync with:
+#   - .cursor/rules/11-e2e-test-customer-trigger.mdc  (triggers, eight-step order)
+#   - .cursor/agents/tester.md  §4                    (e2e_workflow modes and report contract)
+#   - docs/ai/playbooks/tester-e2e-ucn.md             (step procedure + maintainer checklist)
+#
+# Print:  ./scripts/e2e-test-customer.sh list-catalog
+#         ./scripts/e2e-test-customer.sh list-steps   (eight steps only; same source)
+
+=== TRIGGERS (any phrase — case/spacing flexible) ===
+
+  Run E2E Test Customer
+  run e2e test customer
+  E2E Test Customer _TEST_CUSTOMER
+
+Only _TEST_CUSTOMER. Invokes the eight chat/shell steps without approval pauses on
+that customer. For UCN Step 7 and Step 9, log bypass outcomes instead of pausing.
+Quality/diff: .cursor/agents/tester.md §6. Rule: 11-e2e-test-customer-trigger.mdc.
+
+=== EIGHT STEPS (harness) ===
+
+E2E _TEST_CUSTOMER — eight steps (TASK-052 / tester-e2e-ucn.md)
+
+  Shell (automated, no prompts):
+    1  prep-v1   ./scripts/e2e-test-customer.sh prep-v1
+    5  prep-v2   ./scripts/e2e-test-customer.sh prep-v2
+
+  Chat (Cursor; full auto when triggers above, _TEST_CUSTOMER approval bypass on writes):
+    2  Load Customer Context for _TEST_CUSTOMER
+    3  Extract Call Records for _TEST_CUSTOMER
+    4  Update Customer Notes for _TEST_CUSTOMER
+    6  Extract Call Records for _TEST_CUSTOMER
+    7  Update Customer Notes for _TEST_CUSTOMER
+    8  Run Account Summary for _TEST_CUSTOMER
+
+  Debugger:  ./scripts/e2e-test-customer.sh run-step <1-8>   (only 1 and 5 run shell)
+
+  Optional nuclear (delete entire customer on Drive and locally):
+    ./scripts/e2e-test-customer.sh reset
+    Then: Bootstrap Customer for _TEST_CUSTOMER
+    Then: prep-v1 --skip-rebaseline   (or prep-v1 to also reset the GDoc from template)
+
+  Legacy (no GDoc file replace, no local clean):
+    ./scripts/e2e-test-customer.sh v1
+
+=== WORKFLOW MODES (Delegation: e2e_workflow; .cursor/agents/tester.md §4) ===
+
+  v1_full
+    prep-v1 → Load Context → Extract → call_records lint (0) → first UCN
+    (all applicable UCN sub-steps; include Step 11 ledger when write applies) →
+    read_doc → post-write diff (tester.md §6).
+
+  v1_partial
+    A subset: e.g. prep-v1 --skip-rebaseline, or extract+lint only, or UCN-only
+    on existing data. DAL-only belongs here. List explicit skips + reasons in report.
+
+  v2_full
+    Needs round-1 done: prep-v2 → second Extract → lint → second UCN →
+    read_doc → diff (new transcripts + regressions).
+
+  v2_partial
+    A narrow slice; document out-of-scope sections in the report.
+
+  full
+    All eight harness steps, including Run Account Summary (harness 8);
+    diff after each UCN (combine or separate tables in the report).
+
+=== /tester SUBAGENT (same workflows; chat-only) ===
+
+  Example delegation header:
+    e2e_workflow: v1_full | v1_partial | v2_full | v2_partial | full
+
+  /tester does not replace shell: it runs MCP + playbooks for the chat steps; use
+  prep-v1 / prep-v2 in the shell when the workflow includes them.
+
+=== SEE ALSO ===
+
+  docs/ai/playbooks/tester-e2e-ucn.md
+  .cursor/agents/tester.md  §4 workflow modes, §6 diff
+  .cursor/rules/11-e2e-test-customer-trigger.mdc

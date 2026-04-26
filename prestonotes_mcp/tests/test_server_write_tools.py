@@ -66,6 +66,33 @@ def test_write_doc_dry_run_mocks_subprocess(repo_ctx: Path) -> None:
     assert data.get("exit_code") == 0
 
 
+def test_write_doc_persists_ucn_recovery_latest_for_real_write(repo_ctx: Path) -> None:
+    from prestonotes_mcp.server import write_doc
+
+    done = subprocess.CompletedProcess(args=[], returncode=0, stdout="ok", stderr="")
+    mutations = '{"mutations":[{"section_key":"exec_account_summary","field_key":"risk","action":"append_with_history","new_value":"test"}]}'
+    with patch("prestonotes_mcp.server.run_uv_script", return_value=done):
+        out = write_doc(
+            "1a2b3c4d5e6f7g8h9i0j0k1l2m3n",
+            mutations,
+            dry_run=False,
+            customer_name="Acme",
+        )
+    assert json.loads(out).get("exit_code") == 0
+
+    recovery_dir = repo_ctx / "MyNotes" / "Customers" / "Acme" / "AI_Insights" / "ucn-recovery"
+    mut_path = recovery_dir / "latest-mutations.json"
+    state_path = recovery_dir / "latest-write-state.json"
+    assert mut_path.is_file()
+    assert state_path.is_file()
+    cached = json.loads(mut_path.read_text(encoding="utf-8"))
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert isinstance(cached, dict)
+    assert state.get("status") == "write_succeeded_ledger_pending"
+    assert state.get("mutations_path") == str(mut_path)
+    assert state.get("doc_id") == "1a2b3c4d5e6f7g8h9i0j0k1l2m3n"
+
+
 def test_append_ledger_mocks_subprocess(repo_ctx: Path) -> None:
     from prestonotes_mcp.server import append_ledger
 
@@ -79,6 +106,70 @@ def test_append_ledger_mocks_subprocess(repo_ctx: Path) -> None:
     run.assert_called_once()
     args = run.call_args[0]
     assert "ledger-append" in args
+
+
+def test_append_ledger_row_marks_recovery_complete(repo_ctx: Path) -> None:
+    from prestonotes_mcp.server import append_ledger_row
+
+    state_path = (
+        repo_ctx
+        / "MyNotes"
+        / "Customers"
+        / "Acme"
+        / "AI_Insights"
+        / "ucn-recovery"
+        / "latest-write-state.json"
+    )
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "customer_name": "Acme",
+                "status": "write_succeeded_ledger_pending",
+                "doc_id": "docid12345",
+                "ledger_attempt_count": 0,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    row = {
+        "run_date": "2026-04-24",
+        "call_type": "other",
+        "account_health": "good",
+        "sentiment": "neutral",
+        "coverage": "baseline",
+        "value_realized": "outcome",
+        "next_critical_event": "next event",
+        "wiz_license_evidence_quality": "low",
+    }
+
+    with patch("prestonotes_mcp.server._append_ledger_row", return_value=repo_ctx / "ledger.md"):
+        out = append_ledger_row("Acme", json.dumps(row))
+    data = json.loads(out)
+    assert data.get("ok") is True
+
+    new_state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert new_state.get("status") == "complete"
+    assert new_state.get("ledger_source") == "append_ledger_row"
+    assert new_state.get("ledger_attempt_count") == 1
+
+
+def test_recover_ledger_from_latest_uses_cached_mutations(repo_ctx: Path) -> None:
+    from prestonotes_mcp.server import recover_ledger_from_latest
+
+    recovery_dir = repo_ctx / "MyNotes" / "Customers" / "Acme" / "AI_Insights" / "ucn-recovery"
+    recovery_dir.mkdir(parents=True, exist_ok=True)
+    (recovery_dir / "latest-mutations.json").write_text('{"mutations":[]}', encoding="utf-8")
+
+    done = subprocess.CompletedProcess(args=[], returncode=0, stdout="ledger ok", stderr="")
+    with patch("prestonotes_mcp.server.run_uv_script", return_value=done) as run:
+        out = recover_ledger_from_latest("Acme", "docid12345", dry_run=False)
+    payload = json.loads(out)
+    assert payload.get("ok") is True
+    run_args = run.call_args[0]
+    assert "ledger-append" in run_args
+    assert "MyNotes/Customers/Acme/AI_Insights/ucn-recovery/latest-mutations.json" in run_args
 
 
 def test_bootstrap_customer_dry_run_mocks_subprocess(repo_ctx: Path) -> None:
@@ -141,8 +232,13 @@ def test_sync_notes_runs_rsync_for_leading_underscore_customer(repo_ctx_gdrive: 
 
 
 @pytest.mark.skipif(not shutil.which("rsync"), reason="rsync not installed")
-def test_sync_notes_preserves_local_only_test_customer_artifacts(repo_ctx_gdrive: Path) -> None:
-    """rsync uses --delete; _TEST_CUSTOMER should keep repo-local fixture transcripts/records safe."""
+def test_sync_notes_deletes_local_only_transcripts_and_call_records_when_absent_on_gdrive(
+    repo_ctx_gdrive: Path,
+) -> None:
+    """Pull is a normal mirror: --delete removes per-call files that exist only under MyNotes.
+
+    E2E re-seeds from ``tests/fixtures/...`` via ``e2e-test-customer-materialize.py`` / prep-v1.
+    """
     from prestonotes_mcp.server import sync_notes
 
     gdrive_customer = repo_ctx_gdrive / "gdrive_mynotes" / "Customers" / "_TEST_CUSTOMER"
@@ -164,5 +260,6 @@ def test_sync_notes_preserves_local_only_test_customer_artifacts(repo_ctx_gdrive
     data = json.loads(out)
     assert data.get("exit_code") == 0, data.get("output")
 
-    assert tx.is_file()
-    assert rec.is_file()
+    assert not tx.is_file()
+    assert not rec.is_file()
+    assert (local_customer / "note.txt").read_text(encoding="utf-8") == "from-drive-underscore"

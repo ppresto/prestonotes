@@ -41,7 +41,7 @@ Ship the three legacy scripts so the **local `MyNotes/` tree** (under the repo o
 - [x] **`README.md`**
 - [x] **`docs/MIGRATION_GUIDE.md`**
 
-## Verification run (post-`/tester`)
+## Verification run (post-`/code-tester`)
 
 - `uv run pytest` (full suite) — **28 passed**
 - `bash .cursor/skills/lint.sh` — passed (`shellcheck` on `scripts/*.sh`)

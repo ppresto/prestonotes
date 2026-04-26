@@ -121,7 +121,7 @@ At every step, tell the user what you are doing in plain English. Follow the for
 - "Full sync" means full coverage of the **finite** discovered WIN catalog (`win_apis_doc_index.json`) plus configured external seed sources, not an infinite crawl of all `docs.wiz.io`.
 - WIN sync completeness is measured against discovered `doc_name` entries materialized into `mcp_materializations/`.
 - Discovery expansion is wave-based: run discovery waves until two consecutive waves produce no unexpected net-new URLs/doc names, then stop and record stability evidence.
-- Track discovery-wave process details and proof in `docs/tasks/active/TASK-027-wiz-discovery-catalog.md`.
+- Track discovery-wave process details and proof in `docs/tasks/archive/2026-04/TASK-027-wiz-discovery-catalog.md`.
 
 ## 2.53) Discovery wave run order and rollback
 

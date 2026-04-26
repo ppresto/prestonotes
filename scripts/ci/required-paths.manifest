@@ -37,8 +37,8 @@ docs/ai/playbooks/update-customer-notes.md
 docs/ai/playbooks/run-license-evidence-check.md
 docs/ai/playbooks/extract-call-records.md
 docs/ai/playbooks/test-call-record-extraction.md
-docs/ai/playbooks/e2e-test-customer.md
-docs/ai/playbooks/e2e-troubleshoot-ucn-gdoc.md
+docs/ai/playbooks/tester-e2e-ucn.md
+docs/ai/playbooks/tester-e2e-ucn-debug.md
 docs/ai/playbooks/load-product-intelligence.md
 docs/ai/playbooks/refresh-wiz-doc-cache.md
 docs/ai/playbooks/bootstrap-customer.md
@@ -80,6 +80,8 @@ scripts/spider_wiz_external_pages.py
 scripts/wiz_vector_coverage_report.py
 scripts/tests/test_wiz_docs_client.py
 scripts/tests/test_materialize_dry_run.py
+scripts/lib/gdrive-auth-hint.sh
+scripts/lib/e2e-catalog.txt
 scripts/e2e-test-customer.sh
 scripts/e2e-test-customer-materialize.py
 scripts/e2e-test-customer-bump-dates.py
@@ -89,11 +91,15 @@ scripts/e2e-test-push-gdrive-notes.sh
 .cursor/rules/11-e2e-test-customer-trigger.mdc
 .cursor/rules/10-task-router.mdc
 .cursor/rules/20-orchestrator.mdc
-.cursor/rules/workflow.mdc
+docs/archive/cursor-rules-retired/workflow.mdc
 docs/archive/cursor-rules-retired/README.md
 docs/archive/cursor-rules-retired/99-migration-mode.mdc
 docs/tasks/archive/2026-04/PHASE3-PLAN.md
 .cursor/rules/15-user-preferences.mdc
+.cursor/agents/coder.md
+.cursor/agents/code-tester.md
+.cursor/agents/tester.md
+.cursor/agents/doc.md
 .cursor/rules/ai_learnings.mdc
 .cursor/rules/21-extractor.mdc
 .cursor/rules/23-domain-advisor-soc.mdc

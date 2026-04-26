@@ -4,6 +4,12 @@
 Reads ~/Library/Application Support/Granola/cache-v*.json (newest first; v6+ uses object ``cache``), or GRANOLA_CACHE_PATH.
 Writes: {GDRIVE_BASE_PATH}/Customers/<folder-name>/Transcripts/YYYY-MM-DD-<slug>.txt
 
+Granola v6 often keeps **few** entries in ``state.transcripts`` (only meetings with cached
+segment lists). Most meetings still have **notes_plain** / **notes_markdown** when
+``transcribe`` is off or the transcript has not landed in the JSON yet. By default this
+script **falls back to notes** so those meetings export; use ``--transcript-only`` to
+require segment-based transcript text only.
+
 See docs/MIGRATION_GUIDE.md for cache format notes and Internal-folder routing.
 """
 
@@ -160,6 +166,30 @@ def _internal_folder_names() -> frozenset[str]:
     return frozenset(x.strip().lower() for x in raw.split(",") if x.strip())
 
 
+def pick_customer_from_title_prefix(doc: dict[str, Any]) -> str | None:
+    """When ``folders`` is missing in cache (common Granola v6), derive customer from ``title``.
+
+    Uses the segment before the first ``" - "``, ``" – "``, em dash, ``":"``, or ``"|"`` when that
+    segment passes the same safe-name rules as folder names. ``Internal`` (case-insensitive)
+    maps to the Internal customer directory like folder-based routing.
+    """
+    title = str(doc.get("title") or "").strip()
+    if not title:
+        return None
+    for sep in (" – ", " - ", "—", ":", "|"):
+        if sep not in title:
+            continue
+        left = title.split(sep, 1)[0].strip()
+        if not left or not _SAFE_CUSTOMER.match(left):
+            return None
+        if ".." in left or "/" in left or "\\" in left:
+            return None
+        if left.lower() in _internal_folder_names():
+            return os.environ.get("GRANOLA_INTERNAL_CUSTOMER_NAME", "Internal")
+        return left
+    return None
+
+
 def pick_customer_from_folders(
     doc: dict[str, Any],
     *,
@@ -257,6 +287,36 @@ def resolve_cache_path(explicit: Path | None) -> Path | None:
     return None
 
 
+def _utc_log_ts() -> str:
+    """UTC timestamp for log lines (minute resolution, ``…THH:MMZ``)."""
+    return datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+
+
+# Printed after the hash banner in ``granola-sync.log`` so long files stay self-documenting.
+_LOG_APPEND_STATUS_LEGEND: tuple[str, ...] = (
+    "# Status meanings (each data line is `YYYY-MM-DDTHH:MMZ STATUS: details`):",
+    "#   RUN_START: — Start of this append block: Granola cache path, Drive customers root, notes_fb.",
+    "#   RUN: — Run summary: exit, new/updated/skipped counts, cache doc counts, body=transcript|notes tallies, skip_reasons.",
+    "#   SYNC_NEW: — Created a new file under …/Transcripts/.",
+    "#   SYNC_UPD: — Rewrote an existing Transcripts file in place.",
+    "#   SKIP: — Meeting not exported; reason/id/folder/title on the line.",
+    "#   END: — End of this append block; repeats exit and new/updated/written/skipped counts.",
+    "#   HINT: — Optional note (e.g. transcript index smaller than document count on Granola v6).",
+    "#   SYNC: — No transcript files written this run (placeholder when the written list is empty).",
+    "#   TRUNC: — SYNC or SKIP per-meeting lines were capped; see --log-max-lines.",
+    "#   ERR: — Error detail recorded for this run.",
+)
+
+
+def _collapse_ws(text: str) -> str:
+    return re.sub(r"\s+", " ", (text or "").replace("\r", " ").replace("\n", " ")).strip()
+
+
+def _log_line(status: str, detail: str) -> str:
+    """One log line: ``{timestamp} {status}: {detail}`` (status examples: RUN, SYNC_NEW, SKIP)."""
+    return f"{_utc_log_ts()} {status}: {_collapse_ws(detail)}"
+
+
 def _written_label(w: dict[str, Any]) -> str:
     title = str(w.get("title") or "Untitled").strip()
     customer = str(w.get("customer") or "").strip()
@@ -268,12 +328,22 @@ def _written_label(w: dict[str, Any]) -> str:
     return title or "meeting"
 
 
+def _first_folder_name(doc: dict[str, Any]) -> str:
+    folders = doc.get("folders")
+    if not isinstance(folders, list) or not folders:
+        return ""
+    first = folders[0]
+    if not isinstance(first, dict):
+        return ""
+    return str(first.get("name", "") or "").strip()
+
+
 def sync_granola_to_mynotes(
     *,
     cache_path: Path,
     customers_base: Path,
     dry_run: bool,
-    emit_notes_without_transcript: bool,
+    notes_fallback: bool = True,
     default_customer: str | None,
 ) -> dict[str, Any]:
     state = load_cache_path(cache_path)
@@ -290,24 +360,46 @@ def sync_granola_to_mynotes(
         if not isinstance(doc, dict):
             continue
         title = str(doc.get("title") or "Untitled Meeting")
+        folder_dbg = _first_folder_name(doc)
         tr_raw = transcripts.get(meeting_id)
         if tr_raw is None and isinstance(doc, dict):
             tr_raw = doc.get("transcript")
-        transcript = parse_transcript_segments(tr_raw) if tr_raw is not None else ""
-        if not transcript and emit_notes_without_transcript:
+        segment_text = parse_transcript_segments(tr_raw) if tr_raw is not None else ""
+        body_source = "transcript"
+        transcript = segment_text
+        if not transcript.strip() and notes_fallback:
             transcript = extract_notes_plain(doc)
+            if transcript.strip():
+                body_source = "notes"
         if not transcript.strip():
             skipped.append(
                 {
                     "meeting_id": meeting_id,
                     "reason": "no_transcript_or_notes",
+                    "title": title[:200],
+                    "folder": folder_dbg[:120],
                 }
             )
             continue
 
         customer = pick_customer_from_folders(doc, default_customer=default_customer)
+        if not customer and os.environ.get(
+            "GRANOLA_TITLE_PREFIX_CUSTOMER", "1"
+        ).strip().lower() not in {
+            "0",
+            "false",
+            "no",
+        }:
+            customer = pick_customer_from_title_prefix(doc)
         if not customer:
-            skipped.append({"meeting_id": meeting_id, "reason": "no_customer_for_folder"})
+            skipped.append(
+                {
+                    "meeting_id": meeting_id,
+                    "reason": "no_customer_for_folder",
+                    "title": title[:200],
+                    "folder": folder_dbg[:120],
+                }
+            )
             continue
 
         dt = meeting_date_from_doc(doc)
@@ -341,6 +433,7 @@ def sync_granola_to_mynotes(
                     "is_new": is_new,
                     "bytes": len(content.encode("utf-8")),
                     "dry_run": True,
+                    "body_source": body_source,
                 }
             )
         else:
@@ -355,8 +448,14 @@ def sync_granola_to_mynotes(
                     "is_new": is_new,
                     "bytes": out_path.stat().st_size,
                     "dry_run": False,
+                    "body_source": body_source,
                 }
             )
+
+    body_counts: dict[str, int] = {}
+    for w in written:
+        src = str(w.get("body_source") or "unknown")
+        body_counts[src] = body_counts.get(src, 0) + 1
 
     return {
         "cache_path": str(cache_path),
@@ -364,37 +463,144 @@ def sync_granola_to_mynotes(
         "written": written,
         "skipped": skipped,
         "errors": errors,
+        "stats": {
+            "documents_in_cache": len(documents),
+            "transcript_index_size": len(transcripts),
+            "notes_fallback_enabled": notes_fallback,
+            "written_body_source": body_counts,
+        },
     }
 
 
-def _append_sync_logs(log_dir: Path, result: dict[str, Any], *, exit_code: int) -> None:
-    """Append a human-readable run record and overwrite ``granola-sync-last.json``."""
+def _append_sync_logs(
+    log_dir: Path,
+    result: dict[str, Any],
+    *,
+    exit_code: int,
+    write_last_json: bool,
+    log_max_lines: int = 5000,
+) -> None:
+    """Append human-readable lines to ``granola-sync.log``.
+
+    Each line is ``{timestamp} {STATUS}: {details}`` (``timestamp`` is UTC minute ``YYYY-MM-DDTHH:MMZ``).
+    A hash-comment banner, a short status legend, then ``RUN_START`` mark each append block.
+    """
     log_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=timezone.utc).isoformat()
     payload = dict(result)
     payload["exit_code"] = exit_code
     payload["logged_at"] = stamp
-    (log_dir / "granola-sync-last.json").write_text(
-        json.dumps(payload, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-    lines = [f"==== {stamp} exit={exit_code} ===="]
+    if write_last_json:
+        (log_dir / "granola-sync-last.json").write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+    stats = result.get("stats") or {}
     written = result.get("written") or []
-    if written:
-        lines.append(f"synced {len(written)} transcript(s):")
-        for w in written:
-            tag = "NEW" if w.get("is_new") else "UPD"
-            lines.append(f"  [{tag}] {_written_label(w)} -> {w.get('path', '')}")
-    else:
-        lines.append("no transcript files written this run.")
     skipped = result.get("skipped") or []
-    if skipped:
-        lines.append(f"skipped_meetings: {len(skipped)}")
     errors = result.get("errors") or []
-    if errors:
-        lines.append(f"errors: {errors!r}")
+    n_new = sum(1 for w in written if w.get("is_new"))
+    n_upd = len(written) - n_new
+
+    reason_counts: dict[str, int] = {}
+    for s in skipped:
+        r = str(s.get("reason") or "unknown")
+        reason_counts[r] = reason_counts.get(r, 0) + 1
+
+    body_src = stats.get("written_body_source") or {}
+    src_bits = ",".join(f"{k}={v}" for k, v in sorted(body_src.items())) if body_src else "none"
+
+    lines: list[str] = [
+        "# " + "=" * 78,
+        "# Granola sync — new log append (scripts/granola-sync.py)",
+        "# " + "=" * 78,
+        "",
+    ]
+    lines.extend(_LOG_APPEND_STATUS_LEGEND)
+    lines.append("")
+    lines.append(
+        _log_line(
+            "RUN_START",
+            "cache="
+            + str(result.get("cache_path", "") or "")
+            + " dest="
+            + str(result.get("customers_base", "") or "")
+            + f" notes_fb={stats.get('notes_fallback_enabled', '?')}",
+        )
+    )
+    lines.append(
+        _log_line(
+            "RUN",
+            f"exit={exit_code} new={n_new} updated={n_upd} skipped={len(skipped)} "
+            f"written_total={len(written)} "
+            f"docs={stats.get('documents_in_cache', '?')} "
+            f"tr_index={stats.get('transcript_index_size', '?')} "
+            f"bodies={{{src_bits}}} "
+            f"skip_reasons={json.dumps(reason_counts, separators=(',', ':'), sort_keys=True)}",
+        )
+    )
+    if stats.get("transcript_index_size") not in (None, "?") and int(
+        stats["transcript_index_size"] or 0
+    ) < int(stats.get("documents_in_cache") or 0):
+        lines.append(
+            _log_line(
+                "HINT",
+                "tr_index<<docs is common on Granola v6; body=notes uses notes_plain/markdown. "
+                "Use --transcript-only for segment transcripts only.",
+            )
+        )
+
+    w_cap = min(len(written), max(0, log_max_lines))
+    for w in written[:w_cap]:
+        st = "SYNC_NEW" if w.get("is_new") else "SYNC_UPD"
+        src = str(w.get("body_source") or "?")
+        mid = str(w.get("meeting_id", ""))
+        cust = str(w.get("customer", "") or "")
+        ttl = str(w.get("title", "") or "")
+        fn = str(w.get("filename", "") or "")
+        pth = str(w.get("path", "") or "")
+        lines.append(
+            _log_line(
+                st,
+                f"title={ttl!r}, file={fn!r}, path={pth}, customer={cust!r}, body={src}, "
+                f"bytes={w.get('bytes', 0)}, id={mid}",
+            )
+        )
+    if len(written) > w_cap:
+        lines.append(_log_line("TRUNC", f"scope=SYNC shown={w_cap} total_written={len(written)}"))
+
+    if not written:
+        lines.append(_log_line("SYNC", "none (0 files written this run)"))
+
+    s_cap = min(len(skipped), max(0, log_max_lines))
+    for s in skipped[:s_cap]:
+        mid = str(s.get("meeting_id", ""))
+        reason = str(s.get("reason", ""))
+        fld = str(s.get("folder", "") or "")
+        ttl = str(s.get("title", "") or "")
+        lines.append(
+            _log_line(
+                "SKIP",
+                f"reason={reason}, id={mid}, folder={fld!r}, title={ttl!r}",
+            )
+        )
+    if len(skipped) > s_cap:
+        lines.append(_log_line("TRUNC", f"scope=SKIP shown={s_cap} total_skipped={len(skipped)}"))
+
+    for e in errors:
+        lines.append(_log_line("ERR", repr(e)))
+
+    lines.append(
+        _log_line(
+            "END",
+            f"exit={exit_code} new={n_new} updated={n_upd} written={len(written)} skipped={len(skipped)}",
+        )
+    )
+    lines.append("")
+
     with (log_dir / "granola-sync.log").open("a", encoding="utf-8") as fh:
-        fh.write("\n".join(lines) + "\n\n")
+        fh.write("\n".join(lines))
 
 
 def _format_notify_stdout(result: dict[str, Any], *, max_chars: int = 280) -> str:
@@ -403,7 +609,7 @@ def _format_notify_stdout(result: dict[str, Any], *, max_chars: int = 280) -> st
     if errors:
         msg = (
             f"Granola sync: failed with {len(errors)} error(s). "
-            "See logs/granola-sync-last.json or stderr."
+            "See logs/granola-sync.log (and stderr)."
         )
         return msg if len(msg) <= max_chars else msg[: max_chars - 1].rstrip() + "…"
     written = result.get("written") or []
@@ -414,31 +620,52 @@ def _format_notify_stdout(result: dict[str, Any], *, max_chars: int = 280) -> st
         return "Granola sync: no meetings exported."
     new = [w for w in written if w.get("is_new")]
     updated = [w for w in written if not w.get("is_new")]
-    parts: list[str] = []
-    if new:
-        parts.append("New: " + "; ".join(_written_label(w) for w in new))
-    if updated:
-        parts.append("Updated: " + "; ".join(_written_label(w) for w in updated))
-    body = "Granola sync — " + " · ".join(parts)
-    if len(body) <= max_chars:
-        return body
-    return body[: max_chars - 1].rstrip() + "…"
+    if not new and updated:
+        return f"Granola sync: {len(updated)} file(s) updated in place, 0 new."
+    if new and not updated:
+        body = "Granola sync — New: " + "; ".join(_written_label(w) for w in new)
+        if len(body) <= max_chars:
+            return body
+        return body[: max_chars - 1].rstrip() + "…"
+    if new and updated:
+        return f"Granola sync: {len(new)} new, {len(updated)} updated in place."
+    return "Granola sync: done."
 
 
 def _emit_human_sync_summary(result: dict[str, Any], *, max_paths: int = 40) -> None:
-    """stderr lines for operators; stdout stays JSON-only."""
+    """stderr lines for operators; stdout stays JSON-only.
+
+    When every write is an in-place update (no new files), print one short line instead of
+    listing every path — details are in ``granola-sync.log``.
+    """
     written = result.get("written") or []
     skipped = result.get("skipped") or []
     errors = result.get("errors") or []
     if written:
+        new = [w for w in written if w.get("is_new")]
+        upd = [w for w in written if not w.get("is_new")]
         print("", file=sys.stderr)
-        for i, w in enumerate(written):
-            if i >= max_paths:
-                print(f"… and {len(written) - max_paths} more.", file=sys.stderr)
-                break
-            prefix = "(dry-run) " if w.get("dry_run") else ""
-            print(f"{prefix}Wrote: {w['path']}", file=sys.stderr)
-        print(f"Done: {len(written)} transcript file(s).", file=sys.stderr)
+        if new:
+            for i, w in enumerate(new):
+                if i >= max_paths:
+                    print(f"… and {len(new) - max_paths} more new file(s).", file=sys.stderr)
+                    break
+                prefix = "(dry-run) " if w.get("dry_run") else ""
+                print(f"{prefix}Wrote (new): {w['path']}", file=sys.stderr)
+        if upd and not new:
+            prefix = "(dry-run) " if upd[0].get("dry_run") else ""
+            print(
+                f"{prefix}Refreshed {len(upd)} transcript file(s) in place (no new files). "
+                "See logs/granola-sync.log for per-file SYNC_UPD lines.",
+                file=sys.stderr,
+            )
+        elif upd and new:
+            print(
+                f"Also refreshed {len(upd)} existing transcript file(s) in place. "
+                "See logs/granola-sync.log for SYNC_UPD lines.",
+                file=sys.stderr,
+            )
+        print(f"Done: {len(new)} new, {len(upd)} updated ({len(written)} total).", file=sys.stderr)
     elif errors:
         print("", file=sys.stderr)
         for e in errors:
@@ -446,8 +673,10 @@ def _emit_human_sync_summary(result: dict[str, Any], *, max_paths: int = 40) -> 
     elif skipped:
         print(
             f"No files written; {len(skipped)} meeting(s) skipped "
-            "(no transcript, no customer folder, or unsafe folder name). "
-            "Try --emit-notes-without-transcript if you only have AI notes.",
+            "(no transcript or notes text, no customer folder, or unsafe folder name). "
+            "Default uses notes when segment transcripts are missing; "
+            "see logs/granola-sync.log for per-meeting reasons. "
+            "Use --transcript-only if you require segment transcripts only.",
             file=sys.stderr,
         )
     else:
@@ -478,9 +707,20 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Do not write files; report planned paths.",
     )
     p.add_argument(
+        "--transcript-only",
+        action="store_true",
+        help="Only export meetings that have segment transcript text in cache; "
+        "do not fall back to notes_plain/notes_markdown (default is to fall back).",
+    )
+    p.add_argument(
         "--emit-notes-without-transcript",
         action="store_true",
-        help="If set, use Granola notes when transcript segments are empty.",
+        help="Deprecated: notes fallback is now the default. This flag is a no-op.",
+    )
+    p.add_argument(
+        "--write-last-json",
+        action="store_true",
+        help="Also write granola-sync-last.json (full last-run payload). Default is log-only.",
     )
     p.add_argument(
         "--no-human-summary",
@@ -491,7 +731,14 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         "--log-dir",
         type=Path,
         default=None,
-        help="Write granola-sync.log (append) and granola-sync-last.json after each run.",
+        help="Append granola-sync.log (UTC minute timestamps YYYY-MM-DDTHH:MMZ; RUN/SYNC/SKIP/END lines). Use --write-last-json for granola-sync-last.json.",
+    )
+    p.add_argument(
+        "--log-max-lines",
+        type=int,
+        default=5000,
+        metavar="N",
+        help="Max SYNC lines and max SKIP lines written per run (default 5000 each).",
     )
     p.add_argument(
         "--stdout-format",
@@ -528,8 +775,11 @@ def main(argv: list[str] | None = None) -> int:
                             "written": [],
                             "skipped": [],
                             "errors": [{"error": err_obj["error"]}],
+                            "stats": {},
                         },
                         exit_code=1,
+                        write_last_json=bool(args.write_last_json),
+                        log_max_lines=max(0, int(args.log_max_lines)),
                     )
                 except OSError:
                     pass
@@ -556,25 +806,41 @@ def main(argv: list[str] | None = None) -> int:
                         "written": [],
                         "skipped": [],
                         "errors": [{"error": err_obj["error"], "tried": err_obj["tried"]}],
+                        "stats": {},
                     },
                     exit_code=1,
+                    write_last_json=bool(args.write_last_json),
+                    log_max_lines=max(0, int(args.log_max_lines)),
                 )
             except OSError:
                 pass
         return 1
 
     default_customer = os.environ.get("GRANOLA_DEFAULT_CUSTOMER", "").strip() or None
+    env_fb = os.environ.get("GRANOLA_NOTES_FALLBACK", "").strip().lower()
+    if env_fb in {"0", "false", "no"}:
+        notes_fallback = False
+    elif env_fb in {"1", "true", "yes"}:
+        notes_fallback = True
+    else:
+        notes_fallback = not bool(args.transcript_only)
     result = sync_granola_to_mynotes(
         cache_path=cache,
         customers_base=base,
         dry_run=bool(args.dry_run),
-        emit_notes_without_transcript=bool(args.emit_notes_without_transcript),
+        notes_fallback=notes_fallback,
         default_customer=default_customer,
     )
     exit_code = 0 if not result["errors"] else 2
     if args.log_dir:
         try:
-            _append_sync_logs(Path(args.log_dir), result, exit_code=exit_code)
+            _append_sync_logs(
+                Path(args.log_dir),
+                result,
+                exit_code=exit_code,
+                write_last_json=bool(args.write_last_json),
+                log_max_lines=max(0, int(args.log_max_lines)),
+            )
         except OSError as exc:
             print(f"granola-sync: could not write --log-dir: {exc}", file=sys.stderr)
 
