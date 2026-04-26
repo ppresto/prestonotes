@@ -176,13 +176,15 @@ Canonical step table: **`docs/ai/playbooks/tester-e2e-ucn.md`**. After **`prep-v
 
 ### Planner coverage ≠ Account Summary review
 
-The writer’s **planner coverage guard** in `prestonotes_gdoc/update-gdoc-customer-notes.py` only enforces explicit **`no_evidence` or mutating** coverage for:
+TASK-073 expands pre-write coverage beyond the old four-field guard.
 
-`exec_account_summary.top_goal`, `exec_account_summary.risk`, `use_cases.free_text`, `workflows.free_text`.
+Canonical planner-required targets, mode contract (`ucn_mode`), allowed skip reasons, and fail-code mapping now live in:
+- `docs/ai/playbooks/update-customer-notes.md` -> Step 8 section **"TASK-073 canonical coverage matrix (single source)"**.
 
-It does **not** require **Contacts**, **Challenge Tracker**, **Cloud Environment**, or **Account Metadata**. A UCN can **pass the guard** and still leave those sections **empty** in `read_doc`.
-
-**The tester must not treat “four key fields + DAL” as a complete Account Summary** — and must **not** omit those sections from the post-write diff when `v1_full` / `full` (with UCN) was run. If the corpus (transcripts + call-records) contains clear signal and `read_doc` is empty, that is a **scored gap** (typically **H** or **M**), unless the approved mutation plan documented **`action: no_evidence` / skip + reason** for that field (per UCN playbook).
+Tester scoring still requires post-write honesty:
+- For `v1_full` / `full`, include all high-signal rows in §6 even when planner preflight passed.
+- If `read_doc` remains sparse while corpus signal is rich, score the gap (`H`/`M`) and file follow-up tasks.
+- Treat documented planner `skip` decisions (with valid reasons) as context, not an excuse to hide empty sections.
 
 **Inputs (order):**
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Preflight validator for UCN mutation plans.
 
-TASK-072 contract:
-- DAL parity: expected missing meetings -> prepend actions.
-- Deal Stage trigger path: expected SKU motion has an auto or explicit trigger.
+Contracts enforced:
+- TASK-072: DAL parity + Deal Stage trigger path.
+- TASK-073: full/partial pre-write section coverage via planner decisions.
 """
 
 from __future__ import annotations
@@ -17,6 +17,278 @@ from typing import Any
 
 COMMERCIAL_SKUS = {"cloud", "sensor", "defend", "code"}
 _DATE_RE = re.compile(r"\b(20\d{2}-\d{2}-\d{2})\b")
+_NUMERIC_RE = re.compile(r"^-?\d+(\.\d+)?(%|h|hrs|hours|days)?$", re.IGNORECASE)
+
+ALLOWED_SKIP_REASONS = {
+    "no_in_scope_transcript_signal",
+    "same_as_current_entry",
+    "evidence_below_confidence_threshold",
+    "section_off_by_opt_out",
+    "empty_transcript",
+}
+
+# TASK-073 canonical planner-governed targets.
+TARGET_MATRIX: dict[str, dict[str, Any]] = {
+    # Account Summary tab
+    "exec_account_summary.top_goal": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": True,
+        "allowed_mutation_actions": {
+            "append_with_history",
+            "set_if_empty",
+            "replace_field_entries",
+        },
+        "evidence_rule": "standard",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "exec_account_summary.risk": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": True,
+        "allowed_mutation_actions": {
+            "append_with_history",
+            "set_if_empty",
+            "replace_field_entries",
+        },
+        "evidence_rule": "standard",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "exec_account_summary.upsell_path": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": True,
+        "allowed_mutation_actions": {
+            "append_with_history",
+            "set_if_empty",
+            "update_in_place",
+            "replace_field_entries",
+        },
+        "evidence_rule": "deal_stage_trigger_path",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "challenge_tracker": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"add_table_row", "update_table_row"},
+        "evidence_rule": "challenge_row_evidence",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "company_overview.free_text": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"append_with_history"},
+        "evidence_rule": "standard",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "contacts.free_text": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"append_with_history", "replace_field_entries"},
+        "evidence_rule": "named_contact_evidence",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "org_structure.free_text": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"append_with_history"},
+        "evidence_rule": "standard",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "cloud_environment.csp_regions": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"set_if_empty", "update_in_place", "replace_field_entries"},
+        "evidence_rule": "standard",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "cloud_environment.platforms": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"add_tool", "update_tool_detail", "remove_tool_suggestion"},
+        "evidence_rule": "tool_evidence",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "cloud_environment.idp_sso": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"set_if_empty", "update_in_place", "replace_field_entries"},
+        "evidence_rule": "standard",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "cloud_environment.devops_vcs": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"add_tool", "update_tool_detail", "remove_tool_suggestion"},
+        "evidence_rule": "tool_evidence",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "cloud_environment.security_tools": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"add_tool", "update_tool_detail", "remove_tool_suggestion"},
+        "evidence_rule": "tool_evidence",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "cloud_environment.aspm_tools": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"add_tool", "update_tool_detail", "remove_tool_suggestion"},
+        "evidence_rule": "tool_evidence",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "cloud_environment.ticketing": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"add_tool", "update_tool_detail", "remove_tool_suggestion"},
+        "evidence_rule": "tool_evidence",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "cloud_environment.languages": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"add_tool", "update_tool_detail", "remove_tool_suggestion"},
+        "evidence_rule": "tool_evidence",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "cloud_environment.sizing": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"set_if_empty", "update_in_place", "replace_field_entries"},
+        "evidence_rule": "numeric_or_capacity_signal",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "cloud_environment.archive": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"append_with_history"},
+        "evidence_rule": "standard",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "use_cases.free_text": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": True,
+        "allowed_mutation_actions": {"append_with_history", "replace_field_entries"},
+        "evidence_rule": "requirements_signal",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "workflows.free_text": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": True,
+        "allowed_mutation_actions": {"append_with_history", "replace_field_entries"},
+        "evidence_rule": "workflow_signal",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "accomplishments.free_text": {
+        "tab": "account_summary",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"append_with_history"},
+        "evidence_rule": "resolved_outcome_signal",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    # Daily Activity tab
+    "daily_activity_logs.free_text": {
+        "tab": "daily_activity",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": True,
+        "allowed_mutation_actions": {"prepend_daily_activity_ai_summary"},
+        "evidence_rule": "dal_parity",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    # Account Metadata tab
+    "account_motion_metadata.exec_buyer": {
+        "tab": "account_metadata",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"set_if_empty", "update_in_place"},
+        "evidence_rule": "explicit_statement_required",
+        "validator_fail_code": "coverage_explicit_statement_required",
+    },
+    "account_motion_metadata.champion": {
+        "tab": "account_metadata",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"set_if_empty", "update_in_place"},
+        "evidence_rule": "explicit_statement_required",
+        "validator_fail_code": "coverage_explicit_statement_required",
+    },
+    "account_motion_metadata.technical_owner": {
+        "tab": "account_metadata",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"set_if_empty", "update_in_place"},
+        "evidence_rule": "standard",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+    "account_motion_metadata.sensor_coverage_pct": {
+        "tab": "account_metadata",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"set_if_empty", "update_in_place"},
+        "evidence_rule": "numeric_value_required",
+        "validator_fail_code": "coverage_numeric_value_invalid",
+    },
+    "account_motion_metadata.critical_issues_open": {
+        "tab": "account_metadata",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"set_if_empty", "update_in_place"},
+        "evidence_rule": "numeric_value_required",
+        "validator_fail_code": "coverage_numeric_value_invalid",
+    },
+    "account_motion_metadata.mttr_days": {
+        "tab": "account_metadata",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"set_if_empty", "update_in_place"},
+        "evidence_rule": "numeric_value_required",
+        "validator_fail_code": "coverage_numeric_value_invalid",
+    },
+    "account_motion_metadata.monthly_reporting_hours": {
+        "tab": "account_metadata",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"set_if_empty", "update_in_place"},
+        "evidence_rule": "numeric_value_required",
+        "validator_fail_code": "coverage_numeric_value_invalid",
+    },
+    "deal_stage_tracker": {
+        "tab": "account_metadata",
+        "required_in_ucn_full": True,
+        "required_in_ucn_partial": False,
+        "allowed_mutation_actions": {"add_table_row", "update_table_row"},
+        "evidence_rule": "deal_stage_trigger_path",
+        "validator_fail_code": "coverage_mutation_missing",
+    },
+}
+
+STRICT_EXPLICIT_STATEMENT_TARGETS = {
+    "account_motion_metadata.exec_buyer",
+    "account_motion_metadata.champion",
+}
+NUMERIC_VALUE_TARGETS = {
+    "account_motion_metadata.sensor_coverage_pct",
+    "account_motion_metadata.critical_issues_open",
+    "account_motion_metadata.mttr_days",
+    "account_motion_metadata.monthly_reporting_hours",
+}
 
 
 def _normalize_heading_key(heading_line: str) -> str:
@@ -53,7 +325,167 @@ def _load_mutations(payload: Any) -> list[dict[str, Any]]:
     return []
 
 
-def validate_payload(payload: Any) -> tuple[bool, list[str], dict[str, Any]]:
+def _resolve_ucn_mode(contract: dict[str, Any], ucn_mode: str | None) -> tuple[str, list[str]]:
+    codes: list[str] = []
+    mode = ucn_mode or contract.get("ucn_mode") or "full"
+    mode = str(mode).strip().lower()
+    if mode not in {"full", "partial"}:
+        codes.append(f"coverage_mode_invalid:{mode}")
+        mode = "full"
+    return mode, codes
+
+
+def _required_targets_for_mode(ucn_mode: str) -> set[str]:
+    required_key = "required_in_ucn_full" if ucn_mode == "full" else "required_in_ucn_partial"
+    return {target for target, cfg in TARGET_MATRIX.items() if bool(cfg.get(required_key))}
+
+
+def _normalize_coverage_decisions(raw: Any) -> tuple[dict[str, dict[str, Any]], list[str]]:
+    codes: list[str] = []
+    decisions: dict[str, dict[str, Any]] = {}
+    if isinstance(raw, dict):
+        items = raw.items()
+        for target, value in items:
+            if isinstance(value, dict):
+                decision = dict(value)
+            else:
+                decision = {"action": value}
+            decision["target"] = str(target)
+            decisions[str(target)] = decision
+        return decisions, codes
+
+    if isinstance(raw, list):
+        for item in raw:
+            if not isinstance(item, dict):
+                codes.append("coverage_decisions_invalid_entry")
+                continue
+            target = str(item.get("target") or "").strip()
+            if not target:
+                codes.append("coverage_decisions_target_missing")
+                continue
+            if target in decisions:
+                codes.append(f"coverage_decisions_duplicate_target:{target}")
+            decisions[target] = item
+        return decisions, codes
+
+    codes.append("coverage_decisions_invalid_type")
+    return decisions, codes
+
+
+def _mutations_for_target(mutations: list[dict[str, Any]], target: str) -> list[dict[str, Any]]:
+    if target in {"challenge_tracker", "deal_stage_tracker"}:
+        return [m for m in mutations if str(m.get("section_key") or "") == target]
+    section_key, _, field_key = target.partition(".")
+    return [
+        m
+        for m in mutations
+        if str(m.get("section_key") or "") == section_key
+        and str(m.get("field_key") or "") == field_key
+    ]
+
+
+def _is_numeric_like(value: Any) -> bool:
+    text = str(value or "").strip()
+    if not text:
+        return False
+    return bool(_NUMERIC_RE.match(text))
+
+
+def _validate_coverage_contract(
+    contract: dict[str, Any],
+    mutations: list[dict[str, Any]],
+    ucn_mode: str,
+) -> tuple[list[str], dict[str, Any]]:
+    codes: list[str] = []
+    metrics: dict[str, Any] = {}
+
+    coverage = contract.get("coverage")
+    if not isinstance(coverage, dict):
+        return ["coverage_contract_missing"], {"ucn_mode": ucn_mode}
+
+    decisions_raw = coverage.get("decisions")
+    decisions, decision_codes = _normalize_coverage_decisions(decisions_raw)
+    codes.extend(decision_codes)
+
+    required_targets = _required_targets_for_mode(ucn_mode)
+    missing_required = sorted(required_targets - set(decisions.keys()))
+    if missing_required:
+        codes.append("coverage_decisions_missing_required:" + ",".join(missing_required))
+
+    unknown_targets = sorted({t for t in decisions.keys() if t not in TARGET_MATRIX})
+    for target in unknown_targets:
+        codes.append(f"coverage_decision_unknown_target:{target}")
+
+    mutate_count = 0
+    skip_count = 0
+    for target, decision in decisions.items():
+        if target not in TARGET_MATRIX:
+            continue
+        cfg = TARGET_MATRIX[target]
+        action = str(decision.get("action") or "").strip().lower()
+        if action == "no_evidence":
+            action = "skip"
+
+        if action not in {"mutate", "skip"}:
+            codes.append(f"coverage_decision_invalid_action:{target}:{action or 'missing'}")
+            continue
+
+        if action == "skip":
+            skip_count += 1
+            reason = str(decision.get("skip_reason") or "").strip()
+            if not reason:
+                codes.append(f"coverage_skip_reason_missing:{target}")
+            elif reason not in ALLOWED_SKIP_REASONS:
+                codes.append(f"coverage_skip_reason_invalid:{target}:{reason}")
+            continue
+
+        mutate_count += 1
+        target_mutations = _mutations_for_target(mutations, target)
+        if not target_mutations:
+            codes.append(f"coverage_mutation_missing:{target}")
+            continue
+
+        allowed_actions = set(cfg.get("allowed_mutation_actions", set()))
+        matching_actions = {str(m.get("action") or "") for m in target_mutations}
+        if not (matching_actions & allowed_actions):
+            joined = ",".join(sorted(matching_actions)) if matching_actions else "none"
+            codes.append(f"coverage_mutation_action_invalid:{target}:{joined}")
+            continue
+
+        if target in STRICT_EXPLICIT_STATEMENT_TARGETS:
+            has_explicit_statement = any(
+                bool(m.get("explicit_statement"))
+                for m in target_mutations
+                if str(m.get("action") or "") in allowed_actions
+            )
+            if not has_explicit_statement:
+                codes.append(f"coverage_explicit_statement_required:{target}")
+
+        if target in NUMERIC_VALUE_TARGETS:
+            values = [
+                m.get("new_value")
+                for m in target_mutations
+                if str(m.get("action") or "") in allowed_actions and m.get("new_value") is not None
+            ]
+            if not values or not any(_is_numeric_like(v) for v in values):
+                example = str(values[0]) if values else ""
+                codes.append(f"coverage_numeric_value_invalid:{target}:{example}")
+
+    metrics = {
+        "ucn_mode": ucn_mode,
+        "required_targets_count": len(required_targets),
+        "required_targets": sorted(required_targets),
+        "decision_count": len(decisions),
+        "mutate_count": mutate_count,
+        "skip_count": skip_count,
+        "allowed_skip_reasons": sorted(ALLOWED_SKIP_REASONS),
+    }
+    return codes, metrics
+
+
+def validate_payload(
+    payload: Any, ucn_mode: str | None = None
+) -> tuple[bool, list[str], dict[str, Any]]:
     codes: list[str] = []
     metrics: dict[str, Any] = {}
     mutations = _load_mutations(payload)
@@ -64,6 +496,14 @@ def validate_payload(payload: Any) -> tuple[bool, list[str], dict[str, Any]]:
     contract = payload.get("planner_contract")
     if not isinstance(contract, dict):
         return False, ["planner_contract_missing"], {"reason": "planner_contract_missing"}
+
+    resolved_mode, mode_codes = _resolve_ucn_mode(contract, ucn_mode)
+    codes.extend(mode_codes)
+    coverage_codes, coverage_metrics = _validate_coverage_contract(
+        contract, mutations, resolved_mode
+    )
+    codes.extend(coverage_codes)
+    metrics["coverage"] = coverage_metrics
 
     dal_cfg = contract.get("dal")
     if not isinstance(dal_cfg, dict):
@@ -191,6 +631,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Validate UCN planner contract before write_doc.")
     ap.add_argument("--mutations", required=True, help="Path to mutation JSON file")
     ap.add_argument(
+        "--ucn-mode",
+        choices=["full", "partial"],
+        default=None,
+        help="Coverage required-set mode. Defaults to planner_contract.ucn_mode or full.",
+    )
+    ap.add_argument(
         "--json-output",
         action="store_true",
         help="Print structured JSON result in addition to plain summary",
@@ -216,7 +662,7 @@ def main() -> int:
         )
         return 2
 
-    ok, codes, metrics = validate_payload(payload)
+    ok, codes, metrics = validate_payload(payload, ucn_mode=args.ucn_mode)
     if args.json_output:
         print(json.dumps({"ok": ok, "codes": codes, "metrics": metrics}, indent=2))
     else:
