@@ -285,29 +285,62 @@ Produce a typed change plan (mutation JSON) following the schema, core rules, an
 
 Incorporate user answers from Step 7 as evidence (cite "user confirmation [date]" as evidence source).
 
-Run the planner coverage guard: every run must explicitly cover `exec_account_summary.top_goal`, `exec_account_summary.risk`, `use_cases.free_text`, and `workflows.free_text` with either a change or `no_evidence`.
+### TASK-073 canonical coverage matrix (single source)
 
-**Populatable-field enumeration (required — propose or skip-with-reason):** On top of the coverage guard above, the planner MUST visit every populatable GDoc field and for each one either propose a mutation or record a skip with one of **four** reasons: `no_in_scope_transcript_signal`, `same_as_current_entry`, `evidence_below_confidence_threshold`, `section_off_by_opt_out`. The 15 fields:
+This section is the canonical policy table for planner-required coverage and preflight checks. `docs/ai/gdoc-customer-notes/mutations-global.md` points here and must not maintain a second copy.
 
-1. `company_overview.free_text`
-2. `contacts.free_text`
-3. `org_structure.free_text`
-4. `cloud_environment.platforms` (tools_list)
-5. `cloud_environment.devops_vcs` (tools_list)
-6. `cloud_environment.security_tools` (tools_list)
-7. `cloud_environment.ticketing` (tools_list)
-8. `use_cases.free_text`
-9. `workflows.free_text`
-10. `accomplishments.free_text`
-11. `account_motion_metadata.exec_buyer`
-12. `account_motion_metadata.champion`
-13. `account_motion_metadata.technical_owner`
-14. `account_motion_metadata.sensor_coverage_pct`
-15. `account_motion_metadata.critical_issues_open`
+**Mode contract (`ucn_mode`):**
 
-`account_motion_metadata.mttr_days` and `account_motion_metadata.monthly_reporting_hours` are populated only when a transcript states the number explicitly; otherwise skip with `no_in_scope_transcript_signal`. Per-field extraction rules live in `.cursor/rules/21-extractor.mdc` § **Per-section GDoc extraction**; skip-reason accounting is what the writer surfaces in the agent run log (§F / Step 10 below).
+- Allowed values: `full`, `partial`.
+- Source of truth: `planner_contract.ucn_mode`; CLI `--ucn-mode` may override for testing.
+- Default when omitted: `full`.
+- E2E workflow names (`v1_full`, `v2_full`, etc.) are harness labels; they still run preflight with production `ucn_mode`.
 
-**Coverage artifact (required):** build and persist a machine-friendly planner outcome for Step 8 before approval: each key field is either `mutate` or `skip` with one of the allowed skip reasons. This can be embedded in the approved mutations bundle metadata and/or surfaced in the run log fields, but it must be explicit and reproducible (no silent skip).
+**Decision contract (required in `planner_contract.coverage.decisions`):**
+
+- `action`: `mutate` or `skip` (`no_evidence` is accepted as `skip` synonym for backward compatibility).
+- For `skip`, `skip_reason` is required and must be one of:
+  - `no_in_scope_transcript_signal`
+  - `same_as_current_entry`
+  - `evidence_below_confidence_threshold`
+  - `section_off_by_opt_out`
+  - `empty_transcript`
+
+| target | tab | required_in_ucn_full | required_in_ucn_partial | allowed_actions_when_mutate | evidence_rule | validator_fail_code |
+|---|---|---|---|---|---|---|
+| `exec_account_summary.top_goal` | account_summary | yes | yes | `append_with_history`,`set_if_empty`,`replace_field_entries` | standard | `coverage_mutation_missing` |
+| `exec_account_summary.risk` | account_summary | yes | yes | `append_with_history`,`set_if_empty`,`replace_field_entries` | standard | `coverage_mutation_missing` |
+| `exec_account_summary.upsell_path` | account_summary | yes | yes | `append_with_history`,`set_if_empty`,`update_in_place`,`replace_field_entries` | deal_stage_trigger_path | `coverage_mutation_missing` |
+| `challenge_tracker` | account_summary | yes | no | `add_table_row`,`update_table_row` | challenge_row_evidence | `coverage_mutation_missing` |
+| `company_overview.free_text` | account_summary | yes | no | `append_with_history` | standard | `coverage_mutation_missing` |
+| `contacts.free_text` | account_summary | yes | no | `append_with_history`,`replace_field_entries` | named_contact_evidence | `coverage_mutation_missing` |
+| `org_structure.free_text` | account_summary | yes | no | `append_with_history` | standard | `coverage_mutation_missing` |
+| `cloud_environment.csp_regions` | account_summary | yes | no | `set_if_empty`,`update_in_place`,`replace_field_entries` | standard | `coverage_mutation_missing` |
+| `cloud_environment.platforms` | account_summary | yes | no | `add_tool`,`update_tool_detail`,`remove_tool_suggestion` | tool_evidence | `coverage_mutation_missing` |
+| `cloud_environment.idp_sso` | account_summary | yes | no | `set_if_empty`,`update_in_place`,`replace_field_entries` | standard | `coverage_mutation_missing` |
+| `cloud_environment.devops_vcs` | account_summary | yes | no | `add_tool`,`update_tool_detail`,`remove_tool_suggestion` | tool_evidence | `coverage_mutation_missing` |
+| `cloud_environment.security_tools` | account_summary | yes | no | `add_tool`,`update_tool_detail`,`remove_tool_suggestion` | tool_evidence | `coverage_mutation_missing` |
+| `cloud_environment.aspm_tools` | account_summary | yes | no | `add_tool`,`update_tool_detail`,`remove_tool_suggestion` | tool_evidence | `coverage_mutation_missing` |
+| `cloud_environment.ticketing` | account_summary | yes | no | `add_tool`,`update_tool_detail`,`remove_tool_suggestion` | tool_evidence | `coverage_mutation_missing` |
+| `cloud_environment.languages` | account_summary | yes | no | `add_tool`,`update_tool_detail`,`remove_tool_suggestion` | tool_evidence | `coverage_mutation_missing` |
+| `cloud_environment.sizing` | account_summary | yes | no | `set_if_empty`,`update_in_place`,`replace_field_entries` | numeric_or_capacity_signal | `coverage_mutation_missing` |
+| `cloud_environment.archive` | account_summary | yes | no | `append_with_history` | standard | `coverage_mutation_missing` |
+| `use_cases.free_text` | account_summary | yes | yes | `append_with_history`,`replace_field_entries` | requirements_signal | `coverage_mutation_missing` |
+| `workflows.free_text` | account_summary | yes | yes | `append_with_history`,`replace_field_entries` | workflow_signal | `coverage_mutation_missing` |
+| `accomplishments.free_text` | account_summary | yes | no | `append_with_history` | resolved_outcome_signal | `coverage_mutation_missing` |
+| `daily_activity_logs.free_text` | daily_activity | yes | yes | `prepend_daily_activity_ai_summary` | dal_parity | `coverage_mutation_missing` |
+| `account_motion_metadata.exec_buyer` | account_metadata | yes | no | `set_if_empty`,`update_in_place` | explicit_statement_required | `coverage_explicit_statement_required` |
+| `account_motion_metadata.champion` | account_metadata | yes | no | `set_if_empty`,`update_in_place` | explicit_statement_required | `coverage_explicit_statement_required` |
+| `account_motion_metadata.technical_owner` | account_metadata | yes | no | `set_if_empty`,`update_in_place` | standard | `coverage_mutation_missing` |
+| `account_motion_metadata.sensor_coverage_pct` | account_metadata | yes | no | `set_if_empty`,`update_in_place` | numeric_value_required | `coverage_numeric_value_invalid` |
+| `account_motion_metadata.critical_issues_open` | account_metadata | yes | no | `set_if_empty`,`update_in_place` | numeric_value_required | `coverage_numeric_value_invalid` |
+| `account_motion_metadata.mttr_days` | account_metadata | yes | no | `set_if_empty`,`update_in_place` | numeric_value_required | `coverage_numeric_value_invalid` |
+| `account_motion_metadata.monthly_reporting_hours` | account_metadata | yes | no | `set_if_empty`,`update_in_place` | numeric_value_required | `coverage_numeric_value_invalid` |
+| `deal_stage_tracker` | account_metadata | yes | no | `add_table_row`,`update_table_row` | deal_stage_trigger_path | `coverage_mutation_missing` |
+
+Excluded from planner-required coverage in TASK-073: `discovery.free_text`, `appendix.free_text`, `appendix.agent_run_log`.
+
+**Coverage artifact (required):** before approval, store explicit planner decisions in the same mutation bundle under `planner_contract.coverage.decisions`; no silent skips.
 
 **Deterministic planner contract (TASK-072, required):** include a top-level `planner_contract` object in the same JSON file as `mutations` and run preflight before Step 9/10.
 

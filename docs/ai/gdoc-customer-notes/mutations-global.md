@@ -185,13 +185,16 @@ When `replace_field_entries` removes old bullets, the mutations JSON (`step9-app
 
 ## Planner Coverage Guard
 
-Every run must explicitly cover these fields with either a mutating action or `no_evidence`:
-- `exec_account_summary.top_goal`
-- `exec_account_summary.risk`
-- `use_cases.free_text`
-- `workflows.free_text`
+TASK-073 canonical coverage policy now lives in one place:
+- `docs/ai/playbooks/update-customer-notes.md` → Step 8 section **"TASK-073 canonical coverage matrix (single source)"**.
 
-`no_evidence` entries are planner markers for audit traceability and are not written to the GDoc.
+Use that matrix as the source for:
+- required targets per `ucn_mode` (`full` vs `partial`),
+- allowed mutating actions per target,
+- allowed skip reasons,
+- validator fail-code mapping.
+
+Do not duplicate a second matrix in this file; keep this as a pointer so policy and preflight enforcement stay aligned.
 
 ---
 

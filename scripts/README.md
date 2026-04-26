@@ -56,11 +56,13 @@ Local markdown in **`MyNotes/Customers/.../[Customer] Notes.md`** is what most M
 - **`e2e-test-customer-materialize.py`** (kept as library) — **`to-fixtures`**: copy **`MyNotes/Customers/_TEST_CUSTOMER/Transcripts`** → **`tests/fixtures/e2e/_TEST_CUSTOMER/v1/Transcripts`** only. **`apply`**: copy v1 (and optional v2) **transcripts** into **`MyNotes/...`**; clears **`call-records/*.json` on v1** apply; never copies call-record JSON from git fixtures. Optional **`--v2`** merges **`v2/Transcripts/`** while preserving round-1 extracts. See **`tests/fixtures/e2e/_TEST_CUSTOMER/README.md`**.
 - **`e2e-test-customer-bump-dates.py`** (kept as library) — rewrites **`Transcripts/YYYY-MM-DD-*.txt`** basenames + matching **`call-records/*.json`** so rolling "last 30 days" windows stay populated.
 - **`e2e-test-push-gdrive-notes.sh`** (kept as library) — push repo **`MyNotes/Customers/<name>/`** → Google Drive for Desktop mount.
-- **`ucn-planner-preflight.py`** — validates TASK-072 planner contract on a mutation JSON before `write_doc` (DAL parity + Deal Stage trigger path). Exit `0` = `planner_contract_ok`, exit `2` = `planner_contract_failed:*`.
+- **`ucn-planner-preflight.py`** — validates planner contract on a mutation JSON before `write_doc`:
+  - TASK-072 gates: DAL parity + Deal Stage trigger path.
+  - TASK-073 gates: canonical section/subsection coverage decisions (`planner_contract.coverage.decisions`) for `ucn_mode` (`full`/`partial`), allowed skip reasons, per-target action checks, and strict metadata evidence checks.
+  - Exit `0` = `planner_contract_ok`, exit `2` = `planner_contract_failed:*`.
 - **`wiz_doc_cache_manager.py`** — Wiz cache **`manifest.json`** upserts / **`status`** / **`refresh-loop`** / **`vector-index-status`** (see **`docs/ai/references/wiz-doc-lookup-protocol.md`**).
 - **`wiz_vector_coverage_report.py`** — Compare **`manifest.json`** `doc:*` rows to files under **`docs/ai/cache/wiz_mcp_server/docs/`** and optional Chroma **`wiz_docs`** collection (`--repo-root .`).
 - **`wiz_docs_search_cli.py`** — **`search_wiz_docs`**-equivalent: OAuth + **`aiAssistantQuery`** using **`WIZ_*`** from **`.cursor/mcp.env`** (for shells/agents without Cursor MCP stdio). Example: `uv run python scripts/wiz_docs_search_cli.py --query "What is Wiz Defend?"`.
 - **`wiz_docs_client.py`** — Shared OAuth + GraphQL + response parsing for the above and for materialization.
 - **`materialize_wiz_mcp_docs.py`** — Writes **`docs/ai/cache/wiz_mcp_server/mcp_materializations/<doc_name>.md`** from DOCS search (no **`docs.wiz.io`** HTTP). Options: `--dry-run`, `--min-age-days`, `--force`, `--doc-name`, `--delay-seconds`.
 - **`spider_wiz_external_pages.py`** — Fetches **`www.wiz.io`** (and allowlisted) URLs from **`ext/indexes/tier_manifest.json`** into **`ext/pages/`**; manifest TTL **365** days for those URLs. Also: **`wiz_doc_cache_manager.py spider-ext`** / **`mcp-materialize`**.
-

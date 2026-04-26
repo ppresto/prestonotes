@@ -14,6 +14,7 @@ Local cache for Wiz documentation: **WIN inventory**, **tenant GraphQL snapshots
 | **`mcp_materializations/<doc_name>.md`** | **Latest** text from **tenant `aiAssistantQuery` / DOCS** (same contract as **`search_wiz_docs`**) |
 | `ext/pages/*.md` | External **`www.wiz.io`** pages (see `ext/indexes/tier_manifest.json`) |
 | `queries/` | Optional saved search traces |
+| `mcp_query_snapshots/*.md` | (Optional) **wiz-remote** `wiz_docs_knowledge_base` on-disk markdown — see **TASK-074** §G3 / §G8. |
 
 ## Scripts (repo root)
 
@@ -22,6 +23,7 @@ uv run python scripts/wiz_doc_cache_manager.py status
 uv run python scripts/wiz_doc_cache_manager.py mcp-materialize --min-age-days 7 --delay-seconds 2.5
 uv run python scripts/wiz_doc_cache_manager.py spider-ext --dry-run --max-pages 3
 uv run python scripts/wiz_docs_search_cli.py --query "Wiz CLI prerequisites"
+# see TASK-074 §G8 (wiz-remote snapshot files)
 ```
 
 ## Adaptive `refresh-loop`
