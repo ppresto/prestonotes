@@ -24,6 +24,16 @@ At every step, tell the user what you are doing in plain English. Follow the for
 
 ## 0) Execution Mode Default (Required)
 - Default mode is **cache-first delta mode** when the user does not explicitly request a full sweep.
+- In default mode, run **cache-first hydrate-if-needed** for TASK-074 hosted KB seeds:
+  - read `docs/ai/cache/wiz_mcp_server/kb_seed_queries.yaml`
+  - for each seed/query snapshot file, use local cache when fresh
+  - when snapshot is missing or stale, call `wiz_docs_knowledge_base`, then overwrite the local snapshot JSON (see `wiz_cache_manager.py kb-snapshot save`)
+- Add explicit **cache-only** mode when user asks for one of:
+  - `cache-only`
+  - `read-only`
+  - `no refresh`
+  - `local cache only`
+- In cache-only mode, never call remote refresh tools; read only local artifacts and report missing/stale items as gaps.
 - Full baseline sweep is allowed only when the prompt explicitly includes a full intent, such as:
   - `full`
   - `rebuild`
@@ -106,15 +116,19 @@ At every step, tell the user what you are doing in plain English. Follow the for
 
 ## 2.51) Read vs refresh decision tree (required)
 
-- **Read-only path (default for `Load Product Intelligence`):**
-  - load local cache files already on disk into LLM context (`docs/`, `mcp_materializations/`, and configured `ext/indexes` inputs)
-  - do not claim this step performed a network refresh by itself
-- **Refresh path (explicit operator/agent action before or during load):**
-  - run `uv run python scripts/wiz_doc_cache_manager.py mcp-materialize ...` for WIN/tenant GraphQL docs
-  - optionally run `uv run python scripts/wiz_doc_cache_manager.py spider-ext ...` for external pages
+- **Default path (for `Load Product Intelligence`):**
+  - load local cache files already on disk into LLM context (`docs/`, `mcp_materializations/`, configured `ext/indexes`, and `mcp_query_snapshots`)
+  - for TASK-074 hosted KB seeds from `kb_seed_queries.yaml`, attempt local read first, then refresh only missing/stale snapshots using `wiz_docs_knowledge_base`
+  - write refreshed snapshot envelopes (paths derive from `kb_seed_queries.yaml`; use `kb-snapshot status` to list missing/stale vs yaml)
+- **Cache-only path (explicit user option):**
+  - load only local cache artifacts; do not call networked refresh tools
+  - report missing/stale entries and continue synthesis with what is present
+- **Refresh path (explicit operator/agent action before or during load, broad):**
+  - run `uv run python scripts/wiz_cache_manager.py mcp-materialize ...` for WIN/tenant GraphQL docs
+  - optionally run `uv run python scripts/wiz_cache_manager.py spider-ext ...` for external pages
   - then re-read local cache artifacts for synthesis
 - **TTL defaults:** WIN/MCP docs = 7 days; external pages = 365 days (unless overridden by command flags).
-- If the user asks for "latest" and freshness is stale, recommend refresh path first, then proceed with read path.
+- If the user asks for "latest" and freshness is stale, perform default hydrate-if-needed; use broad refresh path only when stale coverage is substantial.
 
 ## 2.52) What "full sync" means in this playbook
 
@@ -131,9 +145,9 @@ At every step, tell the user what you are doing in plain English. Follow the for
   - `./docs/ai/cache/wiz_mcp_server/mcp_materializations/`
 - Minimum run order:
   1. Regenerate/extend `win_apis_doc_index.json` from wiz-local `win_apis` categories when needed.
-  2. Run `uv run python scripts/wiz_doc_cache_manager.py seed-from-index`.
-  3. Run `uv run python scripts/wiz_doc_cache_manager.py refresh-loop --max-waves 2 --include-all` until two same-input waves show no net-new catalog IDs.
-  4. Run `uv run python scripts/wiz_doc_cache_manager.py mcp-materialize` for any targeted refresh gaps.
+  2. Run `uv run python scripts/wiz_cache_manager.py seed-from-index`.
+  3. Run `uv run python scripts/wiz_cache_manager.py refresh-loop --max-waves 2 --include-all` until two same-input waves show no net-new catalog IDs.
+  4. Run `uv run python scripts/wiz_cache_manager.py mcp-materialize` for any targeted refresh gaps.
   5. Rebuild vectors only if this run changed docs that should be searchable.
 - Rollback rule: if a wave introduces bad entries, restore `win_apis_doc_index.json` and `manifest.json` from git, then rerun seed + refresh-loop on the restored files.
 - Ops ledger template line (use in run notes or ledger): `WIZ-DISCOVERY-WAVE <YYYY-MM-DD>-<N>: index_delta=+<a>/-<b>, manifest_delta=+<c>/-<d>, decision=<stop|continue>, notes=<why>`.
@@ -141,12 +155,82 @@ At every step, tell the user what you are doing in plain English. Follow the for
 ## 2.55) Vector index and manifest (v2)
 
 - **Manifest (freshness source of truth):** `./docs/ai/cache/wiz_mcp_server/manifest.json` — per-entry `last_cached`, `next_refresh_due`, `status`.
-- **CLI status:** `uv run python scripts/wiz_doc_cache_manager.py status` — entry counts and stale-or-due rows.
+- **CLI status:** `uv run python scripts/wiz_cache_manager.py status` — entry counts and stale-or-due rows.
 - **Chroma rebuild** after large cache pulls or when vectors must match disk: from repo root run  
   `uv run python -m prestonotes_mcp.ingestion.build_vector_db --reset`  
   (indexes `rag.wiz_docs_cache` and optional `rag.wiz_ext_pages` from `prestonotes-mcp.yaml`; see `prestonotes-mcp.yaml.example`).
 - **Coverage spot-check:** `uv run python scripts/wiz_vector_coverage_report.py --repo-root .`
 - **Operator tutorial:** `docs/tutorials/wiz-rag-from-cache-to-search.md`
+
+## 2.59) TASK-074 tied caches — hosted docs KB JSON + §G4 external gap refs (Required on default + refresh paths)
+
+Cross-ref: **`docs/tasks/active/TASK-074-ucn-accomplishments-vendor-wins-and-upsell-path-sku-gaps.md`** (**§G3.a** seeds, **§G4** URLs, **§G8** snapshot file shape) and `docs/ai/cache/wiz_mcp_server/kb_seed_queries.yaml`.
+
+This section applies on the **§2.51 default path** (hydrate-if-needed), and also on the broad **refresh path**. It is skipped only in explicit **cache-only** mode.
+
+1. **`wiz_docs_knowledge_base` (wiz-remote) + `kb_seed_queries.yaml`**  
+   - Seed source of truth is **`kb_seed_queries.yaml`** (`initial_query`, **`results`** = top-K rows to keep, default **1**).  
+   - **One shot + top-K:** one MCP call per seed; keep the top `results` rows by `Score`. When materializing from **full** MCP JSON (multiple hits), use `wiz_cache_manager.py kb-snapshot save --slice-top-k <K>` so the envelope matches the seed without hand-editing `Content`.  
+   - **Never** substitute placeholder or “stub” `Content` in committed snapshots; the literal MCP row text is the contract (see `kb_licensing_seed_sources/` for offline rebuilds).
+   - Cache layout: `docs/ai/cache/wiz_mcp_server/mcp_query_snapshots/<category>/` where **category** is the slug of the first ` - `-delimited segment (e.g. `licensing`).  
+   - Snapshot file name: `slugify(remainder after first segment).json` (e.g. `wiz-cloud-billable-units.json`).  
+   - Each file is envelope JSON (`query`, `saved_at`, `source_tool`, `result_count`, `results`, optional `top_k`).  
+   - Missing-file behavior: re-run the seed `initial_query` from `kb_seed_queries.yaml` (or the `query` field stored in an existing envelope) and overwrite that path.  
+   - Freshness policy is **per file** (`saved_at` <= 7 days means fresh). Use `wiz_cache_manager.py kb-snapshot status --initial-slug <category>` (optional `--seed-file`) to compare on-disk files to yaml expectations.
+
+2. **Fetch robustness and concurrency**  
+   - Max **10** in-flight `wiz_docs_knowledge_base` calls at a time.
+   - For each query call, use retry policy: up to **2 retries**, exponential backoff (`1s`, `2s`, `4s`), and per-query timeout.
+   - If retries exhaust, record failure in run notes and continue with other seeds/paths.
+
+3. **§G4 external (architecture / gap-framing) URLs**  
+   - Ensure every URL in **TASK-074 §G4** is represented in external tiering (`ext/indexes/tier_a_urls.md` / `tier_manifest.json` when absent).  
+   - Apply the same **delta** rules as other external pages (**§2.7–§2.8**): **missing** or **stale** -> hydrate into `./docs/ai/cache/wiz_mcp_server/ext/pages/` via `spider-ext` or browser-render path. **Fresh** on-disk page -> skip re-fetch.  
+   - These pages are **not** `docs.wiz.io`; do **not** route them through wiz-local doc materialization.
+
+**Cache-only option:** when run in explicit cache-only mode, load existing seed directories + JSON snapshots and Tier A §G4 pages if profile includes them, but do not run remote calls.
+
+## 2.595) Operator E2E — TASK-074 hosted KB + §G4 ext pages (repeatable)
+
+Use this sequence whenever you need to prove the refresh path and local-cache warm run.
+
+### 1) Reset hosted KB snapshot cache (clean validation only)
+
+From repo root:
+
+```bash
+rm -rf docs/ai/cache/wiz_mcp_server/mcp_query_snapshots/*
+```
+
+### 2) Verify `wiz-remote` MCP (fail-fast)
+
+In Cursor, run one cheap `wiz_docs_knowledge_base` call (`query: "CSPM overview"`). If unavailable, stop and fix MCP auth/connectivity first.
+
+### 3) Phase 1 run (cold cache)
+
+- **Canonical path:** use **Cursor `wiz-remote` MCP** (`wiz_docs_knowledge_base`) for each seed in `kb_seed_queries.yaml`, then materialize with `wiz_cache_manager.py kb-snapshot save`. Pipe **full** MCP JSON on stdin (or `--json-file`). When the MCP payload has **multiple** hits and the seed keeps top‑K by `Score`, pass **`--slice-top-k <K>`** so the envelope’s `results` and `result_count` match the seed (same ordering as `kb_top_results`). Set **`--top-k`** on the envelope when needed (defaults to the slice K when `--top-k` is omitted). **Do not** substitute stub `Content` or placeholder text; the saved row must be the literal MCP hit text.
+- **Offline / reproducible rebuild:** committed seed bodies live under `docs/ai/cache/wiz_mcp_server/kb_licensing_seed_sources/` (`meta.json` + `bodies/*.md`, verbatim top-hit `Content`). Run `uv run python scripts/materialize_licensing_kb_snapshots.py` to rewrite `mcp_query_snapshots/licensing/*.json`. To refresh bodies from exported MCP JSON, drop files under `kb_licensing_seed_sources/_incoming/*.mcp.json` and run the same command with **`--ingest-incoming`** first.
+- **Retired:** `scripts/lpi_kb_seed_refresh.py` is a **shim** (exit 2) pointing here; the archived copy is `scripts/deprecated/lpi_kb_seed_refresh.py` — **do not** use it in playbooks or CI.
+- Hydrate §G4 external URLs through normal ext delta flow.
+
+### 4) Validate Phase 1 output
+
+- Every **category** directory under `mcp_query_snapshots/` that you expect (e.g. `licensing/`) contains the derived JSON files.
+- Every file is valid envelope JSON with non-empty `query` and `saved_at`.
+- Every seed in `kb_seed_queries.yaml` for that category has a matching envelope file (compare with `kb-snapshot status --initial-slug <category>`).
+- Failures get two troubleshoot/fix/re-validate attempts before stopping the run.
+
+### 5) Phase 2 run (warm cache)
+
+- Run **Load Product Intelligence** again with no cache deletion.
+- For each file in each seed directory:
+  - fresh (`saved_at` < 7d): read locally, skip MCP
+  - stale/missing: run only that file's exact query and overwrite just that file
+- Failures get two troubleshoot/fix/re-validate attempts before stopping the run.
+
+### 6) Ad hoc proof (optional)
+
+Use `.cursor/skills/wiz-kb-adhoc-snapshot/SKILL.md` for one-off query caching under `mcp_query_snapshots/_adhoc/<slug>.json`.
 
 ## 2.6) Wiz-Remote Enrichment Cache (Required)
 - Use the `wiz-remote` MCP server to pull product-level intelligence that is not customer/tenant-specific.
@@ -377,15 +461,15 @@ At every step, tell the user what you are doing in plain English. Follow the for
 
 - **Hard cap:** never exceed **10 requests per second** to the wiz-local MCP server (aggregate across parallel callers).
 - **Slow start (recommended):** sleep **0.2–0.5 seconds** between calls (~**2–5** requests per second) until the run is stable; do not burst above **10/s** even briefly.
-- After large doc-cache pulls, use `wiz_doc_cache_manager.py status`, review `./docs/ai/cache/wiz_mcp_server/manifest.json`, then rebuild vectors if needed:  
+- After large doc-cache pulls, use `wiz_cache_manager.py status`, review `./docs/ai/cache/wiz_mcp_server/manifest.json`, then rebuild vectors if needed:  
   `uv run python -m prestonotes_mcp.ingestion.build_vector_db --reset`
 
 ## 3.6) wiz-remote pacing and backoff (required)
 
 - Apply pacing for **`wiz-remote`** independently from wiz-local (separate credentials and limits).
-- Start **`wiz-remote`** at **15 concurrent requests**.
+- Start and stay at **10 concurrent requests max** for `wiz-remote`.
 - If any request returns a limit signal (`429`, explicit throttling, or retry-after):
-  - immediately reduce **`wiz-remote`** to **10 concurrent requests**
+  - keep concurrency at **10** (do not raise above 10 in the run)
   - add pacing delay between batches for that server only
 - Pacing ladder for **`wiz-remote`** after a limit event:
   - first limit event: `1s` inter-batch delay at concurrency `10`
@@ -393,7 +477,7 @@ At every step, tell the user what you are doing in plain English. Follow the for
   - cap delay at `8s` unless the run still fails, then hold and record as unstable
 - Stability criteria:
   - at least 3 consecutive clean batches (no throttling/timeouts) at the current setting
-  - once stable, keep the current setting for the rest of the run (do not re-increase above `10` in the same run after a limit event)
+  - once stable, keep the current setting for the rest of the run (do not exceed `10` in the same run)
 - Always log pacing telemetry in run notes/output (starting concurrency, first limit signal, fallback concurrency, final stable delay).
 
 ## 4) Synthesis Rules
@@ -436,6 +520,7 @@ At every step, tell the user what you are doing in plain English. Follow the for
     - items refreshed as stale
     - items fetched as missing
     - estimated API calls avoided
+  - **TASK-074 §2.59** touch summary (include whenever **§2.51** refresh path ran **§2.59** work): for each **TASK-074 §G3.a** seed, note refreshed vs skipped-as-fresh vs failed (wiz-remote); for each **TASK-074 §G4** URL, note hydrated vs skipped-as-fresh vs failed (ext fetch).
   - External page extraction quality summary (from Section 3.7):
     - content-first vs mixed vs script-heavy counts
     - list of script-heavy URLs needing enhanced render capture

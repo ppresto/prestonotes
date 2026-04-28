@@ -5,16 +5,16 @@ This directory is the **durable source** for `_TEST_CUSTOMER` transcript + call-
 ## Layout
 
 ```text
-v1/Transcripts/YYYY-MM-DD-<call-id>.txt
-v2/Transcripts/...          # commercial expansion (+2 calls: Cloud PO + Sensor POV)
-expected-call-records/      # optional: golden minimum JSON for `call_records lint` / tests (not materialized by apply)
+v1/Transcripts/YYYY-MM-DD-NN-<slug>.txt   # NN = 01–06 (narrative order)
+v2/Transcripts/YYYY-MM-DD-NN-<slug>.txt   # NN = 07–08 (commercial expansion)
 ```
+
+**Order:** `NN` is a two-digit sequence. **v1** per-call files use **`01`–`06`**; **v2** adds **`07`** (Wiz Cloud enterprise close) and **`08`** (Sensor POV kickoff). Lexicographic sort by date + `NN` matches story order. **`_MASTER_TRANSCRIPT__TEST_CUSTOMER.txt`** is a bundle and is not part of the `01`–`08` series.
 
 ## Intent
 
 - **v1** seeds **transcripts only** in `MyNotes/.../Transcripts/`. **Call-record JSON** is not copied from this tree; the **Extract Call Records** playbook produces `call-records/*.json` at runtime.
-- **v2** layers a commercial expansion on top of v1 (`2026-04-28-wiz-cloud-sku-purchase`, `2026-05-05-wiz-sensor-pov-kickoff`). **v2** materialize merges **transcripts only**; round-1 call records on disk are preserved.
-- **expected-call-records/** (if present) is for regression / lint baselines, not for `e2e-test-customer-materialize.py apply`.
+- **v2** layers a commercial expansion on top of v1 (`2026-04-28-07-wiz-cloud-sku-purchase`, `2026-05-05-08-wiz-sensor-pov-kickoff`). **v2** materialize merges **transcripts only**; round-1 call records on disk are preserved.
 
 ## Refreshing fixtures
 

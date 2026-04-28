@@ -212,7 +212,7 @@ Make the _"after bootstrap: restart Drive, then poll for the new dir"_ behavior 
 
 ### Section C: `v2` materialize must be additive
 
-1. **Scope `_clear_per_call_corpus` to v1 only.** When `materialize apply --v2` runs, keep existing `call-records/*.json` and existing v1 `Transcripts/*.txt`; only drop any `_seed_from_*` or `Backup*` stragglers. v2 adds **2 expansion transcripts** (`2026-04-28-wiz-cloud-sku-purchase.txt`, `2026-05-05-wiz-sensor-pov-kickoff.txt`) without disturbing round-1 state.
+1. **Scope `_clear_per_call_corpus` to v1 only.** When `materialize apply --v2` runs, keep existing `call-records/*.json` and existing v1 `Transcripts/*.txt`; only drop any `_seed_from_*` or `Backup*` stragglers. v2 adds **2 expansion transcripts** (`2026-04-28-07-wiz-cloud-sku-purchase.txt`, `2026-05-05-08-wiz-sensor-pov-kickoff.txt`) without disturbing round-1 state.
 2. **Re-test the bump-dates script** after Section C.1 - it must still succeed when call-records exist from round 1 (`e2e-test-customer-bump-dates.py --customer _TEST_CUSTOMER`). If there's a name-collision concern (which was the original reason for `_clear_per_call_corpus`), handle it by making the clear **v1-only** (`apply` with no `--v2`) and making `--v2` a pure merge.
 3. **Update the E2E playbook** at the step 7 and step 8 sections to state: round 2 Extract produces **only the 2 new call-records**; the 6 from round 1 are unchanged.
 

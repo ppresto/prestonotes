@@ -1,0 +1,27 @@
+---
+# One shot + top-K: each seed is one wiz_docs_knowledge_base query.
+# `results` is the count of rows to keep by score.
+# Paths:
+# mcp_query_snapshots/<first-segment-slug>/<slugify(remainder)>.json
+# Materialize with Cursor wiz-remote MCP kb-snapshot save
+# (--slice-top-k when MCP returns multiple hits), or use committed
+# bodies under docs/ai/cache/wiz_mcp_server/kb_licensing_seed_sources/
+# with scripts/materialize_licensing_kb_snapshots.py.
+version: 1
+seeds:
+  - initial_query: "licensing - wiz cloud - billable units"
+    results: 1
+  - initial_query: "licensing - wiz cloud - feature coverage"
+    results: 1
+  - initial_query: "licensing - wiz runtime sensor - billable units"
+    results: 1
+  - initial_query: "licensing - wiz runtime sensor - feature coverage"
+    results: 1
+  - initial_query: "licensing - wiz defend - billable units"
+    results: 1
+  - initial_query: "licensing - wiz defend - feature coverage"
+    results: 1
+  - initial_query: "licensing - wiz code - billable units"
+    results: 1
+  - initial_query: "licensing - wiz code - feature coverage"
+    results: 1

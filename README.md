@@ -122,12 +122,12 @@ There is **no** v1 **`run_pipeline`** / `run-main-task.py` in v2; structured wor
 **Constraint:** **`docs.wiz.io`** is usually **not** bulk-downloadable from your laptop (firewall). Use **tenant GraphQL** (same contract as **`search_wiz_docs`**) to refresh local text:
 
 ```bash
-uv run python scripts/wiz_doc_cache_manager.py mcp-materialize --min-age-days 7 --delay-seconds 2.5
+uv run python scripts/wiz_cache_manager.py mcp-materialize --min-age-days 7 --delay-seconds 2.5
 ```
 
-That writes **`docs/ai/cache/wiz_mcp_server/mcp_materializations/*.md`**. Optional **public** blog pages: **`wiz_doc_cache_manager.py spider-ext`** (see **`docs/ai/cache/wiz_mcp_server/README.md`**).
+That writes **`docs/ai/cache/wiz_mcp_server/mcp_materializations/*.md`**. Optional **public** blog pages: **`wiz_cache_manager.py spider-ext`** (see **`docs/ai/cache/wiz_mcp_server/README.md`**).
 
-Set **`GOOGLE_API_KEY`** (or **`GEMINI_API_KEY`**) and optionally **`PRESTONOTES_GEMINI_EMBEDDING_MODEL`** (default **`text-embedding-004`**) in **`.cursor/mcp.env`**. **Ingest roots** in **`prestonotes-mcp.yaml`**: **`wiz_docs_cache`** (static WIN), **`wiz_mcp_materializations`** (GraphQL snapshots), optional **`wiz_ext_pages`**. Build Chroma with **`uv run python -m prestonotes_mcp.ingestion.build_vector_db`** (**`--dry-run`** counts files, **`--reset`** rebuilds, **`--no-ingest-mcp`** to skip MCP dir). In Cursor: **`wiz_knowledge_search`**, **`refresh_wiz_vector_index`**. Status: **`uv run python scripts/wiz_doc_cache_manager.py vector-index-status --repo-root .`**
+Set **`GOOGLE_API_KEY`** (or **`GEMINI_API_KEY`**) and optionally **`PRESTONOTES_GEMINI_EMBEDDING_MODEL`** (default **`text-embedding-004`**) in **`.cursor/mcp.env`**. **Ingest roots** in **`prestonotes-mcp.yaml`**: **`wiz_docs_cache`** (static WIN), **`wiz_mcp_materializations`** (GraphQL snapshots), optional **`wiz_ext_pages`**. Build Chroma with **`uv run python -m prestonotes_mcp.ingestion.build_vector_db`** (**`--dry-run`** counts files, **`--reset`** rebuilds, **`--no-ingest-mcp`** to skip MCP dir). In Cursor: **`wiz_knowledge_search`**, **`refresh_wiz_vector_index`**. Status: **`uv run python scripts/wiz_cache_manager.py vector-index-status --repo-root .`**
 
 Hands-on walkthrough: **[`docs/tutorials/wiz-rag-from-cache-to-search.md`](docs/tutorials/wiz-rag-from-cache-to-search.md)**.
 

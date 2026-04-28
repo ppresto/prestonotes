@@ -14,16 +14,24 @@ Local cache for Wiz documentation: **WIN inventory**, **tenant GraphQL snapshots
 | **`mcp_materializations/<doc_name>.md`** | **Latest** text from **tenant `aiAssistantQuery` / DOCS** (same contract as **`search_wiz_docs`**) |
 | `ext/pages/*.md` | External **`www.wiz.io`** pages (see `ext/indexes/tier_manifest.json`) |
 | `queries/` | Optional saved search traces |
-| `mcp_query_snapshots/*.md` | (Optional) **wiz-remote** `wiz_docs_knowledge_base` on-disk markdown — see **TASK-074** §G3 / §G8. |
+| `mcp_query_snapshots/<category>/*.json` | **wiz-remote** hosted-KB envelope cache (**one shot + top-K** per `kb_seed_queries.yaml`) — **TASK-074** §G3 / §G8. |
+
+**Repeatable E2E (snapshots + §G4 ext pages):** **`docs/ai/playbooks/load-product-intelligence.md`** → **§2.595** (reset → MCP smoke → refresh-path LPI → ad hoc snapshot skill → second read-only LPI).
 
 ## Scripts (repo root)
 
 ```bash
-uv run python scripts/wiz_doc_cache_manager.py status
-uv run python scripts/wiz_doc_cache_manager.py mcp-materialize --min-age-days 7 --delay-seconds 2.5
-uv run python scripts/wiz_doc_cache_manager.py spider-ext --dry-run --max-pages 3
+uv run python scripts/wiz_cache_manager.py status
+uv run python scripts/wiz_cache_manager.py mcp-materialize --min-age-days 7 --delay-seconds 2.5
+uv run python scripts/wiz_cache_manager.py spider-ext --dry-run --max-pages 3
 uv run python scripts/wiz_docs_search_cli.py --query "Wiz CLI prerequisites"
-# see TASK-074 §G8 (wiz-remote snapshot files)
+# TASK-074 §G8: wiz-remote JSON → envelope snapshot (paths derived from --query: first segment = category dir)
+# Full multi-hit MCP payload: use --slice-top-k to persist top rows by Score before building the envelope.
+uv run python scripts/wiz_cache_manager.py kb-snapshot save \
+  --query "licensing - wiz cloud - billable units" \
+  --slice-top-k 1 \
+  --top-k 1 \
+  --json-file path/to/wiz_docs_knowledge_base_full_response.json
 ```
 
 ## Adaptive `refresh-loop`

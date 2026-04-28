@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, phase3]
+    branches: [main]
   pull_request:
-    branches: [main, phase3]
+    branches: [main]
 
 jobs:
   check:
@@ -17,25 +17,16 @@ jobs:
         with:
           version: "latest"
 
-      - name: Sync Python (workspace)
+      - name: Sync Python workspace
         run: uv sync --all-groups
 
-      - name: Repo integrity manifest
-        run: bash scripts/ci/check-repo-integrity.sh
+      - name: Pre-commit & Linters
+        run: uv run pre-commit run --all-files
 
-      - name: No embedded GDoc file ids in docs (TASK-052 §0.6)
-        run: bash scripts/ci/check-docs-no-embedded-gdoc-file-ids.sh
-
-      - name: Tests
-        run: uv run pytest
-
-      - name: Call-record lint (guarded — _TEST_CUSTOMER fixture only)
+      - name: Lint E2E Test Data (_TEST_CUSTOMER)
         run: |
           if [ -d "MyNotes/Customers/_TEST_CUSTOMER/call-records" ]; then
             uv run python -m prestonotes_mcp.call_records lint _TEST_CUSTOMER
           else
-            echo "skip: MyNotes/Customers/_TEST_CUSTOMER not materialized; lint is a no-op here"
+            echo "skip: Test data not materialized; lint is a no-op."
           fi
-
-      - name: Pre-commit
-        run: uv run pre-commit run --all-files

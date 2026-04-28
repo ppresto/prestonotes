@@ -44,7 +44,13 @@ class PerCallTxt:
 
 
 def _spacing_days(n: int) -> list[int]:
-    """Return ``n`` day-offsets in (1, 30], oldest → newest spacing."""
+    """Return ``n`` increasing day-offsets spread through ~(3, 28] days ago.
+
+    Paired with ``_assign_target_dates`` using **oldest narrative first**: the
+    **first** offset is assigned to the **oldest** file and must be the
+    **largest** (furthest in the past) so bumped ``YYYY-MM-DD`` filenames stay
+    in chronological story order.
+    """
     if n <= 0:
         return []
     if n == 1:
@@ -57,11 +63,20 @@ def _spacing_days(n: int) -> list[int]:
 
 
 def _assign_target_dates(files: list[PerCallTxt], *, today: date) -> dict[str, date]:
-    """Map old stem (YYYY-MM-DD-slug) -> new date (same slug)."""
+    """Map old stem (YYYY-MM-DD-slug) -> new calendar date (same slug).
+
+    Files are sorted by narrative order (``old_date``, then ``slug``). Oldest
+    story gets the **earliest** bumped date (largest day offset from ``today``);
+    newest story gets the **latest** bumped date (smallest offset). After bump,
+    lexicographic sort of ``YYYY-MM-DD-*.txt`` matches call order.
+    """
     ordered = sorted(files, key=lambda p: (p.old_date, p.slug))
     offs = _spacing_days(len(ordered))
+    # offs[0] is smallest offset (most recent wall date). Pair oldest file with
+    # largest offset so oldest call -> oldest calendar date in the window.
+    offs_for_oldest_first = list(reversed(offs))
     mapping: dict[str, date] = {}
-    for p, off in zip(ordered, offs, strict=True):
+    for p, off in zip(ordered, offs_for_oldest_first, strict=True):
         mapping[p.old_stem] = today - timedelta(days=int(off))
     return mapping
 
