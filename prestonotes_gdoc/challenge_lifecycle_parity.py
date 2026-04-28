@@ -56,9 +56,33 @@ def _tracker_blob(rows: list) -> str:
 
 
 def markers_in_tracker(rows: list) -> set[str]:
-    """Lowercased lifecycle ids found in [lifecycle_id:…] anchors."""
+    """Lowercased lifecycle ids found in [lifecycle_id:…] anchors (challenge + notes)."""
     blob = _tracker_blob(rows)
     return {m.group(1).lower() for m in MARKER_RE.finditer(blob)}
+
+
+def markers_in_notes_references_only(rows: list) -> set[str]:
+    """Lowercased lifecycle ids from anchors appearing only in Notes & References cells."""
+    parts: list[str] = []
+    for r in rows:
+        parts.append(getattr(r, "notes_references", "") or "")
+    blob = "\n".join(parts)
+    return {m.group(1).lower() for m in MARKER_RE.finditer(blob)}
+
+
+def markers_in_challenge_only(rows: list) -> set[str]:
+    """Lowercased lifecycle ids from anchors appearing in Challenge column text."""
+    parts: list[str] = []
+    for r in rows:
+        parts.append(getattr(r, "challenge", "") or "")
+    blob = "\n".join(parts)
+    return {m.group(1).lower() for m in MARKER_RE.finditer(blob)}
+
+
+def strip_lifecycle_markers_from_challenge_text(text: str) -> str:
+    """Remove lifecycle anchor tokens from challenge text; collapse whitespace."""
+    stripped = MARKER_RE.sub(" ", text or "")
+    return " ".join(stripped.split()).strip()
 
 
 def _mentions_lifecycle_id(text: str, lifecycle_id: str) -> bool:
@@ -86,7 +110,7 @@ def auto_insert_missing_lifecycle_anchors(
     inserted: list[str] = []
     for idx, row in enumerate(tracker_rows):
         row_blob = f"{getattr(row, 'challenge', '')}\n{getattr(row, 'notes_references', '')}"
-        existing_ids = markers_in_tracker([row])
+        existing_ids = markers_in_notes_references_only([row])
         missing_for_row: list[str] = []
         for lifecycle_id in lifecycle_ids:
             lid = lifecycle_id.lower()
@@ -105,6 +129,16 @@ def auto_insert_missing_lifecycle_anchors(
         else:
             setattr(row, "notes_references", anchors)
         inserted.append(f"row[{idx}] -> {' '.join(missing_for_row)}")
+
+    for row in tracker_rows:
+        ch_orig = str(getattr(row, "challenge", "") or "")
+        if not MARKER_RE.search(ch_orig):
+            continue
+        ch_stripped = strip_lifecycle_markers_from_challenge_text(ch_orig)
+        if ch_stripped:
+            setattr(row, "challenge", ch_stripped)
+        else:
+            setattr(row, "challenge", "")
     return inserted
 
 
@@ -116,32 +150,48 @@ def check_tracker_lifecycle_parity(
     """
     Returns (warnings, errors).
 
-    - If lifecycle has ids but the tracker has no [lifecycle_id:…] anchors at all → warning only
-      (migration / older docs).
-    - If any anchor exists → every lifecycle id must have a matching [lifecycle_id:<id>] token
-      (case-insensitive id match) or errors list is non-empty (write should abort).
+    - Parity is satisfied only when every lifecycle id has a matching anchor in
+      **Notes & References** (not the Challenge column).
+    - If challenge-lifecycle.json has ids but **no** anchors appear in Notes & References
+      → migration warning (legacy docs).
+    - If any anchor appears in the Challenge column → placement warning (anchors belong
+      in Notes & References only).
+    - If any anchor exists in Notes **or** Challenge, every lifecycle id must appear
+      in Notes & References or errors list is non-empty (write should abort).
     """
     ids = load_lifecycle_challenge_ids(repo_root, customer_name)
     if not ids:
         return [], []
 
-    blob = _tracker_blob(tracker_rows).lower()
-    if "[lifecycle_id:" not in blob and "lifecycle:" not in blob:
-        msg = (
-            "LIFECYCLE_PARITY: challenge-lifecycle.json has entries but Challenge Tracker rows "
-            "have no [lifecycle_id:…] anchors. Add anchors to challenge or Notes & References "
+    warns: list[str] = []
+    notes_ids = markers_in_notes_references_only(tracker_rows)
+    challenge_ids = markers_in_challenge_only(tracker_rows)
+
+    if not notes_ids:
+        warns.append(
+            "LIFECYCLE_PARITY: challenge-lifecycle.json has entries but Challenge Tracker "
+            "Notes & References cells have no [lifecycle_id:…] (or legacy lifecycle:) anchors. "
+            "Add anchors to Notes & References only "
             "(see docs/ai/gdoc-customer-notes/mutations-account-summary-tab.md). "
             f"Lifecycle ids: {', '.join(ids)}"
         )
-        return [msg], []
 
-    found = markers_in_tracker(tracker_rows)
+    if challenge_ids:
+        warns.append(
+            "LIFECYCLE_PARITY_PLACEMENT: lifecycle anchors were found in the Challenge column; "
+            "they belong in Notes & References only. Move [lifecycle_id:…] tokens out of "
+            "Challenge text (see docs/ai/gdoc-customer-notes/mutations-account-summary-tab.md)."
+        )
+
+    if not notes_ids and not challenge_ids:
+        return warns, []
+
     errors: list[str] = []
     for kid in ids:
-        if kid.lower() not in found:
+        if kid.lower() not in notes_ids:
             errors.append(
                 "LIFECYCLE_PARITY_FAIL: "
                 f"lifecycle id {kid!r} is missing matching anchor [lifecycle_id:{kid}] "
-                "in Challenge Tracker after applying mutations."
+                "in Challenge Tracker Notes & References after applying mutations."
             )
-    return [], errors
+    return warns, errors

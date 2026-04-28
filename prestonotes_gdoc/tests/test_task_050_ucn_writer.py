@@ -99,11 +99,11 @@ def _make_section_map_with_tracker(w, rows):
 def test_lifecycle_reconciler_flips_mismatched_status(pn_gdoc_writer):
     w = pn_gdoc_writer
     row = w.TableRow(
-        challenge="SOC budget blocks Splunk PO [lifecycle_id:ch-soc-budget]",
+        challenge="SOC budget blocks Splunk PO",
         date="2026-04-21",
         category="Commercial",
         status="Open",
-        notes_references="2026-03-28 Cloud close",
+        notes_references="2026-03-28 Cloud close [lifecycle_id:ch-soc-budget]",
     )
     section_map = _make_section_map_with_tracker(w, [row])
     lifecycle = {
@@ -128,11 +128,11 @@ def test_lifecycle_reconciler_flips_mismatched_status(pn_gdoc_writer):
 def test_lifecycle_reconciler_noop_when_status_already_matches(pn_gdoc_writer):
     w = pn_gdoc_writer
     row = w.TableRow(
-        challenge="Champion exit [lifecycle_id:ch-champion-exit]",
+        challenge="Champion exit",
         date="2026-04-21",
         category="Risk",
         status="In Progress",
-        notes_references="",
+        notes_references="[lifecycle_id:ch-champion-exit]",
     )
     section_map = _make_section_map_with_tracker(w, [row])
     lifecycle = {"ch-champion-exit": {"current_state": "in_progress"}}
@@ -164,11 +164,11 @@ def test_lifecycle_reconciler_skips_row_without_anchor(pn_gdoc_writer):
 def test_lifecycle_reconciler_ignores_unknown_state(pn_gdoc_writer):
     w = pn_gdoc_writer
     row = w.TableRow(
-        challenge="[lifecycle_id:ch-x] something",
+        challenge="something",
         date="2026-04-21",
         category="Other",
         status="Open",
-        notes_references="",
+        notes_references="[lifecycle_id:ch-x] context",
     )
     section_map = _make_section_map_with_tracker(w, [row])
     lifecycle = {"ch-x": {"current_state": "not_a_real_state"}}
@@ -288,6 +288,28 @@ def _make_appendix_section(w):
         section_type="fields",
         fields={"agent_run_log": fld},
     )
+
+
+def test_appendix_run_log_healed_from_free_text_when_agent_log_empty(pn_gdoc_writer):
+    """Mis-parsed read: compact run line under free_text → agent_run_log."""
+    w = pn_gdoc_writer
+    run_line = (
+        "run_date=2026-04-21; sections_touched=a,b; entries_added=1; "
+        "entries_skipped=0; skipped_reasons=; reconciled=;"
+    )
+    ft = w.SectionField(key="free_text", label=None, update_strategy="free_text", entries=[w.Entry("noise"), w.Entry(run_line)])
+    ar = w.SectionField(key="agent_run_log", label="Agent Run Log:", update_strategy="append_with_history", entries=[])
+    appendix = w.DocumentSection(
+        key="appendix",
+        header="Appendix",
+        level=1,
+        section_type="fields",
+        fields={"free_text": ft, "agent_run_log": ar},
+    )
+    sm = {"appendix": appendix}
+    w._heal_appendix_run_log_from_free_text(sm)
+    assert len(ar.entries) == 1 and ar.entries[0].value == run_line
+    assert len(ft.entries) == 1 and ft.entries[0].value == "noise"
 
 
 def test_agent_run_log_entry_contains_required_keys(pn_gdoc_writer):

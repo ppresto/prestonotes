@@ -98,6 +98,7 @@ Mutation guardrails:
   - Keep `workflows_processes` narratives named and operational; avoid low-signal bullet spam or shorthand-only arrows.
   - Do not place deal/commercial risk lines in `workflows_processes`; keep those in `exec_account_summary.risk`.
   - Do not place challenge lifecycle/status text in `workflows_processes`; keep blockers in `challenge_tracker`.
+  - **Accomplishments vs Workflows:** **Accomplishments** are durable customer outcomes (for example a tool decommissioned, a PO signed, a coverage or score milestone reached). **Workflows** are repeatable operating processes (how teams run detection, intake, or releases day to day). Sizing, counts, and coverage rollups belong in `cloud_environment.sizing` (and related cloud fields), not in `workflows_processes`. Do not park accomplishment-only wins only under `workflows_processes` when the transcript is really stating a completed outcome—route those to `accomplishments` (or the right exec summary field) per schema.
   - `cloud_environment.*` = active tooling/environment context only; use concise operational tool details.
 - Cloud Environment boundaries:
   - Allowed actions:

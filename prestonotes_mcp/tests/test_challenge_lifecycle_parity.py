@@ -49,8 +49,10 @@ def test_parity_errors_when_markers_partial(tmp_path: Path, parity_mod) -> None:
     ).write_text(json.dumps(life), encoding="utf-8")
     rows = [SimpleNamespace(challenge="x [lifecycle_id:foo]", notes_references="")]
     warns, errs = parity_mod.check_tracker_lifecycle_parity(tmp_path, cust, rows)
-    assert not warns
-    assert len(errs) == 1 and "bar" in errs[0]
+    assert any("PLACEMENT" in w for w in warns)
+    assert any("LIFECYCLE_PARITY:" in w and "Notes & References" in w for w in warns)
+    assert len(errs) == 2
+    assert any("foo" in e for e in errs) and any("bar" in e for e in errs)
 
 
 def test_parity_ok_when_all_markers(tmp_path: Path, parity_mod) -> None:

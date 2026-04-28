@@ -760,6 +760,40 @@ def _add_content_to_field(sf: SectionField, text: str) -> None:
         sf.entries.append(parse_entry_text(text))
 
 
+def _free_text_value_looks_like_agent_run_log(value: str) -> bool:
+    v = value or ""
+    return "run_date=" in v and "sections_touched=" in v
+
+
+def _heal_appendix_run_log_from_free_text(section_map: SectionMap) -> None:
+    """Move mis-parsed TASK-050 run-log lines from ``free_text`` into ``agent_run_log``.
+
+    When ``appendix.agent_run_log`` parsed empty but ``appendix.free_text`` holds
+    compact single-line run records (``run_date=`` … ``sections_touched=``), attach
+    those entries to ``agent_run_log`` so reads match writer output.
+    """
+    appendix = section_map.get("appendix")
+    if not appendix or appendix.section_type == "table":
+        return
+    ar = appendix.fields.get("agent_run_log")
+    ft = appendix.fields.get("free_text")
+    if not ar or not ft:
+        return
+    if ar.entries:
+        return
+    kept: list[Entry] = []
+    moved: list[Entry] = []
+    for ent in ft.entries:
+        if _free_text_value_looks_like_agent_run_log(ent.value):
+            moved.append(ent)
+        else:
+            kept.append(ent)
+    if not moved:
+        return
+    ft.entries = kept
+    ar.entries.extend(moved)
+
+
 def parse_document(content: list, config: dict) -> SectionMap:
     header_to_key, section_configs, _ = build_config_lookups(config)
     sections = config.get("sections", [])
@@ -864,6 +898,7 @@ def parse_document(content: list, config: dict) -> SectionMap:
         if sec_key in last_index:
             sec.content_end_index = last_index[sec_key]
 
+    _heal_appendix_run_log_from_free_text(section_map)
     return section_map
 
 
@@ -2924,8 +2959,8 @@ def _load_challenge_lifecycle(customer_name: str) -> dict[str, dict]:
 
 
 def _lifecycle_ids_for_row(row: "TableRow") -> list[str]:
-    """Extract all [lifecycle_id:<id>] anchors from a Challenge Tracker row."""
-    blob = f"{row.challenge or ''}\n{row.notes_references or ''}"
+    """Extract lifecycle anchors from the Notes & References cell only."""
+    blob = row.notes_references or ""
     return [m.group(1).lower() for m in _LIFECYCLE_ID_RE.finditer(blob)]
 
 
@@ -2936,8 +2971,9 @@ def _reconcile_with_lifecycle(
 ) -> list[dict]:
     """TASK-050 §B (D2): lifecycle-authoritative reconciliation.
 
-    For every Challenge Tracker row carrying a ``[lifecycle_id:<id>]`` anchor
-    whose lifecycle ``current_state`` maps to a Challenge Tracker status that
+    For every Challenge Tracker row whose **Notes & References** cell carries a
+    ``[lifecycle_id:<id>]`` anchor (or legacy ``lifecycle:``) whose lifecycle
+    ``current_state`` maps to a Challenge Tracker status that
     differs from the row's current ``status``, rewrite the row status to match
     the lifecycle. Each rewrite is recorded as an "applied" change so it shows
     up in the agent run log (§F) and the markdown audit log.
@@ -5088,8 +5124,8 @@ def _run_lifecycle_tracker_parity_gate(customer_name: str, section_map: SectionM
     if errs:
         raise RuntimeError(
             "\n".join(errs)
-            + "\n\nFix: include matching [lifecycle_id:<id>] anchors in Challenge Tracker text "
-            "(challenge cell and/or Notes & References) for every id in challenge-lifecycle.json, "
+            + "\n\nFix: include matching [lifecycle_id:<id>] anchors in Challenge Tracker "
+            "**Notes & References** for every id in challenge-lifecycle.json, "
             "or pass --skip-lifecycle-parity-check for an emergency write."
         )
 

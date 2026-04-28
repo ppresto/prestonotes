@@ -153,7 +153,7 @@ The append-only JSON journal under **`MyNotes/Customers/<Customer>/AI_Insights/c
 
 ### Anchor convention (machine-checkable)
 
-For every persisted lifecycle **`challenge_id`**, ensure the corresponding tracker row includes this exact token (challenge cell and/or **Notes & References**):
+For every persisted lifecycle **`challenge_id`**, ensure the corresponding tracker row includes this exact token in **Notes & References** only (not the Challenge column):
 
 `[lifecycle_id:<challenge_id>]`
 
@@ -161,7 +161,7 @@ Example: `[lifecycle_id:splunk-renewal-planning-q2]` at the end of **Notes & Ref
 
 When **`write_doc`** is called with MCP argument **`customer_name`** (forwarded as **`--customer-name`** to `prestonotes_gdoc/update-gdoc-customer-notes.py`):
 
-- If the lifecycle file has ids but **no** row contains `[lifecycle_id:` → the writer prints a **stderr warning** (migration / legacy docs).
+- If the lifecycle file has ids but **no** row has `[lifecycle_id:` in **Notes & References** → the writer prints a **stderr warning** (migration / legacy docs).
 - If **any** anchor exists → **every** lifecycle id must have a matching anchor or the write **fails** with `LIFECYCLE_PARITY_FAIL` (prevents partial sync).
 - Emergency bypass: **`--skip-lifecycle-parity-check`** on the write CLI (MCP: omit `customer_name` or add a future MCP flag if needed).
 
@@ -169,9 +169,9 @@ When **`write_doc`** is called with MCP argument **`customer_name`** (forwarded 
 
 ### Writer-side mechanics (code paths)
 
-- **`prestonotes_gdoc/update-gdoc-customer-notes.py`** — after mutations apply, **`_reconcile_with_lifecycle`** updates Challenge Tracker **status** only for rows that already contain **`[lifecycle_id:<id>]`** (or legacy `lifecycle:`); rows without an anchor are unchanged.
-- **`prestonotes_gdoc/challenge_lifecycle_parity.py`** — invoked at end of **`cmd_write`**: **`auto_insert_missing_lifecycle_anchors`** appends a canonical **`[lifecycle_id:…]`** to **Notes & References** when the row text already includes the raw id token but the bracket form is missing; **`check_tracker_lifecycle_parity`** then requires **every** id in `challenge-lifecycle.json` to appear as an anchor in the table or the write **raises** (unless `--skip-lifecycle-parity-check`).
-- **New `challenge_id` only in JSON:** `update_challenge_state` does not create a Doc row. The approved mutation batch must add a **Challenge Tracker** row (or extend text) that includes **`[lifecycle_id:<id>]`** for each new id; otherwise parity fails after auto-insert (which cannot invent rows).
+- **`prestonotes_gdoc/update-gdoc-customer-notes.py`** — after mutations apply, **`_reconcile_with_lifecycle`** updates Challenge Tracker **status** only for rows whose **Notes & References** cell already contains **`[lifecycle_id:<id>]`** (or legacy `lifecycle:`); rows without an anchor there are unchanged.
+- **`prestonotes_gdoc/challenge_lifecycle_parity.py`** — invoked at end of **`cmd_write`**: **`auto_insert_missing_lifecycle_anchors`** appends a canonical **`[lifecycle_id:…]`** to **Notes & References** when the row text already includes the raw id token but the bracket form is missing, then strips misplaced anchors from the Challenge column; **`check_tracker_lifecycle_parity`** then requires **every** id in `challenge-lifecycle.json` to appear as an anchor in **Notes & References** or the write **raises** (unless `--skip-lifecycle-parity-check`).
+- **New `challenge_id` only in JSON:** `update_challenge_state` does not create a Doc row. The approved mutation batch must add a **Challenge Tracker** row (or extend **Notes & References**) that includes **`[lifecycle_id:<id>]`** for each new id; otherwise parity fails after auto-insert (which cannot invent rows).
 
 ---
 
