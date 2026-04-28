@@ -10,6 +10,7 @@ Canonical **eight-step** end-to-end validation for the `_TEST_CUSTOMER` fixture 
 - **GDoc and artifact** nuance (wording, hygiene, cross-section truth) is reviewed by the **agent + operator** using that playbook (or the checklist below) — there is no substitute for `read_doc` and transcript `call_record` side-by-sides.
 - If a step fails, stop, fix, and **resume from that step** — do not restart from step 1 unless the failure corrupted state.
 - **Artifact hygiene:** customer-facing artifacts produced by this flow (GDoc sections, History Ledger, `challenge-lifecycle.json`, Account Summary, call records) must be indistinguishable from a real-customer run. See **`.cursor/rules/11-e2e-test-customer-trigger.mdc` — Artifact hygiene**.
+- **Call-records / sync order:** After **Extract Call Records** (steps 3 or 6) creates or updates `call-records/*.json`, run **`./scripts/e2e-test-push-gdrive-notes.sh _TEST_CUSTOMER`** (push local changes to Drive) **before** any **`sync_notes`** pull or other pull that mirrors from Drive — otherwise `rsync` delete-on-receive can remove JSON that exists only in the repo until it is pushed.
 
 ## Prerequisites (one-time per machine)
 
