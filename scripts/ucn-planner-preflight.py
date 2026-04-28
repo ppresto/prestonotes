@@ -3,7 +3,8 @@
 
 Contracts enforced:
 - TASK-072: DAL parity + Deal Stage trigger path.
-- TASK-073: full/partial pre-write section coverage via planner decisions.
+- TASK-073: pre-write section coverage via planner decisions (always **full** matrix; see
+  ``_required_targets_full()`` — ``partial`` mode is no longer used).
 """
 
 from __future__ import annotations
@@ -19,6 +20,10 @@ COMMERCIAL_SKUS = {"cloud", "sensor", "defend", "code"}
 _DATE_RE = re.compile(r"\b(20\d{2}-\d{2}-\d{2})\b")
 _NUMERIC_RE = re.compile(r"^-?\d+(\.\d+)?(%|h|hrs|hours|days)?$", re.IGNORECASE)
 
+# Skip reasons: preflight enforces that every matrix target was *reviewed* (``mutate`` or ``skip``).
+# A ``skip`` with one of these reasons is success — it records “checked, no change” and avoids
+# fabricating GDoc/ledger lines. Prefer specific reasons; ``no_in_scope_transcript_signal`` is the
+# usual label when the active corpus has no defensible signal for that section.
 ALLOWED_SKIP_REASONS = {
     "no_in_scope_transcript_signal",
     "same_as_current_entry",
@@ -27,7 +32,8 @@ ALLOWED_SKIP_REASONS = {
     "empty_transcript",
 }
 
-# TASK-073 canonical planner-governed targets.
+# TASK-073 canonical planner-governed targets. ``required_in_ucn_partial`` is legacy (unused);
+# :func:`_required_targets_full` is the only required set used for validation.
 TARGET_MATRIX: dict[str, dict[str, Any]] = {
     # Account Summary tab
     "exec_account_summary.top_goal": {
@@ -325,19 +331,11 @@ def _load_mutations(payload: Any) -> list[dict[str, Any]]:
     return []
 
 
-def _resolve_ucn_mode(contract: dict[str, Any], ucn_mode: str | None) -> tuple[str, list[str]]:
-    codes: list[str] = []
-    mode = ucn_mode or contract.get("ucn_mode") or "full"
-    mode = str(mode).strip().lower()
-    if mode not in {"full", "partial"}:
-        codes.append(f"coverage_mode_invalid:{mode}")
-        mode = "full"
-    return mode, codes
-
-
-def _required_targets_for_mode(ucn_mode: str) -> set[str]:
-    required_key = "required_in_ucn_full" if ucn_mode == "full" else "required_in_ucn_partial"
-    return {target for target, cfg in TARGET_MATRIX.items() if bool(cfg.get(required_key))}
+def _required_targets_full() -> set[str]:
+    """Planner-governed targets for every UCN preflight run (``required_in_ucn_full``)."""
+    return {
+        target for target, cfg in TARGET_MATRIX.items() if bool(cfg.get("required_in_ucn_full"))
+    }
 
 
 def _normalize_coverage_decisions(raw: Any) -> tuple[dict[str, dict[str, Any]], list[str]]:
@@ -394,20 +392,19 @@ def _is_numeric_like(value: Any) -> bool:
 def _validate_coverage_contract(
     contract: dict[str, Any],
     mutations: list[dict[str, Any]],
-    ucn_mode: str,
 ) -> tuple[list[str], dict[str, Any]]:
     codes: list[str] = []
     metrics: dict[str, Any] = {}
 
     coverage = contract.get("coverage")
     if not isinstance(coverage, dict):
-        return ["coverage_contract_missing"], {"ucn_mode": ucn_mode}
+        return ["coverage_contract_missing"], {"ucn_mode": "full"}
 
     decisions_raw = coverage.get("decisions")
     decisions, decision_codes = _normalize_coverage_decisions(decisions_raw)
     codes.extend(decision_codes)
 
-    required_targets = _required_targets_for_mode(ucn_mode)
+    required_targets = _required_targets_full()
     missing_required = sorted(required_targets - set(decisions.keys()))
     if missing_required:
         codes.append("coverage_decisions_missing_required:" + ",".join(missing_required))
@@ -472,7 +469,7 @@ def _validate_coverage_contract(
                 codes.append(f"coverage_numeric_value_invalid:{target}:{example}")
 
     metrics = {
-        "ucn_mode": ucn_mode,
+        "ucn_mode": "full",
         "required_targets_count": len(required_targets),
         "required_targets": sorted(required_targets),
         "decision_count": len(decisions),
@@ -486,6 +483,13 @@ def _validate_coverage_contract(
 def validate_payload(
     payload: Any, ucn_mode: str | None = None
 ) -> tuple[bool, list[str], dict[str, Any]]:
+    """Validate a UCN mutation plan.
+
+    The ``ucn_mode`` parameter is **deprecated and ignored**; preflight always
+    enforces the **full** ``TARGET_MATRIX`` (``required_in_ucn_full``). Remove
+    ``planner_contract.ucn_mode`` or set it to ``full`` for clarity.
+    """
+    _ = ucn_mode  # deprecated; kept for backward compatibility with callers/tests
     codes: list[str] = []
     metrics: dict[str, Any] = {}
     mutations = _load_mutations(payload)
@@ -497,11 +501,7 @@ def validate_payload(
     if not isinstance(contract, dict):
         return False, ["planner_contract_missing"], {"reason": "planner_contract_missing"}
 
-    resolved_mode, mode_codes = _resolve_ucn_mode(contract, ucn_mode)
-    codes.extend(mode_codes)
-    coverage_codes, coverage_metrics = _validate_coverage_contract(
-        contract, mutations, resolved_mode
-    )
+    coverage_codes, coverage_metrics = _validate_coverage_contract(contract, mutations)
     codes.extend(coverage_codes)
     metrics["coverage"] = coverage_metrics
 
@@ -628,14 +628,13 @@ def validate_payload(
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Validate UCN planner contract before write_doc.")
-    ap.add_argument("--mutations", required=True, help="Path to mutation JSON file")
-    ap.add_argument(
-        "--ucn-mode",
-        choices=["full", "partial"],
-        default=None,
-        help="Coverage required-set mode. Defaults to planner_contract.ucn_mode or full.",
+    ap = argparse.ArgumentParser(
+        description=(
+            "Validate UCN planner contract before write_doc. "
+            "Always enforces full matrix coverage (see TARGET_MATRIX required_in_ucn_full)."
+        )
     )
+    ap.add_argument("--mutations", required=True, help="Path to mutation JSON file")
     ap.add_argument(
         "--json-output",
         action="store_true",
@@ -662,7 +661,17 @@ def main() -> int:
         )
         return 2
 
-    ok, codes, metrics = validate_payload(payload, ucn_mode=args.ucn_mode)
+    pc = payload.get("planner_contract") if isinstance(payload, dict) else None
+    if isinstance(pc, dict) and "ucn_mode" in pc:
+        raw_um = str(pc.get("ucn_mode") or "").strip().lower()
+        if raw_um and raw_um != "full":
+            print(
+                f"ucn-planner-preflight: planner_contract.ucn_mode={pc.get('ucn_mode')!r} is ignored; "
+                'preflight always enforces full matrix coverage. Omit ucn_mode or set it to "full".',
+                file=sys.stderr,
+            )
+
+    ok, codes, metrics = validate_payload(payload)
     if args.json_output:
         print(json.dumps({"ok": ok, "codes": codes, "metrics": metrics}, indent=2))
     else:

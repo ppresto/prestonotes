@@ -66,7 +66,7 @@ At every step, tell the user what you are doing in plain English. Start each ste
 
 ## Before You Start (Setup Checks)
 
-Run these checks in order. If any check fails, **stop** and tell the user what failed and how to fix it. Do not continue until they confirm the fix.
+Run these checks in order. If any check fails, **stop** and tell the user what failed and how to fix it. Do not continue until they confirm the fix. If the run is explicitly non-commercial and will not touch Upsell/commercial language, Check 4 can be marked `not_applicable`.
 
 ### Check 1 — Google Drive is available
 
@@ -102,9 +102,24 @@ Wait for confirmation before continuing.
 
 If the customer folder is missing, run `./scripts/rsync-gdrive-notes.sh "[CustomerName]"` after Checks 1-2 pass.
 
-### Check 4 — Product Intelligence is fresh
+### Check 4 — Upsell SKU snapshots are fresh (when Upsell/commercial text is in scope)
 
-Check `./MyNotes/Internal/AI_Insights/Product-Intelligence.md`. If missing or `last_updated` is older than 7 days, run `Load Product Intelligence` first.
+For runs that may write `exec_account_summary.upsell_path` (or other SKU/commercial wording), check targeted local snapshots in:
+
+- `./docs/ai/cache/wiz_mcp_server/mcp_query_snapshots/`
+- seed configuration: `./docs/ai/cache/wiz_mcp_server/kb_seed_queries.yaml`
+
+Seed query SSoT is `kb_seed_queries.yaml` (`initial_query`, **`results`** = number of top-scoring KB rows to keep per seed, default **1**; **one shot + top-K**, not a depth drill).
+
+For each seed relevant to the current deal:
+
+- Snapshot files live under **`mcp_query_snapshots/<category>/`** (category = first segment of `initial_query`, e.g. `licensing`).
+- Snapshot files are JSON envelopes with `query`, `saved_at`, `source_tool`, `result_count`, `results`, and usually `top_k`.
+- For TASK-074 hosted KB snapshots: use **`docs/ai/cache/wiz_mcp_server/kb_seed_queries.yaml`** for path → query mapping; **missing** snapshot → re-run that row’s `initial_query` via `wiz_docs_knowledge_base` and overwrite the envelope (`wiz_cache_manager.py kb-snapshot save`).
+- Refresh when per-file `saved_at` is older than 7 days or needed SKU coverage is missing.
+- Preferred source is wiz-remote MCP `wiz_docs_knowledge_base`; respect max 10 concurrent calls and retry/backoff policy from `load-product-intelligence.md`.
+
+If wiz-remote is unavailable, proceed with on-disk snapshots and explicitly call out staleness risk in the run output. Do not fabricate SKU/licensing claims.
 
 [STOP — tell user: "Setup checks passed. Starting Update Customer Notes for [CustomerName]. I have 11 steps."]
 
@@ -182,6 +197,12 @@ Pay special attention to:
 Follow **`docs/ai/references/customer-data-ingestion-weights.md`**. Set **lookback** to **1 month** by default; use **3 / 6 / 12** months if the user specified a longer window for this run.
 
 Read all available customer source material using **weights**:
+- **Commercial grounding prereq (when Upsell/commercial is in scope):**
+  1. Start with `read_doc` output from Step 3.
+  2. Read only relevant JSON snapshots in `./docs/ai/cache/wiz_mcp_server/mcp_query_snapshots/<category>/` for SKUs in play (e.g. `licensing/wiz-code-billable-units.json`), not every file in the tree.
+  3. Use TASK-074 §G4 references (NIST CSF, NIST AI RMF, OWASP SAMM, OWASP LLM Top 10) as gap-framing context when shaping upsell logic and discovery prompts.
+  4. Then continue with transcript/call-record/history reads below.
+- This path is intentionally lighter than `Load Product Intelligence`; do not block UCN on a full product-intel sweep for this use case.
 - **+4 — Transcripts (inside lookback only):** `./MyNotes/Customers/[CustomerName]/Transcripts/` (all `.txt` files **dated inside lookback**). Raw transcripts remain UCN's primary evidence at full fidelity for delta detection and quoting.
 - **+3 — Daily Activity Logs:** In local notes or synced export, ingest **only** content under **Daily Activity Logs** with **date headings inside lookback**. Do **not** propose generic edits to this section; the **only** allowed write is the documented `prepend_daily_activity_ai_summary` flow (see `docs/ai/references/daily-activity-ai-prepend.md`), not part of the default UCN mutation plan.
 - **+2 — Account Summary tab (full):** Same notes export / doc as Step 3 — **entire** Account Summary tab: **Challenge Tracker**, **Company Overview**, **Contacts**, **Org Structure**, **Cloud Environment** (CSP/Regions, Platforms, IDP, DevOps/VCS, Security, ASPM, Ticketing, Languages, Sizing), **Use Cases / Requirements**, **Workflows / Processes**, and **Exec Account Summary** (Goals / Risk / Upsell — `top_goal`, `risk`, `upsell_path` in JSON).
@@ -221,6 +242,8 @@ Analyze the loaded transcripts and notes. Extract structured facts using the cat
 **Transcript scan — route “requirement” signal to Use Cases (not Goals):** While reading each in-lookback call, flag lines that are **requirements / operating asks** (reporting cadence or format, deliverable shape, must-have capability, compliance or evidence pack, integration behavior the product must support). For each **new** distinct requirement not already reflected under **Use Cases / Requirements** in Step 3’s `read_doc` JSON, plan **`use_cases` / `free_text`** with **`append_with_history`** in Step 8 (with `evidence_date`, `reasoning`, `theme_key`). **Do not** put those in **`exec_account_summary` / `top_goal`** unless the transcript states a **rolled-up strategic business outcome** (few big goals); see [`mutations-account-summary-tab.md`](../gdoc-customer-notes/mutations-account-summary-tab.md) — **Goals** vs **Use Cases / Requirements**.
 
 **Transcript scan — route expansion / cross-sell to Upsell Path (DSPM, CIEM, core SKUs):** After Step 3 `read_doc`, compare **active** `exec_account_summary.upsell_path` bullets to in-lookback transcripts (and optional bounded `read_call_records` fields such as `products_discussed`, `upsell_signals`). Plan **`append_with_history`** on **`upsell_path`** when **all** are true: (1) the transcript states a **clear solution-fit or expansion** narrative, (2) it is **not** already represented by an existing upsell bullet (same lead-in + same core claim — skip duplicates), (3) it belongs in exec cross-sell, not in Use Cases (requirements) or Workflows (process). **Routing cues (non-exhaustive):** sensitive data / PII / classification / “what sensitive data we have” / acquisition data posture → **`Wiz DSPM`**; cloud identity / entitlements / excessive permissions / IAM / non-human identities → **`Wiz CIEM`**. **Do not** absorb a distinct DSPM or CIEM thread into a single **`Wiz Cloud`** bullet just to save space — one bullet per **distinct** exec expansion line. Use `evidence_date` from the supporting call; `theme_key` stable per thread (e.g. `upsell-dspm-acquisition-data`). This is how E2E / UCN produces the mutation JSON **without** hand-maintaining `tmp/*.json`.
+
+**Transcript scan — route competitive/vendor displacement to Accomplishments:** If transcripts or call-records show a non-Wiz product being displaced, decommissioned, or retired as part of adoption progress, plan an `accomplishments.free_text` `append_with_history` row with evidence date and concise business/security impact. Keep process implementation detail in `workflows` when helpful, but do not leave a clear adoption win only in Workflows.
 
 **Transcript scan — route named products to Cloud Environment `tools_list`:** For each **third-party product or service** the customer **actively uses** (stated in transcript), compare Step 3 `read_doc` `cloud_environment` tool maps. Plan **`add_tool`** with the correct **`field_key`** using the **rubric-first** table in [`mutations-account-summary-tab.md`](../gdoc-customer-notes/mutations-account-summary-tab.md) → **Cloud Environment — `tools_list` routing** (intent by role: CI/CD vs SIEM vs ticketing, etc.). **Do not** require a curated vendor list — route by **function in context**. If the rubric leaves **two** plausible `field_key`s, use **at most one** optional public lookup to disambiguate (same doc: Option 2 backup); if still unclear, skip or ask the operator. One coverage-table row per **distinct** missing tool.
 
@@ -291,20 +314,20 @@ This section is the canonical policy table for planner-required coverage and pre
 
 **Mode contract (`ucn_mode`):**
 
-- Allowed values: `full`, `partial`.
-- Source of truth: `planner_contract.ucn_mode`; CLI `--ucn-mode` may override for testing.
-- Default when omitted: `full`.
-- E2E workflow names (`v1_full`, `v2_full`, etc.) are harness labels; they still run preflight with production `ucn_mode`.
+- **Preflight always enforces the full coverage matrix** (`required_in_ucn_full` in `scripts/ucn-planner-preflight.py` `TARGET_MATRIX`). Every target needs a `mutate` or `skip` (with an allowed `skip_reason`).
+- `planner_contract.ucn_mode` is optional; set it to `full` for clarity. Any other value (e.g. legacy `partial`) is **ignored** and a **stderr warning** is printed when running `ucn-planner-preflight.py` — the validator still uses the full matrix.
+- E2E workflow names (`v1_full`, `v2_full`, etc.) are harness labels, not a second preflight mode.
 
 **Decision contract (required in `planner_contract.coverage.decisions`):**
 
-- `action`: `mutate` or `skip` (`no_evidence` is accepted as `skip` synonym for backward compatibility).
+- **Intent:** The gate is *accounting*, not *filling the doc*. Every matrix target must have a row so each section was **considered**; **`skip` with a reason is a passing outcome** when there is no defensible change (avoids bad or invented data). Only use **`mutate`** when evidence supports the write.
+- `action`: `mutate` or `skip` (`no_evidence` is accepted as a `skip` *action* synonym in the preflight code path for backward compatibility — you still need a real `skip_reason` from the list below).
 - For `skip`, `skip_reason` is required and must be one of:
-  - `no_in_scope_transcript_signal`
-  - `same_as_current_entry`
-  - `evidence_below_confidence_threshold`
-  - `section_off_by_opt_out`
-  - `empty_transcript`
+  - `no_in_scope_transcript_signal` — typical when the in-scope corpus has nothing usable for that section
+  - `same_as_current_entry` — already represented; no edit needed
+  - `evidence_below_confidence_threshold` — signal too weak to change customer-facing text
+  - `section_off_by_opt_out` — out of scope for this run (rare; document in run notes)
+  - `empty_transcript` — e.g. DAL guard when a meeting has no substance
 
 | target | tab | required_in_ucn_full | required_in_ucn_partial | allowed_actions_when_mutate | evidence_rule | validator_fail_code |
 |---|---|---|---|---|---|---|
@@ -441,7 +464,7 @@ For first-time testing, add `--dry-run`.
 **What the writer does before it emits the final applied change set:**
 
 - **Append-with-history timestamp emission** — for the four `append_with_history` fields (`exec_account_summary.top_goal` / `risk` / `upsell_path`, `appendix.agent_run_log`) the writer renders each newly added entry as `<value> [YYYY-MM-DD]` using the current run date. Pre-existing entries without a timestamp are left alone (append-only; no backfill). This is what drives the acceptance bar in §G — every new `append_with_history` entry in the post-run doc carries `[YYYY-MM-DD]`.
-- **Challenge Tracker ↔ lifecycle reconciliation pass** — when `write_doc` receives the customer name, the writer loads `MyNotes/Customers/[CustomerName]/AI_Insights/challenge-lifecycle.json` and, for every Challenge Tracker row carrying a `[lifecycle_id:<id>]` anchor, rewrites the row `status` to match the lifecycle mapping: `identified → Open`, `in_progress → In Progress`, `stalled → Stalled`, `resolved → Resolved` (plus `acknowledged → Open`, `reopened → In Progress`). Each row the reconciler flips shows up as an applied change with `action=reconcile_with_lifecycle`. If lifecycle JSON is absent or unreadable, the reconciler is a no-op and the rest of the write proceeds unchanged.
+- **Challenge Tracker ↔ lifecycle reconciliation pass** — when `write_doc` receives the customer name, the writer loads `MyNotes/Customers/[CustomerName]/AI_Insights/challenge-lifecycle.json` and, for every Challenge Tracker row carrying a `[lifecycle_id:<id>]` anchor, rewrites the row `status` to match the lifecycle mapping: `identified → Open`, `in_progress → In Progress`, `stalled → Stalled`, `resolved → Resolved` (plus `acknowledged → Open`, `reopened → In Progress`). Each row the reconciler flips shows up as an applied change with `action=reconcile_with_lifecycle`. If lifecycle JSON is absent or unreadable, the reconciler is a no-op and the rest of the write proceeds unchanged. **Anchor rules, parity gate (including new lifecycle ids), and when to add a tracker row vs JSON-only:** see [`mutations-account-summary-tab.md`](../gdoc-customer-notes/mutations-account-summary-tab.md) — section **Challenge lifecycle ↔ Challenge Tracker parity**.
 - **Deal Stage Tracker motion capture** — for every SKU (`cloud`, `sensor`, `defend`, `code`) cited in an applied `exec_account_summary.upsell_path` entry, the writer advances the Deal Stage row: `not-active → discovery` by default, `→ pov` when the upsell text matches POV evidence phrases (`pov`, `timeboxed`, `pilot`, `poc kicked off`, …), `→ win` when it matches purchase evidence phrases (`po signed`, `purchased`, `contract signed`, …). `activity` flips to `active`; `reason` is rewritten to `<stage> evidence in upsell_path (<call-date>)` using the most recent ISO date found in the upsell line (fallback: today). Applied as `action=advance_deal_stage_from_upsell`.
 - **Agent run log append** — on a successful run with ≥ 1 applied mutation, the writer appends exactly one `appendix.agent_run_log` entry carrying the TASK-050 §F keys (`run_date`, `sections_touched`, `entries_added`, `entries_skipped`, `skipped_reasons`, `reconciled`, and — when the planner supplies them — `lookback_window`, `transcripts_in_scope`, `dal_prepends_emitted`). On rejection / zero-write runs the writer does **not** append a run-log entry (matches the "no ledger row on rejection" rule).
 

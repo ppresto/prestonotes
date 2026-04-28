@@ -16,7 +16,7 @@ This file is the **table of contents (TOC)** for E2E **quality** work: sub-tasks
 | **Link to vision** | Deliver a **GDoc** and **AI Account Summary** a human can ship without rewrite ([`.cursor/agents/tester.md` §1](../../../.cursor/agents/tester.md)). Full eight-step E2E must show **each transcript represented** in DAL (and related sections) with **full metadata** and consistent lifecycle — not a partial doc because the agent **skipped** DAL or `sync_notes` **reverted** local state. |
 | **Why this task (specifically)** | Separates **content** gaps (missing v2 DAL, sparse metadata) from **process** bugs (**pull** overwriting newer `call-records` / lifecycle). Without documenting both, we blame UCN for what is actually **push/pull order** ([TASK-052 §0](../archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md)). |
 | **Pros of closing the gaps** | E2E reflects **real** customer experience; UCN/Extract debugging gets clear **per-section** test recipes; fewer “it wrote nothing” scares when Drive was stale. |
-| **Cons / risks** | UCN is **heuristic** — DAL can still be skipped if not **explicit** in the prompt. Golden `expected-call-records` for v2 calls may be added over time, increasing maintenance. `read_doc` may not list `appendix.agent_run_log` in JSON — verify in the **GDoc UI**. |
+| **Cons / risks** | UCN is **heuristic** — DAL can still be skipped if not **explicit** in the prompt. `read_doc` may not list `appendix.agent_run_log` in JSON — verify in the **GDoc UI**. |
 | **How to test *only* this task** | **Sync discipline:** (1) Edit `challenge-lifecycle.json` or a call-record in repo; (2) `e2e-test-push-gdrive-notes.sh "_TEST_CUSTOMER"`; (3) `sync_notes` / pull; (4) `diff` — file should not revert. **T053-A/B (DAL):** one transcript at a time, extract if needed, UCN with explicit “prepend DAL for 2026-04-28” (then 5/5); `read_doc` or UI check. **T053-C (metadata):** UCN with named metadata fields, before/after `read_doc`. Do **not** need full `prep-v1` for a narrow repro if Transcripts are already on disk. |
 | **Provenance note** | Live GDoc `read` in this file used a **doc id** from a session discover — **do not** treat that id as canonical; **discover** at run time (see [`.cursor/agents/tester.md`](../../../.cursor/agents/tester.md) and [TASK-052 §0.6](../archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md)). |
 
@@ -36,7 +36,7 @@ Verified via `prestonotes_gdoc/update-gdoc-customer-notes.py discover` / `read -
 | **Challenge Tracker** | **Updated:** both rows `date: 2026-04-20`, notes include 2026-04-20 QBR quotes; Splunk = Stalled, Champion = In Progress. |
 | **Deal Stage Tracker** | **Updated:** `cloud` row `stage: win` with 2026-03-30 PO / exec close narrative. |
 | **Exec Account Summary** | Goals / Risk / Upsell each have **one** `append_with_history` entry with `timestamp: 2026-04-22` (QBR + Splunk + Jane; upsell path SKU lines). |
-| **Daily Activity Logs (DAL)** | **Still missing** dedicated blocks for **v2** transcripts: `2026-04-28-wiz-cloud-sku-purchase.txt` and `2026-05-05-wiz-sensor-pov-kickoff.txt`. Existing DAL is heavy v1 + older material; v2 is not represented as separate dated blocks. |
+| **Daily Activity Logs (DAL)** | **Still missing** dedicated blocks for **v2** transcripts: `2026-04-28-07-wiz-cloud-sku-purchase.txt` and `2026-05-05-08-wiz-sensor-pov-kickoff.txt`. Existing DAL is heavy v1 + older material; v2 is not represented as separate dated blocks. |
 | **Account Metadata** | Still **sparse** vs corpus (e.g. Technical Owner / MTTR / reporting hours often empty; sensor line still **90%** while narrative is **~900/1000** in other sections). |
 | **appendix.agent_run_log** | **`read` parser returned `entries: []` — does not match an expected “2026-04-22 UCN” line. Treat as: **verify in Google Doc UI**; if the line is missing, the write path or parser/heading match may need a follow-up (separate from this task’s manual recipes). |
 
@@ -45,7 +45,7 @@ Verified via `prestonotes_gdoc/update-gdoc-customer-notes.py discover` / `read -
 | Corpus | Transcripts (under `tests/fixtures/e2e/_TEST_CUSTOMER/`) | Expected in GDoc |
 | --- | --- | --- |
 | **v1** | `v1/Transcripts/*.txt` (six dated files + master) | Exec summary / DAL / tracker / deal / metadata largely covered by earlier seeds; 2026-04-22 procurement block may appear with **meeting date vs heading date** nuance. |
-| **v2** | `v2/Transcripts/2026-04-28-wiz-cloud-sku-purchase.txt`, `v2/Transcripts/2026-05-05-wiz-sensor-pov-kickoff.txt` | **DAL** (prepend per v2 call), **Deal Stage** (cloud + sensor / PO / POV — partially landed via “cloud win”), **Account Summary** (upsell + risk as needed), **Account Metadata** (e.g. sensor % / owners if in transcript), **call-records** JSONs (create via extract — **no** golden in `expected-call-records/` for these two at task creation) and **optional** challenge/lifecycle if new evidence. |
+| **v2** | `v2/Transcripts/2026-04-28-07-wiz-cloud-sku-purchase.txt`, `v2/Transcripts/2026-05-05-08-wiz-sensor-pov-kickoff.txt` | **DAL** (prepend per v2 call), **Deal Stage** (cloud + sensor / PO / POV — partially landed via “cloud win”), **Account Summary** (upsell + risk as needed), **Account Metadata** (e.g. sensor % / owners if in transcript), **call-records** JSONs (create via extract) and **optional** challenge/lifecycle if new evidence. |
 
 ---
 
@@ -78,8 +78,8 @@ Use **Step 6 coverage table → Step 8 mutations** in [`docs/ai/playbooks/update
 
 ### T053-A — DAL: 2026-04-28 (Wiz Cloud SKU) block
 
-- **Call-record:** `raw_transcript_ref: 2026-04-28-wiz-cloud-sku-purchase.txt` (generate via extract / `write_call_record` if missing). There is **no** `expected-call-records/*.json` golden for this call in the repo yet — add one when the schema is stable.
-- **Transcript:** `tests/fixtures/e2e/_TEST_CUSTOMER/v2/Transcripts/2026-04-28-wiz-cloud-sku-purchase.txt` (or materialized `MyNotes/.../Transcripts/2026-04-28-wiz-cloud-sku-purchase.txt` after `prep-v2`).
+- **Call-record:** `raw_transcript_ref: 2026-04-28-07-wiz-cloud-sku-purchase.txt` (generate via extract / `write_call_record` if missing).
+- **Transcript:** `tests/fixtures/e2e/_TEST_CUSTOMER/v2/Transcripts/2026-04-28-07-wiz-cloud-sku-purchase.txt` (or materialized `MyNotes/.../Transcripts/` after `prep-v2`).
 - **GDoc:** `daily_activity_logs` (prepend: meeting title, Context, 3 `What changed` + optional Description per project template), **not** replace entire DAL.
 - **Challenge Tracker / History Ledger:** only if the run introduces **new** challenge evidence; otherwise **optional**; ledger is **append_ledger** after a successful UCN `write` if the playbook is run in full.
 - **Manual test sequence:**  
@@ -91,7 +91,7 @@ Use **Step 6 coverage table → Step 8 mutations** in [`docs/ai/playbooks/update
 
 ### T053-B — DAL: 2026-05-05 (Wiz sensor POV kickoff) block
 
-- **Call-record / transcript / GDoc / ledger:** same pattern as T053-A, using `2026-05-05-wiz-sensor-pov-kickoff.txt` (no golden `expected-call-records` file in repo at task creation time).
+- **Call-record / transcript / GDoc / ledger:** same pattern as T053-A, using `2026-05-05-08-wiz-sensor-pov-kickoff.txt`.
 
 ### T053-C — Account Metadata: align sensor % and optional owners/MTTR with transcripts
 

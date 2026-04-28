@@ -402,3 +402,41 @@ def test_today_constant_parses_as_iso_date(pn_gdoc_writer):
     w = pn_gdoc_writer
     parsed = date.fromisoformat(w.TODAY)
     assert parsed.isoformat() == w.TODAY
+
+
+# ---------------------------------------------------------------------------
+# TASK-074 — workflows → Accomplishments for vendor decommission / displacement
+# ---------------------------------------------------------------------------
+
+
+def test_route_workflow_mutation_rewrites_vendor_decommission_to_accomplishments(pn_gdoc_writer):
+    w = pn_gdoc_writer
+    m = {
+        "section_key": "workflows",
+        "field_key": "free_text",
+        "action": "append_with_history",
+        "new_value": "Decommissioned Prisma Cloud CSPM and consolidated findings in Wiz. [2026-04-01]",
+        "reasoning": "Transcript: retirement initiative",
+    }
+    w._route_use_case_workflow_mutation(m)
+    assert m["section_key"] == "accomplishments"
+    assert "accomplishments.free_text" in m.get("reasoning", "") or "Accomplishments" in m.get("reasoning", "")
+
+
+def test_route_workflow_mutation_leaves_process_heavy_win_in_workflows(pn_gdoc_writer):
+    w = pn_gdoc_writer
+    # Many workflow tokens: should not over-route a long runbook that mentions a single decommission in passing.
+    long_narr = (
+        "Jira triage, owner mapping, pivot tables, and monthly reporting. "
+    ) * 8
+    m = {
+        "section_key": "workflows",
+        "field_key": "free_text",
+        "action": "append_with_history",
+        "new_value": long_narr
+        + " we also decommissioned a legacy scanner. "
+        "trigger intake remediation closeout [2026-04-01]",
+        "reasoning": "process",
+    }
+    w._route_use_case_workflow_mutation(m)
+    assert m["section_key"] == "workflows"

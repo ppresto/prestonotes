@@ -189,7 +189,7 @@ TASK-073 canonical coverage policy now lives in one place:
 - `docs/ai/playbooks/update-customer-notes.md` → Step 8 section **"TASK-073 canonical coverage matrix (single source)"**.
 
 Use that matrix as the source for:
-- required targets per `ucn_mode` (`full` vs `partial`),
+- required targets (**preflight always enforces the full** `required_in_ucn_full` set; `partial` is no longer used),
 - allowed mutating actions per target,
 - allowed skip reasons,
 - validator fail-code mapping.

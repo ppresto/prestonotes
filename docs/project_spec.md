@@ -440,7 +440,7 @@ The old project lives at `../prestoNotes.orig` (relative to the new repo root). 
 | `scripts/rsync-gdrive-notes.sh` | `scripts/rsync-gdrive-notes.sh` | Port | Bidirectional sync |
 | `scripts/syncNotesToMarkdown.js` | `scripts/syncNotesToMarkdown.js` | Port | GDoc → Markdown export |
 | `scripts/restart-google-drive.sh` | `scripts/restart-google-drive.sh` | Port | Drive for Desktop restart helper |
-| `scripts/wiz_doc_cache_manager.py` | `scripts/wiz_doc_cache_manager.py` | Port / reference | Stage 4 ingestion input |
+| `scripts/wiz_cache_manager.py` | `scripts/wiz_cache_manager.py` | Canonical CLI | Stage 4 ingestion input |
 | `scripts/ci/check-repo-integrity.sh` | `scripts/ci/check-repo-integrity.sh` | Port — update manifest | Include **`prestonotes_gdoc/`** |
 | `pyproject.toml` | `pyproject.toml` | Port — bump **2.0.0** | Align deps with `uv lock` |
 | `.cursor/rules/ai_learnings.mdc` | `.cursor/rules/ai_learnings.mdc` | Port | Corrections layer |
@@ -697,7 +697,7 @@ Tasks are organized into four stages. Build them in order — each stage depends
 **TASK-020 — Build the vector DB ingestion script**
 - **What it builds:** `prestonotes_mcp/ingestion/build_vector_db.py` — a script that reads Wiz product docs from local markdown cache and ingests them into ChromaDB.
 - **Why it matters:** Direct MCP search is good but imprecise — it returns whatever the search index finds. Vector search returns semantically similar content, which produces much more targeted recommendations.
-- **Reference from old project:** `../prestoNotes.orig/scripts/wiz_doc_cache_manager.py` — shows how Wiz docs are cached locally.
+- **Reference from old project:** `../prestoNotes.orig/scripts/wiz_doc_cache_manager.py` — historical context for earlier cache manager naming.
 - **Test:** `pytest prestonotes_mcp/tests/test_vector_db.py` — ingest 3 test documents, query with a semantic question, verify at least one returned result is topically relevant.
 - **Files created:** `prestonotes_mcp/ingestion/build_vector_db.py`, `prestonotes_mcp/tests/test_vector_db.py`.
 
@@ -729,7 +729,7 @@ Tasks are organized into four stages. Build them in order — each stage depends
 - **Task file:** `docs/tasks/archive/2026-04/TASK-027-wiz-discovery-catalog.md`
 
 **TASK-028 — MCP materialize pipeline**  
-- **What it builds:** `scripts/materialize_wiz_mcp_docs.py`, `scripts/wiz_docs_client.py`, `wiz_doc_cache_manager.py mcp-materialize`, **`mcp_materializations/`** output.  
+- **What it builds:** `scripts/materialize_wiz_mcp_docs.py`, `scripts/wiz_docs_client.py`, `wiz_cache_manager.py mcp-materialize`, **`mcp_materializations/`** output.
 - **Task file:** `docs/tasks/archive/2026-04/TASK-028-wiz-mcp-materialize-pipeline.md`
 
 **TASK-029 — External spider + long TTL**  

@@ -104,8 +104,36 @@ If a prior run wrote meta lines into the doc, fix them with an approved **`repla
 **Duplicates:** use `read_doc` / Step 3 tool keys under each `field_key`; skip `add_tool` if the same product is already listed (normalize trivial variants).
 
 - `Deal Stage Tracker`: maintain per-SKU lifecycle stages, first-seen date, date quality, and renewal placeholders for manual editing and lifecycle continuity.
-- `Accomplishments`: completed/validated outcomes moved from prior goals.
-- `Upsell Path`: **SKU- or product-line-first** bullets, then a one-line value story. **Allowed lead-ins** (first token before `—`): `Wiz Cloud`, `Wiz Sensor`, `Wiz Defend`, `Wiz Code`, `ASM`, **`Wiz DSPM`**, **`Wiz CIEM`**. Use **separate bullets** when transcripts name distinct expansion threads (e.g. sensitive-data / PII / data-classification posture vs cloud identity / entitlements / IAM) — do not fold those into a single generic `Wiz Cloud` line when the dialogue treats them as different solution fits. Pain-to-product hints in config: `prestonotes_gdoc/config/sections/025-exec_account_summary.yaml` → `update_from_evidence.upsell_mapping` (e.g. sensitive data → DSPM, identity → CIEM). **Deal Stage Tracker auto-motion** (`advance_deal_stage_from_upsell`) still keys only on **`cloud|sensor|defend|code`** substrings inside `upsell_path` text — DSPM/CIEM bullets are exec-facing truth regardless; add or retain a `Wiz Cloud` / `Wiz Sensor` / etc. line when you also need that automation to fire.
+- `Accomplishments`: completed/validated outcomes moved from prior goals, plus evidence-backed account wins such as **competitive displacement** and **vendor decommission** outcomes.
+  - If transcripts state that a non-Wiz security product was retired, displaced, or decommissioned (for example Prisma, legacy CSPM, prior scanner stack), route the customer-facing win to `accomplishments.free_text`.
+  - Keep implementation detail in Workflows/Challenge Tracker if needed, but do not leave the customer win only in `workflows` when it is an adoption/value milestone.
+- `Upsell Path`: **SKU- or product-line-first** bullets with a consultative structure:
+  1. customer gap (goal/challenge/risk/compliance or AI exposure),
+  2. Wiz offer that fits,
+  3. commercial motion context (workload growth vs core capability value) when evidence supports it.
+  **Allowed lead-ins** (first token before `—`): `Wiz Cloud`, `Wiz Sensor`, `Wiz Defend`, `Wiz Code`, `ASM`, **`Wiz DSPM`**, **`Wiz CIEM`**.
+  Use **separate bullets** when transcripts name distinct expansion threads (e.g. sensitive-data / PII / data-classification posture vs cloud identity / entitlements / IAM) — do not fold those into a single generic `Wiz Cloud` line when the dialogue treats them as different solution fits.
+  Pain-to-product hints in config: `prestonotes_gdoc/config/sections/025-exec_account_summary.yaml` → `update_from_evidence.upsell_mapping` (e.g. sensitive data → DSPM, identity → CIEM).
+  Licensing/commercial guardrails:
+  - `Wiz Cloud` is the core platform line; some capabilities can support workload growth narratives while others are primarily core value.
+  - `Wiz Defend`, `Wiz Code`, and `Wiz Sensor` have separate consumption/licensing motions from Cloud.
+  - Keep nuance explicit when transcripts support it (for example, DSPM/ASM expansion posture vs CIEM identity posture) and do not invent pricing or unit counts.
+  **Deal Stage Tracker auto-motion** (`advance_deal_stage_from_upsell`) still keys only on **`cloud|sensor|defend|code`** substrings inside `upsell_path` text — DSPM/CIEM bullets are exec-facing truth regardless; add or retain a `Wiz Cloud` / `Wiz Sensor` / etc. line when you also need that automation to fire.
+
+### Upsell grounding bundle (TASK-074)
+
+When Upsell/commercial wording is in scope, ground proposals with this minimal bundle before transcript-heavy synthesis:
+
+1. `read_doc` current account state.
+2. Relevant JSON snapshots under `docs/ai/cache/wiz_mcp_server/mcp_query_snapshots/<category>/` for SKUs in play (Cloud/Defend/Code/Sensor/CIEM/DSPM/ASM as applicable).
+3. Gap-framing references from **TASK-074 §G4** (NIST CSF, NIST AI RMF, OWASP SAMM, OWASP LLM Top 10): [Task 74](../../tasks/active/TASK-074-ucn-accomplishments-vendor-wins-and-upsell-path-sku-gaps.md).
+4. Then normal UCN transcripts/call-records/history processing.
+
+Do not treat this path as a full `Load Product Intelligence` sweep. If snapshot files are stale or missing, flag it in run output and either refresh or proceed with explicit uncertainty.
+
+### Upsell when evidence is thin
+
+If evidence cannot support a high-confidence upsell line, do not fabricate commercial claims. Emit 3-7 targeted discovery questions for the next customer interaction and hand off to [TASK-075](../../tasks/active/TASK-075-ucn-upsell-path-discovery-questions.md) for deeper template coverage.
 
 ### Ingestion Mode
 
@@ -138,6 +166,12 @@ When **`write_doc`** is called with MCP argument **`customer_name`** (forwarded 
 - Emergency bypass: **`--skip-lifecycle-parity-check`** on the write CLI (MCP: omit `customer_name` or add a future MCP flag if needed).
 
 **Orchestrator expectation:** Default UCN runs pass **`customer_name`** into **`write_doc`** whenever the customer is known so drift is caught before the Doc goes stale again.
+
+### Writer-side mechanics (code paths)
+
+- **`prestonotes_gdoc/update-gdoc-customer-notes.py`** — after mutations apply, **`_reconcile_with_lifecycle`** updates Challenge Tracker **status** only for rows that already contain **`[lifecycle_id:<id>]`** (or legacy `lifecycle:`); rows without an anchor are unchanged.
+- **`prestonotes_gdoc/challenge_lifecycle_parity.py`** — invoked at end of **`cmd_write`**: **`auto_insert_missing_lifecycle_anchors`** appends a canonical **`[lifecycle_id:…]`** to **Notes & References** when the row text already includes the raw id token but the bracket form is missing; **`check_tracker_lifecycle_parity`** then requires **every** id in `challenge-lifecycle.json` to appear as an anchor in the table or the write **raises** (unless `--skip-lifecycle-parity-check`).
+- **New `challenge_id` only in JSON:** `update_challenge_state` does not create a Doc row. The approved mutation batch must add a **Challenge Tracker** row (or extend text) that includes **`[lifecycle_id:<id>]`** for each new id; otherwise parity fails after auto-insert (which cannot invent rows).
 
 ---
 

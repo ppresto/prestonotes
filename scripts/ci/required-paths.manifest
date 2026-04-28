@@ -23,13 +23,6 @@ prestonotes_mcp/ingestion/build_vector_db.py
 prestonotes_mcp/tests/test_build_vector_manifest_meta.py
 prestonotes_mcp/prestonotes-mcp.yaml.example
 prestonotes_mcp/call_records.py
-tests/fixtures/e2e/_TEST_CUSTOMER/expected-call-records/README.md
-tests/fixtures/e2e/_TEST_CUSTOMER/expected-call-records/2026-02-21-exec_qbr-1.json
-tests/fixtures/e2e/_TEST_CUSTOMER/expected-call-records/2026-03-25-technical_deep_dive-2.json
-tests/fixtures/e2e/_TEST_CUSTOMER/expected-call-records/2026-03-31-technical_deep_dive-3.json
-tests/fixtures/e2e/_TEST_CUSTOMER/expected-call-records/2026-04-08-technical_deep_dive-4.json
-tests/fixtures/e2e/_TEST_CUSTOMER/expected-call-records/2026-04-17-exec_qbr-5.json
-tests/fixtures/e2e/_TEST_CUSTOMER/expected-call-records/2026-04-22-renewal-6.json
 docs/ai/playbooks/.gitkeep
 docs/ai/playbooks/load-customer-context.md
 docs/ai/playbooks/run-account-summary.md
@@ -73,6 +66,12 @@ scripts/rsync-gdrive-notes.sh
 scripts/restart-google-drive.sh
 scripts/syncNotesToMarkdown.js
 scripts/wiz_doc_cache_manager.py
+scripts/lpi_kb_seed_refresh.py
+scripts/deprecated/README.md
+scripts/deprecated/lpi_kb_seed_refresh.py
+scripts/materialize_licensing_kb_snapshots.py
+docs/ai/cache/wiz_mcp_server/kb_licensing_seed_sources/README.md
+scripts/wiz_cache_manager.py
 scripts/wiz_docs_client.py
 scripts/wiz_docs_search_cli.py
 scripts/materialize_wiz_mcp_docs.py
@@ -80,6 +79,7 @@ scripts/spider_wiz_external_pages.py
 scripts/wiz_vector_coverage_report.py
 scripts/tests/test_wiz_docs_client.py
 scripts/tests/test_materialize_dry_run.py
+scripts/tests/test_kb_dedupe.py
 scripts/lib/gdrive-auth-hint.sh
 scripts/lib/e2e-catalog.txt
 scripts/e2e-test-customer.sh

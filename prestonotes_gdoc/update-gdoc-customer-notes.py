@@ -218,6 +218,24 @@ REQUIREMENT_SIGNAL_TOKENS = {
     "needs to", "need to", "should", "acceptance criteria", "success criteria",
     "non-negotiable", "goal state", "target state",
 }
+# Vendor decommission / competitive displacement (TASK-074: Accomplishments).
+# Single non-overlapping pattern list so "decommissioned" is one hit, not two.
+VENDOR_COMPETITIVE_WIN_RE = re.compile(
+    r"decommission(?:ed|ing)?|"
+    r"displac\w*(?:d|g)?|"
+    r"migrated (?:off|from)|migrated to wiz|"
+    r"cut[ -]?over|"
+    r"switched from|"
+    r"rolled off|"
+    r"sunset\w*|"
+    r"uninstall\w*|"
+    r"replaced with wiz|"
+    r"competitive displacement|"
+    r"legacy cspm|legacy scanner|"
+    r"pulled from production|"
+    r"no longer use",
+    re.IGNORECASE,
+)
 
 AUTH_LOGIN_CMD = [
     "gcloud", "auth", "login",
@@ -1246,6 +1264,31 @@ def _should_route_to_use_cases(text: str) -> bool:
     return requirement_score >= 3 and workflow_score <= 1
 
 
+def _vendor_competitive_win_hits(text: str) -> int:
+    t = (text or "").strip()
+    if not t:
+        return 0
+    return len(VENDOR_COMPETITIVE_WIN_RE.findall(t))
+
+
+def _should_route_workflow_to_accomplishments(text: str) -> bool:
+    """True when a workflows bullet is really an account win (vendor retire/displace) vs process narrative."""
+    t = (text or "").strip()
+    if not t:
+        return False
+    v = _vendor_competitive_win_hits(t)
+    if v == 0:
+        return False
+    w = _workflow_signal_score(t)
+    if v == 1 and w <= 3:
+        return True
+    if v == 2 and w <= 6:
+        return True
+    if v >= 3:
+        return w <= 9
+    return False
+
+
 def _route_use_case_workflow_mutation(mutation: dict) -> None:
     section_key = str(mutation.get("section_key") or "").strip()
     field_key = str(mutation.get("field_key") or "").strip()
@@ -1276,6 +1319,20 @@ def _route_use_case_workflow_mutation(mutation: dict) -> None:
         suffix = (
             "Auto-routed to use_cases.free_text because requirement-signal score "
             "exceeds process-signal score."
+        )
+        mutation["reasoning"] = f"{prior_reason} {suffix}".strip()
+        return
+
+    # Guardrail: vendor decommission / displacement wins belong under Accomplishments, not only Workflows.
+    if (
+        section_key == "workflows"
+        and _should_route_workflow_to_accomplishments(text)
+    ):
+        mutation["section_key"] = "accomplishments"
+        prior_reason = str(mutation.get("reasoning") or "").strip()
+        suffix = (
+            "Auto-routed to accomplishments.free_text because the text matches "
+            "competitive or vendor decommission / displacement signals (see TASK-074 Accomplishments)."
         )
         mutation["reasoning"] = f"{prior_reason} {suffix}".strip()
 
@@ -1334,6 +1391,8 @@ def _prepare_mutations_for_write(
                 )
 
     for m in mutations:
+        # Intent routing for free-text (use_case ↔ workflow; workflow → accomplishments for vendor wins).
+        _route_use_case_workflow_mutation(m)
         sec_key = m.get("section_key")
         field_key = m.get("field_key")
         action = m.get("action")
