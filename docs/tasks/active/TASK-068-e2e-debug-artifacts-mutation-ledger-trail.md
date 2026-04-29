@@ -32,7 +32,7 @@
    - Flag (Delegation packet and/or `PRESTONOTES_E2E_DEBUG=1`): under **`MyNotes/Customers/_TEST_CUSTOMER/AI_Insights/e2e-debug/<ISO-datetime>/`** (or same pattern for any customer in debug), write **`mutations.json`**, **pre/post `read_doc` pointers**, **harness 1–8** + **UCN 1–11** checklists, **ledger** attempt/result. Default **off**.
 
 6. **E2E operator catalog — maintainer contract (future flow changes)**  
-   - **SSoT:** [`scripts/lib/e2e-catalog.txt`](../../../scripts/lib/e2e-catalog.txt) — trigger phrases, eight-step harness, `e2e_workflow` modes; printed by **`./scripts/e2e-test-customer.sh list-catalog`** (alias **`list-all`**) and sliced by **`list-steps`**.  
+   - **SSoT:** [`scripts/lib/e2e-catalog.txt`](../../../scripts/lib/e2e-catalog.txt) — trigger phrases, harness steps, `e2e_workflow` modes; printed by **`./scripts/e2e-test-customer.sh list-catalog`** (alias **`list-all`**) and sliced by **`list-steps`**.  
    - **Design doc (layered, minimal duplication):**  
      - **Contract** in the **header comments** of `e2e-catalog.txt`: what `list-catalog` / `list-steps` are for; that any new user-visible **step**, **trigger**, or **workflow mode** must be updated here; **sync list** (e.g. `11-e2e-test-customer-trigger.mdc`, `tester.md` §4, shell `usage` if new subcommands).  
      - **Procedure** in [`docs/ai/playbooks/tester-e2e-ucn.md`](../../ai/playbooks/tester-e2e-ucn.md): short **“Maintaining the E2E harness”** (or equivalent) checklist — when adding/renaming flows, update catalog → rule/tester as needed → verify with `list-catalog`.  
@@ -83,7 +83,7 @@
 
 ## References
 
-- `scripts/lib/e2e-catalog.txt` — SSoT for triggers, eight steps, workflow modes; `list-catalog` / `list-steps`  
+- `scripts/lib/e2e-catalog.txt` — SSoT for triggers, harness steps, workflow modes; `list-catalog` / `list-steps`  
 - `scripts/e2e-test-customer.sh` `list-catalog` · `list-steps`  
 - `docs/ai/playbooks/tester-e2e-ucn.md`  
 - `docs/ai/playbooks/update-customer-notes.md` (Steps 1–11)  

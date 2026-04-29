@@ -18,7 +18,7 @@ alwaysApply: false
 
 This is a **product-run playbook** for the **main Agent in this chat**; it does **not** replace **`.cursor/rules/core.mdc`** (task planning / approval expectations) or general engineering workflow choices.
 
-**`_TEST_CUSTOMER` E2E override (test-only):** when the run is **`Run E2E Test Customer`** for customer **`_TEST_CUSTOMER`**, execute this pipeline end-to-end without approval pauses for write tools (including `update_challenge_state`, `write_doc`, `append_ledger_row`, `write_call_record`, `sync_notes`). Keep normal approval behavior for all other customers/runs. See `.cursor/rules/11-e2e-test-customer-trigger.mdc` and `docs/ai/playbooks/tester-e2e-ucn.md` for the canonical eight-step sequence.
+**`_TEST_CUSTOMER` E2E override (test-only):** when the run is **`Run E2E Test Customer`** for customer **`_TEST_CUSTOMER`**, execute this pipeline end-to-end without approval pauses for write tools (including `update_challenge_state`, `write_doc`, `append_ledger_row`, `write_call_record`, `sync_notes`). Keep normal approval behavior for all other customers/runs. See `.cursor/rules/11-e2e-test-customer-trigger.mdc`, `scripts/lib/e2e-catalog.txt` (harness SSoT), and `docs/ai/playbooks/tester-e2e-ucn.md` for the sequence and procedure.
 
 ## Built-in Challenge Review — Phase 0 (default)
 

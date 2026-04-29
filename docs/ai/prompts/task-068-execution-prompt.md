@@ -21,7 +21,7 @@
 
 | Layer | What it is | Count |
 | --- | --- | --- |
-| **Harness (shell + chat)** | `scripts/e2e-test-customer.sh` + Cursor playbooks | **8 steps** (`list-steps` / `tester-e2e-ucn.md`) |
+| **Harness (shell + chat)** | `scripts/e2e-test-customer.sh` + Cursor playbooks | **Count + order =** `scripts/lib/e2e-catalog.txt` (or `./scripts/e2e-test-customer.sh list-steps`); procedure in `tester-e2e-ucn.md` |
 | **UCN (playbook)** | `docs/ai/playbooks/update-customer-notes.md` | **11 sub-steps** (planner, gates, write, ledger, …) |
 
 A run can “succeed” on **`write_doc`** at the harness layer while still **omitting** UCN **Step 6** (coverage), **Step 11** (History Ledger), or a honest **`v1_partial`** declaration. **TASK-068** closes that honesty gap in **docs first**, then optional **debug artifacts**, then optional **code/CI gates**.
@@ -38,13 +38,13 @@ Delegation and **`tester.md` §4** use: `v1_full` | `v1_partial` | `v2_full` | `
 - **`v1_full`:** first UCN pass is **full** (all applicable UCN sub-steps) unless a doc explicitly narrows scope.  
 - **`v1_partial`:** **DAL-only** or other reduced scope is OK only with an **explicit skip list** in the tester report (avoid false green when e.g. Account Summary is empty by omission).
 
-**Operator catalog (triggers, eight steps, modes):** from repo root, `./scripts/e2e-test-customer.sh list-catalog` (alias `list-all`). SSoT file: `scripts/lib/e2e-catalog.txt`. **Goal 6** of the task extends the **header** of that file + a short **playbook** checklist + **one** `tester.md` pointer — not a second long SSoT.
+**Operator catalog (triggers, harness, modes):** from repo root, `./scripts/e2e-test-customer.sh list-catalog` (alias `list-all`). SSoT file: `scripts/lib/e2e-catalog.txt`. **Goal 6** of the task extends the **header** of that file + a short **playbook** checklist + **one** `tester.md` pointer — not a second long SSoT.
 
 ### Documentation hierarchy (avoid duplicate doctrine)
 
 - **`.cursor/agents/tester.md`:** workflows, post-write **§6** diff, quality bar, output contract, task filing — **one** SSoT for tester behavior.  
 - **`docs/ai/playbooks/update-customer-notes.md`:** UCN steps 1–11; **extend** for checklist / Step 11 / planner shape.  
-- **`docs/ai/playbooks/tester-e2e-ucn.md`:** eight-step harness; E2E notes; **add** “Maintaining the E2E harness” per task Goal 6.  
+- **`docs/ai/playbooks/tester-e2e-ucn.md`:** E2E procedure; **add** “Maintaining the E2E harness” per task Goal 6.  
 - **Do not** add a second parallel “E2E policy” document; **do not** mandate `ucn-approved-mutations.json` on every run.
 
 ### Sequencing (from task; default order)
@@ -89,7 +89,7 @@ Also read: docs/ai/prompts/task-068-execution-prompt.md (this file’s repo copy
 
 Required orientation (open and use):
 1) .cursor/agents/tester.md — §3 layers, §4 e2e_workflow, §6 post-write diff, “How to run and validate (operator)”, Output Contract
-2) docs/ai/playbooks/tester-e2e-ucn.md — eight-step harness; will gain “Maintaining the E2E harness” per task
+2) docs/ai/playbooks/tester-e2e-ucn.md — E2E procedure; will gain “Maintaining the E2E harness” per task
 3) docs/ai/playbooks/update-customer-notes.md — Steps 1–11 (emphasis 6, 7, 8, 9, 10, 11)
 4) .cursor/rules/11-e2e-test-customer-trigger.mdc — _TEST_CUSTOMER only; at most tighten by one short paragraph
 5) scripts/lib/e2e-catalog.txt — SSoT for list-catalog; extend header per Goal 6

@@ -10,9 +10,9 @@
 
 | Order | Id | What it delivers | Why this sequence |
 | ---: | --- | --- | --- |
-| **0** | *(prerequisite)* | Read [`.cursor/agents/tester.md`](../../../.cursor/agents/tester.md) + [`docs/tasks/INDEX.md`](../../tasks/INDEX.md) | Vision, layers, eight-step relationship, **post-write diff §6** (mandatory rows: Contacts, Challenge Tracker, Cloud Environment, Account Metadata for `v1_full`/`full` — **TASK-069**), plus **§6.1 DAL parity** (`N` transcripts vs `M` DAL meeting blocks — **TASK-071**), task lifecycle §2. |
+| **0** | *(prerequisite)* | Read [`.cursor/agents/tester.md`](../../../.cursor/agents/tester.md) + [`docs/tasks/INDEX.md`](../../tasks/INDEX.md) | Vision, layers, E2E harness (see `scripts/lib/e2e-catalog.txt` + `tester-e2e-ucn.md`), **post-write diff §6** (mandatory rows: Contacts, Challenge Tracker, Cloud Environment, Account Metadata for `v1_full`/`full` — **TASK-069**), plus **§6.1 DAL parity** (`N` transcripts vs `M` DAL meeting blocks — **TASK-071**), task lifecycle §2. |
 | **1** | [**TASK-053**](../../tasks/active/TASK-053-ucn-gdoc-gaps-e2e-sync-hygiene.md) | UCN/GDoc fill, **sync order** recipes, per-gap manual tests **T053-A–G** | Primary **TOC** for E2E quality. |
-| **2** | [**TASK-044**](../../tasks/archive/2026-04/TASK-044-e2e-test-customer-rebuild.md) | *(archived 2026-04-24; harness work landed outside this file)* | Historical spec; current eight-step SSoT is **`tester-e2e-ucn.md`**. |
+| **2** | [**TASK-044**](../../tasks/archive/2026-04/TASK-044-e2e-test-customer-rebuild.md) | *(archived 2026-04-24; harness work landed outside this file)* | Historical spec; harness SSoT is **`scripts/lib/e2e-catalog.txt`** (procedure: **`tester-e2e-ucn.md`**). |
 
 **Next task to execute (default):** **TASK-053** (unless `INDEX` marks a different “current” focus).
 

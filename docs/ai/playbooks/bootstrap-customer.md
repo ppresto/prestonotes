@@ -50,7 +50,7 @@ Doc discovery and mutations use **`discover_doc`**, **`read_doc`**, **`write_doc
 
 ## 4) References
 
-- [`tester-e2e-ucn.md`](tester-e2e-ucn.md) — eight-step E2E for `_TEST_CUSTOMER` (shell: [`../../../scripts/e2e-test-customer.sh`](../../../scripts/e2e-test-customer.sh))
+- [`tester-e2e-ucn.md`](tester-e2e-ucn.md) — E2E for `_TEST_CUSTOMER` (harness: [`../../../scripts/lib/e2e-catalog.txt`](../../../scripts/lib/e2e-catalog.txt); shell: [`../../../scripts/e2e-test-customer.sh`](../../../scripts/e2e-test-customer.sh))
 - [`.cursor/agents/tester.md`](../../../.cursor/agents/tester.md) — E2E tester doctrine; when `prep-v1` runs vs `bootstrap`
 - **`docs/MIGRATION_GUIDE.md`** — ledger migration, lazy create
 - **`docs/tasks/archive/2026-04/TASK-023-history-ledger-lazy-bootstrap.md`** — archived task definition

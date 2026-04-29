@@ -4,7 +4,7 @@
 
 **When to use:** You see missing sections, wrong challenge rows, empty DAL lines, or metadata drift after UCN. You want a **partner** that diffs **ground truth → pipeline → GDoc**, then narrows **which layer** dropped or altered data.
 
-**Canonical background flow** (unchanged): [`tester-e2e-ucn.md`](tester-e2e-ucn.md) (eight-step harness). **Cursor subagent** for this style of run: [`.cursor/agents/tester.md`](../../../.cursor/agents/tester.md) (invoke **`/tester`**) — read the agent file for playbooks vs rules. This playbook **replaces** any ad-hoc “validation script only” workflow; it **supplements** the eight-step E2E with **explicit pause and diff** semantics.
+**Canonical background flow** (unchanged): [`tester-e2e-ucn.md`](tester-e2e-ucn.md) and [`scripts/lib/e2e-catalog.txt`](../../scripts/lib/e2e-catalog.txt) (harness SSoT). **Cursor subagent** for this style of run: [`.cursor/agents/tester.md`](../../../.cursor/agents/tester.md) (invoke **`/tester`**) — read the agent file for playbooks vs rules. This playbook **replaces** any ad-hoc “validation script only” workflow; it **supplements** the default E2E with **explicit pause and diff** semantics.
 
 **Contract:**
 
@@ -116,7 +116,7 @@ If the operator is still iterating on Phase A, stay in A3/A4.
 3. **Lint** — `call_records lint` before UCN if the playbook requires it.
 4. **Chat** — *Update Customer Notes for _TEST_CUSTOMER* (second UCN).
 
-**Optional (after UCN, before deep diff):** *Run Account Summary for _TEST_CUSTOMER* is **step 8** of the full E2E — include it here **only** if the operator asked for the **full** tail; otherwise Phase B can end after the second UCN for troubleshooting scope.
+**Optional (after UCN, before deep diff):** *Run Account Summary for [CustomerName]* (see `run-account-summary.md`) is **outside** the E2E harness; include it here **only** if the operator asked for that pass; otherwise Phase B can end after the second UCN for troubleshooting scope.
 
 ### B2. Extended diff (same as A2, plus lifecycle and metadata)
 
@@ -151,7 +151,7 @@ The agent should **open this file** and follow it **in order** unless the operat
 
 ## What this playbook is not
 
-- **Not** a replacement for the **full** unattended eight-step run in [`tester-e2e-ucn.md`](tester-e2e-ucn.md) when you need **end-to-end coverage with no pauses** (e.g. regression guard).
+- **Not** a replacement for the **full** unattended E2E run in [`tester-e2e-ucn.md`](tester-e2e-ucn.md) / the catalog when you need **end-to-end coverage with no pauses** (e.g. regression guard).
 - **Not** a guarantee the model will catch every GDoc edge case; it is a **procedure** so the **same** investigation can be repeated.
 - **Not** permission to skip **`gcloud`**/Drive requirements or leave secrets in the repo; follow **`.cursor/mcp.env`** and `MIGRATION_GUIDE.md` patterns.
 
@@ -159,7 +159,7 @@ The agent should **open this file** and follow it **in order** unless the operat
 
 ## See also
 
-- [`tester-e2e-ucn.md`](tester-e2e-ucn.md) — eight steps, script parity, reset.
+- [`tester-e2e-ucn.md`](tester-e2e-ucn.md) — procedure, `list-steps` / catalog, reset.
 - [`update-customer-notes.md`](update-customer-notes.md) — UCN tool order and gdoc id discovery.
 - [`extract-call-records.md`](extract-call-records.md) — extract and lint.
 - [`.cursor/rules/11-e2e-test-customer-trigger.mdc`](../../.cursor/rules/11-e2e-test-customer-trigger.mdc) — triggers and artifact hygiene.

@@ -9,8 +9,8 @@
 #   v1        Legacy: no GDoc rebaseline, no local clean — ensure mount + materialize v1 + bump + push.
 #   v2        Same as prep-v2 (kept for older docs).
 #   reset     Nuclear: trash Drive folder, wipe local mirror, restart Google Drive, poll.
-#   list-steps   Eight harness steps (see scripts/lib/e2e-catalog.txt).
-#   list-catalog, list-all  Triggers, eight steps, and e2e_workflow modes (v1_full, full, ...).
+#   list-steps   Harness steps (see scripts/lib/e2e-catalog.txt; only that file lists counts).
+#   list-catalog, list-all  Triggers, harness, e2e_workflow modes (v1_full, e2e_default, ...).
 #   run-step <n> Run only shell step n (1 or 5) or print chat trigger for other n (debugger).
 #
 # Options (prep-v1 only):
@@ -76,11 +76,11 @@ Usage: $(basename "$0") <command> [args]
   v1        Legacy seed: mount + materialize v1 + bump + push (no GDoc rebaseline, no clean).
   v2        Same as prep-v2.
   reset     Trash Drive folder + wipe local + restart Drive + wait for mount absent.
-  list-steps     Eight harness steps + debugger; same content as part of list-catalog.
+  list-steps     Harness table + debugger; same content as part of list-catalog.
   list-catalog, list-all
-                 Triggers, eight steps, e2e_workflow modes (v1_full, full, …), /tester note.
+                 Triggers, harness, e2e_workflow modes, /tester note.
   debug-path  Print active e2e-debug path (PRESTONOTES_E2E_DEBUG=1 only).
-  run-step <1-8>  Run shell step 1 or 5 only; for other numbers print the chat trigger.
+  run-step <1-7>  Run shell step 1 or 5 only; for other numbers print the chat trigger.
 
 SSoT: ${REPO_ROOT}/scripts/lib/e2e-catalog.txt
 Full docs: docs/ai/playbooks/tester-e2e-ucn.md
@@ -111,9 +111,9 @@ debug_init_templates_if_missing() {
 EOF
   fi
 
-  if [[ ! -f "${E2E_DEBUG_RUN_DIR}/harness-steps-1-8.checklist.md" ]]; then
-    cat > "${E2E_DEBUG_RUN_DIR}/harness-steps-1-8.checklist.md" <<'EOF'
-# Harness 1-8 checklist
+  if [[ ! -f "${E2E_DEBUG_RUN_DIR}/harness-steps-1-7.checklist.md" ]]; then
+    cat > "${E2E_DEBUG_RUN_DIR}/harness-steps-1-7.checklist.md" <<'EOF'
+# Harness 1-7 checklist (E2E UCN only; see scripts/lib/e2e-catalog.txt)
 
 - [ ] 1 Shell: prep-v1
 - [ ] 2 Chat: Load Customer Context for _TEST_CUSTOMER
@@ -122,7 +122,6 @@ EOF
 - [ ] 5 Shell: prep-v2
 - [ ] 6 Chat: Extract Call Records for _TEST_CUSTOMER
 - [ ] 7 Chat: Update Customer Notes for _TEST_CUSTOMER
-- [ ] 8 Chat: Run Account Summary for _TEST_CUSTOMER
 EOF
   fi
 
@@ -328,27 +327,27 @@ materialize_bump_push() {
   "${REPO_ROOT}/scripts/e2e-test-push-gdrive-notes.sh" "${CUSTOMER}"
 }
 
+# Post-prep messages: single source in scripts/lib/e2e-catalog.txt (=== AFTER_PREP_*_NEXT_CHAT ===).
+print_catalog_after_block() {
+  local key="${1:-}"
+  [[ -n "${key}" ]] || return 1
+  if [[ ! -f "${E2E_CATALOG}" ]]; then
+    echo "ERROR: missing ${E2E_CATALOG}" >&2
+    return 1
+  fi
+  awk -v k="${key}" '
+    $0 == ("=== " k " ===") {p=1; next}
+    p && $0 ~ /^=== / {exit}
+    p {print}
+  ' "${E2E_CATALOG}"
+}
+
 print_after_v1() {
-  cat <<'V1_NEXT'
-
-[prep-v1 / v1] COMPLETE. Next chat steps (in order):
-    Load Customer Context for _TEST_CUSTOMER
-    Extract Call Records for _TEST_CUSTOMER
-    Update Customer Notes for _TEST_CUSTOMER
-Then: ./scripts/e2e-test-customer.sh prep-v2
-
-V1_NEXT
+  print_catalog_after_block "AFTER_PREP_V1_NEXT_CHAT"
 }
 
 print_after_v2() {
-  cat <<'V2_NEXT'
-
-[prep-v2] COMPLETE. Next chat steps (in order):
-    Extract Call Records for _TEST_CUSTOMER
-    Update Customer Notes for _TEST_CUSTOMER
-    Run Account Summary for _TEST_CUSTOMER
-
-V2_NEXT
+  print_catalog_after_block "AFTER_PREP_V2_NEXT_CHAT"
 }
 
 cmd_legacy_v1() {
@@ -425,8 +424,8 @@ list_steps() {
     echo "ERROR: missing ${E2E_CATALOG}" >&2
     exit 1
   fi
-  # Eight-step block only: from === EIGHT STEPS ... up to (not including) === WORKFLOW MODES ===
-  awk '/^=== EIGHT STEPS /{f=1; next} /^=== WORKFLOW MODES /{exit} f' "${E2E_CATALOG}"
+  # Harness table: from === HARNESS STEPS ... up to (not including) === WORKFLOW MODES ===
+  awk '/^=== HARNESS STEPS /{f=1; next} /^=== WORKFLOW MODES /{exit} f' "${E2E_CATALOG}"
 }
 
 list_catalog() {
@@ -446,8 +445,7 @@ run_one_step() {
     5) cmd_prep_v2 ;;
     6) echo "Chat: Extract Call Records for _TEST_CUSTOMER" ;;
     7) echo "Chat: Update Customer Notes for _TEST_CUSTOMER" ;;
-    8) echo "Chat: Run Account Summary for _TEST_CUSTOMER" ;;
-    *) echo "Step must be 1-8 (see list-steps)" >&2; return 2 ;;
+    *) echo "Step must be 1-7 (see list-steps)" >&2; return 2 ;;
   esac
 }
 
@@ -464,7 +462,7 @@ case "${SUB}" in
   run-step)
     shift
     if [[ -z "${1:-}" ]]; then
-      echo "run-step needs a number 1-8" >&2
+      echo "run-step needs a number 1-7" >&2
       exit 2
     fi
     s="$1"

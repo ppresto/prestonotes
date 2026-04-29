@@ -13,7 +13,7 @@ This file is the **table of contents (TOC)** for E2E **quality** work: sub-tasks
 
 | Question | Answer |
 | --- | --- |
-| **Link to vision** | Deliver a **GDoc** and **AI Account Summary** a human can ship without rewrite ([`.cursor/agents/tester.md` §1](../../../.cursor/agents/tester.md)). Full eight-step E2E must show **each transcript represented** in DAL (and related sections) with **full metadata** and consistent lifecycle — not a partial doc because the agent **skipped** DAL or `sync_notes` **reverted** local state. |
+| **Link to vision** | Deliver a **GDoc** and **AI Account Summary** a human can ship without rewrite ([`.cursor/agents/tester.md` §1](../../../.cursor/agents/tester.md)). The full E2E harness (see [`scripts/lib/e2e-catalog.txt`](../../../scripts/lib/e2e-catalog.txt)) must show **each transcript represented** in DAL (and related sections) with **full metadata** and consistent lifecycle — not a partial doc because the agent **skipped** DAL or `sync_notes` **reverted** local state. |
 | **Why this task (specifically)** | Separates **content** gaps (missing v2 DAL, sparse metadata) from **process** bugs (**pull** overwriting newer `call-records` / lifecycle). Without documenting both, we blame UCN for what is actually **push/pull order** ([TASK-052 §0](../archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md)). |
 | **Pros of closing the gaps** | E2E reflects **real** customer experience; UCN/Extract debugging gets clear **per-section** test recipes; fewer “it wrote nothing” scares when Drive was stale. |
 | **Cons / risks** | UCN is **heuristic** — DAL can still be skipped if not **explicit** in the prompt. `read_doc` may not list `appendix.agent_run_log` in JSON — verify in the **GDoc UI**. |
@@ -51,7 +51,7 @@ Verified via `prestonotes_gdoc/update-gdoc-customer-notes.py discover` / `read -
 
 ## v1 `_TEST_CUSTOMER` transcript-vs-GDoc deltas (finish before `prep-v2`)
 
-Use **Step 6 coverage table → Step 8 mutations** in [`docs/ai/playbooks/update-customer-notes.md`](../../ai/playbooks/update-customer-notes.md) (show-your-work + trace). **Do not run `prep-v2` until this block is checked off** (including **T053-v1-UCN-05** Challenge Tracker — see last bullet). Then continue T053-A/B and the rest of the eight-step E2E.
+Use **Step 6 coverage table → Step 8 mutations** in [`docs/ai/playbooks/update-customer-notes.md`](../../ai/playbooks/update-customer-notes.md) (show-your-work + trace). **Do not run `prep-v2` until this block is checked off** (including **T053-v1-UCN-05** Challenge Tracker — see last bullet). Then continue T053-A/B and the rest of the E2E harness in the catalog.
 
 - [x] **T053-v1-UCN-01 — Use Cases:** Exec readout cadence (“crisp monthly readout, not a ticket dump”) → `use_cases.free_text` (playbook routing + verification write).
 - [x] **T053-v1-UCN-02 — Upsell Path:** Explicit **Wiz DSPM** and **Wiz CIEM** bullets where transcripts name acquisition / PII / identity context (not only “Wiz Cloud” umbrella). *(2026-04-23: `read` → two `append_with_history` on `exec_account_summary.upsell_path` + planner `no_evidence` for other key fields; verified `read` shows three upsell entries.)*

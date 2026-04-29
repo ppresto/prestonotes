@@ -61,14 +61,14 @@
 
 ### E2E trigger rule alignment — `.cursor/rules/11-e2e-test-customer-trigger.mdc` vs harness
 
-**Problem:** A **`git checkout HEAD`** on **`11`** (during an unrelated revert) can leave **`.cursor/rules/11-e2e-test-customer-trigger.mdc`** pointing at **stale** wiring: e.g. **`e2e-test-customer.md`** / **10 steps** / **`reset` + Bootstrap** while the branch has moved to **`tester-e2e-ucn.md`**, **eight steps**, **`prep-v1` / `prep-v2`**, and the **TASK-069** quality pointer to **`.cursor/agents/tester.md` §6** (post-write diff, mandatory rows).
+**Problem:** A **`git checkout HEAD`** on **`11`** (during an unrelated revert) can leave **`.cursor/rules/11-e2e-test-customer-trigger.mdc`** pointing at **stale** wiring: e.g. **`e2e-test-customer.md`** / **10 steps** / **`reset` + Bootstrap** while the branch has moved to **`tester-e2e-ucn.md`**, **harness per `scripts/lib/e2e-catalog.txt`** (see **`list-steps`**), **`prep-v1` / `prep-v2`**, and the **TASK-069** quality pointer to **`.cursor/agents/tester.md` §6** (post-write diff, mandatory rows).
 
 **Do this in TASK-070 (or a tight sub-PR) when touching E2E:**
 
 | Fix | Detail |
 | --- | --- |
 | **Playbook path** | **`11`** “Follow … exactly” must reference **`docs/ai/playbooks/tester-e2e-ucn.md`** (and match the **current** filename on disk — not a retired path). |
-| **Step count + shell/chat order** | Match **`tester-e2e-ucn.md`** (eight steps: `prep-v1` → … → `prep-v2` → …); remove **10-step** / **`reset` + Bootstrap** language if the harness no longer uses it. |
+| **Step count + shell/chat order** | Match **`tester-e2e-ucn.md`** and **`scripts/lib/e2e-catalog.txt`** (or `./scripts/e2e-test-customer.sh list-steps`); remove **10-step** / **`reset` + Bootstrap** language if the harness no longer uses it. |
 | **TASK-069 pointer** | Restore a **short** canonical line in **`11`** (if desired for always-on E2E sessions): **tester.md §6** post-write diff; mandatory delta rows for Contacts, Challenge Tracker, Cloud Environment, Account Metadata on **`v1_full`** / **`full`**; planner **`KEY_FIELD_COVERAGE`** is not a substitute — **without** duplicating the full §6 template (pointer only). |
 
 **Dependency:** Confirm **`scripts/e2e-test-customer.sh`** subcommands and step labels match **`tester-e2e-ucn.md`** before editing **`11`** numbering.
@@ -102,7 +102,7 @@
 | **1. Docs (optional hub §)** | Add **README § SSoT: section semantics** (or equivalent) + optional **one** cross-line in `mutations-global.md` top matter pointing at it — *only* if approved. **Optional** **one** short pointer in **`core.mdc`** to the hub (link only, no rubric tables), per table above. |
 | **2. Deduplicate** | `update-customer-notes.md` and `20`/`21` rules: replace duplicate rubric blocks with links, *if* duplicates are found. |
 | **3. E2E** | `_TEST_CUSTOMER` v1: `read_doc` meets functional acceptance; lint + ledger per harness. |
-| **3b. `11` vs harness** | Align **`.cursor/rules/11-e2e-test-customer-trigger.mdc`** with **`tester-e2e-ucn.md`** (path, **8** steps, script names) and optional **TASK-069** — **`.cursor/agents/tester.md` §6** pointer; see subsection **E2E trigger rule alignment** above. |
+| **3b. `11` vs harness** | Align **`.cursor/rules/11-e2e-test-customer-trigger.mdc`** with **`tester-e2e-ucn.md`** + **catalog** (path, script names) and optional **TASK-069** — **`.cursor/agents/tester.md` §6** pointer; see subsection **E2E trigger rule alignment** above. |
 | **4. Code** | Writer/MCP *only* if a **valid** mutation is blocked. |
 
 ## Acceptance
@@ -115,7 +115,7 @@
 
 **Functional / E2E**
 
-- [x] **`11` / harness:** **`11-e2e-test-customer-trigger.mdc`** now references **`tester-e2e-ucn.md`**, uses the **eight-step** contract, matches script ordering, and includes a TASK-069 pointer to **`tester.md` §6**.
+- [x] **`11` / harness:** **`11-e2e-test-customer-trigger.mdc`** now references **`tester-e2e-ucn.md`**, uses the **catalog + `list-steps`** contract, matches script ordering, and includes a TASK-069 pointer to **`tester.md` §6**.
 - [x] `read_doc`: `contacts` ≥2 stakeholder lines with evidence traceability (John Doe, Jane Smith under `section_map.contacts.fields.free_text.entries`).  
 - [x] `read_doc`: ≥2 Challenge rows when the corpus has ≥2 challenges; lifecycle-consistent (`challenge_tracker` rows match `challenge-lifecycle.json` `in_progress` → **In Progress** for `ch-soc-budget`, `ch-champion-exit`).  
 - [x] Cloud: ≥3 `field_key` groups **when** corpus supports — `csp_regions`, `idp_sso`, `sizing` (update_in_place) plus `platforms`, `devops_vcs`, `ticketing` (tools_list); rubric-based, not vendor-keyword acceptance.  
