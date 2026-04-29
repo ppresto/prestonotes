@@ -40,7 +40,7 @@ isProject: false
 
 - **[`load-product-intelligence.md`](docs/ai/playbooks/load-product-intelligence.md)** is for **Wiz / product** caches and internal reference material under `docs/ai/cache/`, `MyNotes/Internal/`, etc. It is **not** the home for a **specific account’s** transcript + customer-notes snapshot. Preflight may **rsync** `MyNotes`, but **ingestion scope** there is product-intel paths, not “load this customer for UCN.”
 - **[`load-customer-context.md`](docs/ai/playbooks/load-customer-context.md)** is the right playbook for **+4 transcripts / +2 Account Summary (Notes.md) / +1 AI_Insights** with **lookback** — see Step 2 and `customer-data-ingestion-weights.md`. If a thread needs **deep Wiz product** detail, the same playbook’s Step 1 nudges you toward **Wiz MCP** or a pivot to **Load Product Intelligence** — that is a **separate** pass, not a requirement to mix full product sweeps with every UCN.
-- **UCN** already assumes **`read_doc`** (current doc truth) + lookback-limited **transcripts** + **targeted** `read_call_records` for pre-lookback pointers — it does **not** require loading the **entire** transcript history on every run.
+- **UCN** already assumes **`read_doc`** (current doc truth) + lookback-limited **transcripts** (and **targeted** reads of older **`.txt`** files only when a recent call references them) — it does **not** require loading the **entire** transcript history on every run.
 
 **Implication for this project:** Put **“what customer files to load, in what order, for a bounded window”** in the **customer / UCN** lane (scripts + `Load Customer Context` + UCN), not inside **Load Product Intelligence**. Product intel stays for **capability, licensing, and Wiz doc** questions.
 
@@ -51,7 +51,7 @@ isProject: false
 **Practical default (aligned with existing rules):**
 - **Always** load current **GDoc / `[Customer] Notes.md`** (structured truth: challenges, contacts, deal stage) — that is the **+2** surface; without it, UCN is blind to what is already in the account story.
 - For the **“latest call”** UCN, load **that call’s** transcript in full, plus the **default lookback** rule (e.g. last month) *only if* multiple recent calls need to be reconciled; if there is **literally one** new call since last UCN, **one transcript + doc read** is often enough.
-- **Prior** transcripts: use **selectively** — e.g. **last 2–3** per-call files **or** the **single** previous call if the new one **references** open threads, people, or challenges. Full history belongs in **Account Summary** / **read_doc** and **targeted** call-records for older ids, not in loading 50 files every time.
+- **Prior** transcripts: use **selectively** — e.g. **last 2–3** per-call files **or** the **single** previous call if the new one **references** open threads, people, or challenges. Full history belongs in **Account Summary** / **read_doc** and **targeted older `.txt`** pulls by id/date, not in loading 50 files every time.
 - **Script value for steady state:** the same **index** tool can output a **“UCN prep bundle”** (paths only, sorted): `Notes.md`, `newest 1|N transcripts`, optional `next_older` — so the **LLM does not browse** the tree, but the **model still reads** those files; the script is **orchestrating and trimming the list**, not replacing judgment.
 
 **What a script run can do in one go to reduce *LLM* work (not always fewer tokens):**

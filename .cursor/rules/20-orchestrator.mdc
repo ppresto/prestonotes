@@ -18,7 +18,7 @@ alwaysApply: false
 
 This is a **product-run playbook** for the **main Agent in this chat**; it does **not** replace **`.cursor/rules/core.mdc`** (task planning / approval expectations) or general engineering workflow choices.
 
-**`_TEST_CUSTOMER` E2E override (test-only):** when the run is **`Run E2E Test Customer`** for customer **`_TEST_CUSTOMER`**, execute this pipeline end-to-end without approval pauses for write tools (including `update_challenge_state`, `write_doc`, `append_ledger_row`, `write_call_record`, `sync_notes`). Keep normal approval behavior for all other customers/runs. See `.cursor/rules/11-e2e-test-customer-trigger.mdc`, `scripts/lib/e2e-catalog.txt` (harness SSoT), and `docs/ai/playbooks/tester-e2e-ucn.md` for the sequence and procedure.
+**`_TEST_CUSTOMER` E2E override (test-only):** when the run is **`Run E2E Test Customer`** for customer **`_TEST_CUSTOMER`**, execute this pipeline end-to-end without approval pauses for write tools (including `update_challenge_state`, `write_doc`, `append_ledger_row`, `sync_notes`). Keep normal approval behavior for all other customers/runs. See `.cursor/rules/11-e2e-test-customer-trigger.mdc`, `scripts/lib/e2e-catalog.txt` (harness SSoT), and `docs/ai/playbooks/tester-e2e-ucn.md` for the sequence and procedure.
 
 ## Built-in Challenge Review — Phase 0 (default)
 
@@ -26,7 +26,7 @@ This is a **product-run playbook** for the **main Agent in this chat**; it does 
 
 **When:** **Before pipeline Step 1**, unless **Scope — opt-out** applies.
 
-1. Run challenge governance inline: read **`challenge-lifecycle.json`** via MCP **`read_challenge_lifecycle`**, merge ids + **last_updated** / state against call records, compute stall/drift per **`docs/ai/references/challenge-lifecycle-model.md`** (≥ 60 days since last transition on an unresolved state is a stall flag), and emit **one** review table with columns **`challenge_id | description | current_state | last_updated | evidence | stall / risk | recommended_action`**. Reuse data already loaded in orchestrator **Steps 2–3** where it is equivalent. When UCN is the parent run, **do not** use a **second** STOP for this — lifecycle write proposals are folded into **Block A** below.
+1. Run challenge governance inline: read **`challenge-lifecycle.json`** via MCP **`read_challenge_lifecycle`**, merge ids + **last_updated** / state against **in-scope transcripts** (and the tracker table from **`read_doc`**), compute stall/drift per **`docs/ai/references/challenge-lifecycle-model.md`** (≥ 60 days since last transition on an unresolved state is a stall flag), and emit **one** review table with columns **`challenge_id | description | current_state | last_updated | evidence | stall / risk | recommended_action`**. Reuse data already loaded in orchestrator **Steps 2–3** where it is equivalent. When UCN is the parent run, **do not** use a **second** STOP for this — lifecycle write proposals are folded into **Block A** below.
 2. Build **Block A — Challenge status updates** (implementation: MCP **`update_challenge_state`** rows: `challenge_id`, `new_state`, `evidence` citing **`call_id`** or lifecycle rule). Only **legal single-step** transitions per **`prestonotes_mcp/journey.py`**. Rows may be **zero**.
 3. **Do not** call **`update_challenge_state`** until the combined approval step below.
 
@@ -71,11 +71,11 @@ The narrative view of the account (Health line, call spine, milestones, challeng
 | 4 | ASM | **`.cursor/rules/26-domain-advisor-asm.mdc`** |
 | 5 | AI | **`.cursor/rules/27-domain-advisor-ai.mdc`** |
 
-Load **`.cursor/rules/ai_learnings.mdc`** and honor overrides (**`docs/project_spec.md` §2 Rule 5**). For extractor discipline, align with **`.cursor/rules/21-extractor.mdc`** when creating or validating call records.
+Load **`.cursor/rules/ai_learnings.mdc`** and honor overrides (**`docs/project_spec.md` §2 Rule 5**). For UCN field discipline (ledger cells, Challenge Tracker rows, lifecycle evidence), align with **`.cursor/rules/21-extractor.mdc`** where that rule applies to the current task.
 
 ## Approval (default behavior)
 
-- **Phase 0 + Steps 1–7:** Read-only MCP and reasoning only, except where **`.cursor/rules/21-extractor.mdc`** already requires approval before **`write_call_record`** / index updates.
+- **Phase 0 + Steps 1–7:** Read-only MCP and reasoning only (no customer-data writes until the approval gate below).
 - **After step 7, before step 9:** **STOP.** **Default UCN:** use the **combined STOP** (Block A + Block B) above — **one** approval round. **Opt-out UCN:** use the **legacy STOP** (Block B only). Do **not** call **`write_doc`**, **`append_ledger`**, **`append_ledger_row`**, **`log_run`**, or **`sync_notes`** for mutation purposes until the user explicitly approves (same contract as **`.cursor/rules/core.mdc`**). **`update_challenge_state`** is gated the same way.
 
 **`_TEST_CUSTOMER` E2E exception:** skip this approval stop during `_TEST_CUSTOMER` E2E runs.
@@ -84,23 +84,29 @@ Load **`.cursor/rules/ai_learnings.mdc`** and honor overrides (**`docs/project_s
 
 0. **Challenge review (default)** — Run **Phase 0** above unless **Scope — opt-out** applies.
 1. **Sync** — Call MCP **`sync_notes`** and **`sync_transcripts`** for the customer context.
-2. **Load (transcripts / records)** — Read validated call records via MCP **`read_call_records`**. Check for gaps vs **`Transcripts/`**; if new raw transcript chunks lack call records, run the extractor path per **`21-extractor.mdc`** (user approval before **`write_call_record`**).
+2. **Load (transcripts)** — Load the in-scope per-call corpus from **`Transcripts/`** using MCP **`read_transcripts`** with an explicit **`limit`** that covers every file in the lookback window (or read the files from the repo mirror). Do **not** rely on the MCP default transcript limit. If new `.txt` files exist under **`Transcripts/`** that are not yet reflected in **`read_doc`** / Daily Activity, plan updates from those transcripts per **`docs/ai/playbooks/update-customer-notes.md`**.
 3. **Load (notes / audit)** — Read account summary context (**`read_doc`** / **`discover_doc`** as needed), **last 5** History Ledger rows (**`read_ledger`** or file tools on the export path), **last 10** audit log entries (**`read_audit_log`**). If ledger returns `empty`, treat it as first-run/no-history and continue.
-4. **Scope** — If there are **new call records since the last ledger row** (or equivalent signal), plan a **full update**; if there is **no ledger yet**, default to a full update on current evidence.
-5. **Extractor** — For new material, combine **new call records** + current state; produce **`CustomerStateUpdate.json`** per **`docs/ai/references/customer-state-update-delta.md`**.
+4. **Scope** — If there are **new transcripts since the last ledger row** (or no ledger yet), default to a **full update** on current transcript + doc evidence per the UCN playbook.
+5. **Delta shape** — When the multi-advisor **`CustomerStateUpdate.json`** path is in use, build the delta from **transcripts + `read_doc` + ledger** per **`docs/ai/references/customer-state-update-delta.md`**. Otherwise follow the monolithic UCN steps in **`docs/ai/playbooks/update-customer-notes.md`** (no separate structured JSON ingest step).
 6. **Advisors (strictly sequential)** — Feed the same delta object to each advisor in order: **SOC → APP → VULN → ASM → AI**. Wait for each advisor output before starting the next. **ASM** may use **`architecture_diagram_paths`** (images under **`MyNotes/Customers/<Customer>/`**) per **`26-domain-advisor-asm.mdc`**.
 7. **Compile** — Merge extractor output and all advisor outputs into **one** coherent proposed **Google Doc mutation** payload (schema per **`prestonotes_gdoc/config/doc-schema.yaml`** and **`docs/ai/gdoc-customer-notes/mutations-global.md`** / tab packs under **`docs/ai/gdoc-customer-notes/README.md`**). Prepare **`append_ledger_row`** **`row_json`** against the **20-column** `schema_version: 3` model in `prestonotes_mcp/ledger.py` (`LEDGER_V3_COLUMNS`); see `docs/ai/playbooks/update-customer-notes.md` Step 11 for the per-column extraction rules. **Lifecycle–tracker parity:** For every **`update_challenge_state`** row in Block A, include matching **`challenge_tracker`** `add_table_row` / `update_table_row` mutations in Block B (same evidence dates) and add **`[lifecycle_id:<challenge_id>]`** anchors per **`docs/ai/gdoc-customer-notes/mutations-account-summary-tab.md`**. If you are not confident enough to update the customer-facing table, **do not** persist lifecycle alone in the same approval—drop the lifecycle row or defer.
-8. **STOP — user review** — **Default UCN:** **combined STOP** (Block A + Block B); offer **Approve all (A then B), Block B only, Block A only, or reject / edit.** **Opt-out UCN:** legacy STOP (Block B only). **No mutating MCP tools** beyond what step 2 already allowed for call records.
+8. **STOP — user review** — **Default UCN:** **combined STOP** (Block A + Block B); offer **Approve all (A then B), Block B only, Block A only, or reject / edit.** **Opt-out UCN:** legacy STOP (Block B only). **No mutating MCP tools** until the user approves.
 9. **Execute (only after explicit user approval)** — **If Block A approved** (default path): **`update_challenge_state`** (per row) **before** **`write_doc`**. **If Block B approved:** **`write_doc`** (pass **`customer_name`** to MCP when known), **`append_ledger_row`** (or **`append_ledger`** for the legacy GDoc ledger-append path). If ledger append fails, run **`read_ucn_recovery_state`** + **`recover_ledger_from_latest`** before concluding. Optional **`log_run`**, **`sync_notes`**. **Opt-out:** no Block A unless separately approved; otherwise same order.
 
 If any step is blocked (auth, missing customer folder, schema validation), stop with a clear fix instruction (including any **`run_in_terminal_to_fix`** hints from MCP — **`core.mdc`**).
 
-## Call-record reads inside UCN (TASK-051 §D)
+## Transcript-only evidence (UCN)
 
-UCN's call-record reads are **targeted and bounded** — they are not the primary evidence path. The authoritative playbook-side contract lives in **`docs/ai/playbooks/update-customer-notes.md`** Step 4 (Lookback split). Summary for this rule file:
+UCN uses **per-call transcripts under `Transcripts/`** as the only required evidence stream. The authoritative playbook contract lives in **`docs/ai/playbooks/update-customer-notes.md`** Step 4.
 
-1. Raw transcripts **inside lookback** stay at weight **+4** — do **not** demote them.
-2. Do **not** load `call-records/*.json` for calls dated **inside** the active lookback window (those are already covered by raw transcripts — double-counting inflates signal).
-3. For pre-lookback history referenced by a recent transcript (challenge id, SKU, or stakeholder name), call `read_call_records` and **filter the result to ≤ 5 specific records by `call_id` / `raw_transcript_ref`** before citing. No wholesale corpus sweep. `read_call_records` does not accept an `ids=[…]` parameter; the caller is responsible for narrowing in memory.
-4. Wholesale call-record ingestion belongs to **`Run Account Summary for [CustomerName]`** (`docs/ai/playbooks/run-account-summary.md`) — Journey Timeline was retired in TASK-047 and its narrative is absorbed by Account Summary. Account Summary is the sole full-history consumer.
-5. Prefer schema v2 fields on call-records (`metrics_cited`, `stakeholder_signals`, `goals_mentioned`, `risks_mentioned`) over re-quoting transcripts when the call is outside lookback — they are the compressed memory of that call.
+## Transcript scope guard (core UCN)
+
+Transcript loading requirements are part of core UCN (all customers), not tester-only harness logic:
+
+1. When using MCP **`read_transcripts`** for UCN context, always pass an explicit `limit` large enough to include the full in-lookback per-call corpus (do not rely on MCP default limit).
+2. Before mutation planning, record transcript filenames and count in run notes / chat so scope is auditable.
+3. If expected in-lookback transcript files are missing from the loaded set, stop and fix loading scope before compiling mutation JSON.
+4. E2E harness docs (`tester-e2e-ucn.md`) should reference UCN behavior but must not redefine this core scope policy.
+5. Raw transcripts **inside lookback** stay at weight **+4** — do **not** demote them.
+6. For **older meetings** referenced in a recent transcript (challenge id, SKU, stakeholder, product), open the **matching older per-call `.txt` files** under **`Transcripts/`** by date/filename when you need verbatim or historical context — keep reads **bounded** (only the files the citation requires).
+7. **`Run Account Summary for [CustomerName]`** may synthesize long-horizon narrative from the same transcript + doc + ledger corpus per its playbook; it does **not** imply a second structured JSON evidence layer for UCN.

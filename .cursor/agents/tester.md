@@ -32,8 +32,15 @@ Run these sequentially. If any fail, return `status: blocked` with the exact err
 
 ## Phase 3: Post-Write Diff
 
-1. **Validate (read_doc):** After a UCN write, run `read_doc`. Compare the resulting JSON to **in-scope transcripts** (fixture `Transcripts/*.txt` after prep). If `call-records/*.json` exists from a manual Extract run, you may use it as extra structured context; it is **not** required for the default E2E harness.
+1. **Validate (read_doc):** After a UCN write, run `read_doc`. Compare the resulting JSON to **in-scope transcripts** (fixture `Transcripts/*.txt` after prep).
 2. **Delta Table:** Generate a strict diff table checking coverage for: Exec Account Summary, Contacts, Challenge Tracker, Cloud Environment, Account Metadata, and Daily Activity.
+3. **Missed-by-UCN Table (required every run, including all-pass runs):** End every E2E report with a strict section-by-section table built from:
+   - **Expected from transcript:** concrete signals extracted from all in-scope `Transcripts/*.txt` for each UCN target section.
+   - **Actually mutated in last UCN run:** approved mutation payload + write result (`applied`/`skipped` from write output, plus post-write `read_doc` state).
+   - **Columns (required):** `section_target | expected_from_transcript | actually_mutated | verdict | severity | notes`.
+   - **Verdict values:** `matched`, `partial`, `missed`.
+   - **Severity rubric:** `high` (customer-visible important gap in exec summary/challenge/deal stage), `medium` (important but non-blocking section drift), `low` (minor wording/duplication/no-net-new impact), `none` (fully matched).
+   - If everything matches, still print the full table and set each row to `matched` with `severity=none`.
 
 ## Completion and status semantics (e2e_default / full harness)
 
@@ -51,5 +58,7 @@ Run these sequentially. If any fail, return `status: blocked` with the exact err
 - commands_run: [<exact commands run>]
 - read_doc_cited: yes | no
 - delta_table: <markdown table of the §6 mandatory rows>
+- missed_by_ucn_table: <markdown table with section_target | expected_from_transcript | actually_mutated | verdict | severity | notes>
+- missed_by_ucn_summary: <counts by verdict/severity; include explicit "all rows matched" when applicable>
 - recommendations_summary: <bullets detailing any missing high-signal corpus data>
 - handoff_for_next: <operator actions, tasks to file, or "Ready to push branch">

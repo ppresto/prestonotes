@@ -27,8 +27,7 @@
 
 | Source | What it is |
 |--------|------------|
-| **Transcripts** | `MyNotes/Customers/_TEST_CUSTOMER/Transcripts/*.txt` (after prep/materialize) — *what was said*. |
-| **Call records** | `MyNotes/Customers/_TEST_CUSTOMER/call-records/*.json` — *optional; present only if you ran **Extract Call Records** separately*. |
+| **Transcripts** | `MyNotes/Customers/_TEST_CUSTOMER/Transcripts/*.txt` (after prep/materialize) — *what was said* (default ground truth for UCN diffs). |
 | **Lifecycle file** | `.../AI_Insights/challenge-lifecycle.json` — *structured challenge state* (when present). |
 | **GDoc** | **`*_TEST_CUSTOMER Notes*`** in Drive — *what UCN wrote* (read via API/MCP, not only local `.md` export if the export is stale). |
 | **History Ledger** | `.../AI_Insights/*-History-Ledger.md` — *append history for UCN runs* (when present). |
@@ -37,7 +36,7 @@
 
 - `discover_doc` → resolve the Notes **document id** for `_TEST_CUSTOMER` using `MYNOTES_ROOT_FOLDER_ID`.
 - `read_doc` → fetch GDoc **content** (and internal markers if needed for debugging).
-- `read_transcripts`, `read_call_records`, `read_challenge_lifecycle`, `read_ledger` / `read_audit_log` as needed for **side-by-side** comparison with the GDoc.
+- `read_transcripts`, `read_challenge_lifecycle`, `read_ledger` / `read_audit_log` as needed for **side-by-side** comparison with the GDoc.
 
 **Terminal the agent may use**
 
@@ -72,7 +71,7 @@ Execute **in order**, in this session (same triggers as the main E2E playbook’
 ### A2. Build the diff (ground truth vs GDoc)
 
 1. **Read transcripts** (paths above). Summarize *per call* the facts that *should* affect GDoc sections (stakeholders, products, challenges, deal motion — whatever the project’s UCN contract says).
-2. **Read `call-records/*.json`** (skip if the directory has no JSON). For each file, note fields that must flow to **Daily Activity**, **Challenge Tracker**, **Risk**, **Account metadata**, etc. Flag **empty** or **stub** fields that could explain a miss.
+2. **Transcript pass:** for each in-scope **`Transcripts/*.txt`**, note facts that must flow to **Daily Activity**, **Challenge Tracker**, **Risk**, **Account metadata**, etc. Flag **empty** or **stub** meetings that could explain a miss.
 3. **Fetch the GDoc** with `discover_doc` + `read_doc` (or equivalent Drive read). If local ` ... Notes.md` is used as a *mirror*, state whether rsync was run and whether the file might lag the live doc.
 4. **Produce a structured gap list:** *Expected (from 1–2)* | *Observed in GDoc (3)* | *First hypothesis (which subsystem)*. Subsystems might include: **extractor**, **UCN planner**, **GDoc section writer**, **reconciler**, **approval/tool filter**, **schema validation dropping fields**.
 

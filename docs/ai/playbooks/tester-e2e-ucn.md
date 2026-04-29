@@ -11,9 +11,9 @@ End-to-end validation for the `_TEST_CUSTOMER` fixture. **Numbered order and cou
 - `_TEST_CUSTOMER` is test data. Approval pauses for customer-data write tools are bypassed under the `_TEST_CUSTOMER` E2E override (see `.cursor/rules/20-orchestrator.mdc`, `.cursor/rules/21-extractor.mdc`, `.cursor/rules/core.mdc`, `.cursor/rules/11-e2e-test-customer-trigger.mdc`).
 - On the reserved triggers (see below), the agent **must execute the full default harness in a single session, in order, without stopping** for confirmation or substituting session context for the actual playbook work. The **exact** step list is [`scripts/lib/e2e-catalog.txt`](../../scripts/lib/e2e-catalog.txt) (see **HARNESS STEPS (E2E)** and **e2e_default**). Any skipped step, reordering, or shortcut is a defect — stop, fix the script / playbook / rule, and re-run.
 - For **live troubleshooting** (first UCN vs GDoc, pause, diff, then optional **prep-v2** / second UCN and lifecycle + metadata), use [`tester-e2e-ucn-debug.md`](tester-e2e-ucn-debug.md) — a **staged agent playbook** with handoff, not a lint script.
-- **GDoc and artifact** nuance (wording, hygiene, cross-section truth) is reviewed by the **agent + operator** using that playbook (or the checklist below) — there is no substitute for `read_doc` and **transcript** side-by-sides (optional **`call-records`** if you ran **Extract** separately).
+- **GDoc and artifact** nuance (wording, hygiene, cross-section truth) is reviewed by the **agent + operator** using that playbook (or the checklist below) — there is no substitute for `read_doc` and **transcript** side-by-sides.
 - If a step fails, stop, fix, and **resume from that step** — do not restart from step 1 unless the failure corrupted state.
-- **Artifact hygiene:** customer-facing artifacts produced by this flow (GDoc sections, History Ledger, `challenge-lifecycle.json`) must be indistinguishable from a real-customer run. See **`.cursor/rules/11-e2e-test-customer-trigger.mdc` — Artifact hygiene** (`call-records` optional unless Extract was run).
+- **Artifact hygiene:** customer-facing artifacts produced by this flow (GDoc sections, History Ledger, `challenge-lifecycle.json`) must be indistinguishable from a real-customer run. See **`.cursor/rules/11-e2e-test-customer-trigger.mdc` — Artifact hygiene**.
 
 ## Prerequisites (one-time per machine)
 
@@ -59,23 +59,24 @@ Use **`./scripts/e2e-test-customer.sh debug-path`** to print the active bundle p
 ./scripts/e2e-test-customer.sh prep-v1
 ```
 
-Replaces the Notes Google Doc in Drive with a **full copy** of `_TEMPLATE/_notes-template` (Drive API; see `prestonotes_gdoc/e2e_rebaseline_customer_gdoc.py`), pulls the mount into the repo, **removes** `pnotes_agent_log.md` / archive and **clears** `AI_Insights/` for a greenfield, materializes **v1 Transcripts** from `tests/fixtures/e2e/_TEST_CUSTOMER/v1/` (clears `call-records/*.json` on v1 apply — optional JSON can be added later via **Extract Call Records** outside this harness), runs `e2e-test-customer-bump-dates.py`, and pushes to Drive.
+Replaces the Notes Google Doc in Drive with a **full copy** of `_TEMPLATE/_notes-template` (Drive API; see `prestonotes_gdoc/e2e_rebaseline_customer_gdoc.py`), pulls the mount into the repo, **removes** `pnotes_agent_log.md` / archive and **clears** `AI_Insights/` for a greenfield, materializes **v1 Transcripts** from `tests/fixtures/e2e/_TEST_CUSTOMER/v1/`, runs `e2e-test-customer-bump-dates.py`, and pushes to Drive.
 
 Options: `prep-v1 --skip-rebaseline` (no GDoc replace), `prep-v1 --skip-clean` (keep logs and `AI_Insights`).
 
 **Legacy (no GDoc replace, no clean):** `./scripts/e2e-test-customer.sh v1`
 
-**Parity with `e2e-test-customer.sh` (TASK-052 Section 0):** Step 1 is implemented in `cmd_prep_v1` in this order: (1) unless `--skip-rebaseline`, run `e2e_rebaseline_customer_gdoc.py` (Drive **copy** of the template Notes doc into the customer folder, then trash/rename — the Notes **file id may change**; bookmarks to the old URL need updating. This is unlike `Transcripts/` / `call-records/` / `AI_Insights/`, which sync through the Drive mount + rsync); (2) `ensure_bootstrapped` (restart Drive if mount missing, then `rsync-gdrive-notes.sh` pull); (3) unless `--skip-clean`, remove logs and clear `AI_Insights/*`; (4) `e2e-test-customer-materialize.py apply` (v1), `e2e-test-customer-bump-dates.py`, `e2e-test-push-gdrive-notes.sh`. Do not hand-roll a different order in docs or chat.
+**Parity with `e2e-test-customer.sh` (TASK-052 Section 0):** Step 1 is implemented in `cmd_prep_v1` in this order: (1) unless `--skip-rebaseline`, run `e2e_rebaseline_customer_gdoc.py` (Drive **copy** of the template Notes doc into the customer folder, then trash/rename — the Notes **file id may change**; bookmarks to the old URL need updating. This is unlike `Transcripts/` / `AI_Insights/`, which sync through the Drive mount + rsync); (2) `ensure_bootstrapped` (restart Drive if mount missing, then `rsync-gdrive-notes.sh` pull); (3) unless `--skip-clean`, remove logs and clear `AI_Insights/*`; (4) `e2e-test-customer-materialize.py apply` (v1), `e2e-test-customer-bump-dates.py`, `e2e-test-push-gdrive-notes.sh`. Do not hand-roll a different order in docs or chat.
 
 ### 2. Chat: `Load Customer Context for _TEST_CUSTOMER`
 
 ### 3. Chat: `Update Customer Notes for _TEST_CUSTOMER`
 
-First UCN. Persists `challenge-lifecycle.json`, updates the GDoc, appends History Ledger, etc. Run [`update-customer-notes.md`](update-customer-notes.md) end-to-end (especially Step 6 **Upsell Path** routing for **`Wiz DSPM`** / **`Wiz CIEM`** vs a single generic **`Wiz Cloud`** line, and **Contacts** from transcripts per that playbook — optional structured support from `call-records/*.json` if those files exist). For `_TEST_CUSTOMER` E2E, Step 7 clarification and Step 9 approval are logged as bypass outcomes (no user pause) per `.cursor/rules/11-e2e-test-customer-trigger.mdc`; for non-E2E customers, normal pauses remain required.
+First UCN. Persists `challenge-lifecycle.json`, updates the GDoc, appends History Ledger, etc. Run [`update-customer-notes.md`](update-customer-notes.md) end-to-end (especially Step 6 **Upsell Path** routing for **`Wiz DSPM`** / **`Wiz CIEM`** vs a single generic **`Wiz Cloud`** line, and **Contacts** from transcripts per that playbook). For `_TEST_CUSTOMER` E2E, Step 7 clarification and Step 9 approval are logged as bypass outcomes (no user pause) per `.cursor/rules/11-e2e-test-customer-trigger.mdc`; for non-E2E customers, normal pauses remain required.
+Use the canonical checklist in [`update-customer-notes.md`](update-customer-notes.md) Step 6 ("Canonical must-check evidence and routing checkpoint") for required section routing coverage; do not duplicate those section-level read rules here.
 
 #### Required writer dry-run (`dry_run` / `--dry-run`) — E2E only (`_TEST_CUSTOMER`)
 
-**Planner preflight** (`scripts/ucn-planner-preflight.py`) is **required** before every real `write_doc` / `write` — see [`update-customer-notes.md`](update-customer-notes.md) **Step 10**. That validates the planner contract; it does **not** replace a Doc API render preview.
+**Planner preflight** (`scripts/ucn-planner-preflight.py`) is **required** before every real `write_doc` / `write` — see [`update-customer-notes.md`](update-customer-notes.md) **Step 10**. It validates coverage accounting (`mutate` or evidence-backed `skip` for required sections), not standalone evidence sufficiency, and it does **not** replace a Doc API render preview.
 
 For **this harness only** (not production customers): after preflight passes, you **must** run **`write_doc`** with **`dry_run=true`** once **or** **`update-gdoc-customer-notes.py write --dry-run`** once on the same mutations payload, **then** run the real write (`dry_run=false` / no `--dry-run`). **Skipping** the writer dry-run before the real write in step **3** or step **5** is a **`failed`** harness run for `e2e_default`, not `success`.
 
@@ -85,7 +86,7 @@ For **this harness only** (not production customers): after preflight passes, yo
 ./scripts/e2e-test-customer.sh prep-v2
 ```
 
-**Pushes the repo to Drive first** (so round-1 UCN artifacts are on Drive before pull), pulls, materializes v1 + v2 **transcripts** only (does **not** delete existing `call-records/*.json` from round 1 if present), bumps dates, pushes again.
+**Pushes the repo to Drive first** (so round-1 UCN artifacts are on Drive before pull), pulls, materializes v1 + v2 **transcripts**, bumps dates, pushes again.
 
 **Parity with the script (TASK-052 Section B):** `cmd_prep_v2` always runs `e2e-test-push-gdrive-notes.sh` **before** `ensure_bootstrapped` (which pulls from Drive).
 
@@ -101,7 +102,7 @@ Second UCN. Same playbook contract as step 3 (Step 6 coverage table → Step 8 U
 
 After each **`read_doc`** that closes a UCN round, the **`/tester`** agent (or orchestrator) must run **`.cursor/agents/tester.md` §6** *before* calling the run successful for **`v1_full`** / **`e2e_default`** / **`full`** (per catalog workflow names).
 
-- **Not the same as the writer’s planner guard:** the code only requires coverage for four fields (`top_goal`, `risk`, `use_cases`, `workflows`). The **tester** must still diff **Contacts**, **Challenge Tracker**, **Cloud Environment**, and **Account Metadata** against **in-scope transcripts** (and optional **`call-records`** when files exist), and **score** empty sections when the corpus is rich (see §6 “mandatory rows”).
+- **Not the same as the writer’s planner guard:** the code only requires coverage for four fields (`top_goal`, `risk`, `use_cases`, `workflows`). The **tester** must still diff **Contacts**, **Challenge Tracker**, **Cloud Environment**, and **Account Metadata** against **in-scope transcripts**, and **score** empty sections when the corpus is rich (see §6 “mandatory rows”).
 - **Daily Activity (TASK-071):** compare **transcript count in lookback (N)** to **meeting-block count in DAL (M)** — not `len(free_text.entries)`; see **tester.md §6.1**.
 - **Pointer only** — full table template, severity rules, and anti-false-green language live in **tester.md §6** (do not duplicate here).
 

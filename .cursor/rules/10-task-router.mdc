@@ -35,4 +35,4 @@ If intent is ambiguous, **prefer** **`20-orchestrator.mdc`** and say so in one l
 
 - **`.cursor/rules/20-orchestrator.mdc`** — gated MCP steps for Update Customer Notes.
 - **`.cursor/rules/core.mdc`** — mutation JSON, **`write_doc`** / ledger approval gates.
-- **`.cursor/rules/21-extractor.mdc`** — extractor when step 2 or 5 requires call-record work.
+- **`.cursor/rules/21-extractor.mdc`** — Challenge lifecycle / ledger / Challenge Tracker discipline for UCN; full **`Extract Call Records`** path only when the user explicitly runs that trigger.

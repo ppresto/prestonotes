@@ -48,7 +48,7 @@ For **full** default E2E, prefer the **main Cursor chat** with the work **in the
 
 ## Artifact hygiene
 
-Customer artifacts (the Google Doc, History Ledger, `challenge-lifecycle.json`) must be indistinguishable from a real-customer run. **`call-records/*.json`** is optional in the default E2E harness unless the operator runs **Extract Call Records** separately.
+Customer artifacts (the Google Doc, History Ledger, `challenge-lifecycle.json`) must be indistinguishable from a real-customer run.
 
 - **Do not** mention any `TASK-NNN` identifier, `round 1`, `round 2`, `v1 corpus`, `v2 corpus`, `phase`, `E2E`, `harness`, `fixture`, or any other test-only vocabulary in artifact content.
 - **Section dates** in any artifact (Daily Activity, call spine, milestones, ledger rows, challenge history) must be **call dates** or **milestone dates** — never the run date.
@@ -61,4 +61,4 @@ Customer artifacts (the Google Doc, History Ledger, `challenge-lifecycle.json`) 
 For `v1_full` / `e2e_default` / `full` runs, the mandatory post-write diff and severity rubric live in **`.cursor/agents/tester.md` §6**.
 
 - Planner `KEY_FIELD_COVERAGE` is not a substitute for this review.
-- The delta table must explicitly score **Contacts**, **Challenge Tracker**, **Cloud Environment**, and **Account Metadata** when corpus evidence exists (use **transcripts** as primary ground truth; optional **`call-records`** if present).
+- The delta table must explicitly score **Contacts**, **Challenge Tracker**, **Cloud Environment**, and **Account Metadata** when corpus evidence exists (use **transcripts** as ground truth).

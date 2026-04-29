@@ -54,11 +54,10 @@ When analyzing transcripts and notes, extract structured facts into these catego
 
 These rules exist so **Update Customer Notes** produces `contacts.free_text` mutations **inside the normal Step 8 JSON** — the same path for `_TEST_CUSTOMER` and for every production account (no fixture-only scripts, no throwaway `/tmp` plans as the source of truth).
 
-1. **Names must appear in source text.** Prefer verbatim spellings from **in-lookback transcripts**. If Extract has written **`call-records/<call_id>.json`** for that call, you may also cite **`participants[].name`** and roles from **`participants[].role`** when they match the transcript. Do **not** invent people who appear only in generic action-item placeholders (e.g. a bare `"SE"` owner with no named person).
-2. **Use `stakeholder_signals[]` for nuance, not for copying enums into the doc.** Translate `signal` values into plain customer-facing language in the **bullet** (e.g. champion transition, sponsor stepping in). Keep enum tokens and internal field paths in **`reasoning` only**.
-3. **Mutation payload:** `section_key`: `contacts`, `field_key`: `free_text`, `action`: `append_with_history`, `new_value`: one line `Name - role/context; short factual tail`, `theme_key`: `contact:<kebab-slug-from-display-name>`, `evidence_date`: ISO **call** date for the strongest citation (transcript header or record `date`).
-4. **Multi-call accounts:** Merge facts across calls in **one bullet per person** when the doc does not already list them separately; otherwise append once per distinct role change the customer cares about, with the **latest** material `evidence_date`.
-5. **Dedupe against `read_doc`:** If an active entry already covers the same person (normalize whitespace and case for comparison), skip with an explicit skip reason or enrich only when new evidence adds a **material** fact (departure date, title change), never for wording-only churn.
+1. **Names must appear in source text.** Prefer verbatim spellings from **in-lookback transcripts** (speaker lines and stated roles). Do **not** invent people who appear only in generic action-item placeholders (e.g. a bare `"SE"` owner with no named person).
+2. **Mutation payload:** `section_key`: `contacts`, `field_key`: `free_text`, `action`: `append_with_history`, `new_value`: one line `Name - role/context; short factual tail`, `theme_key`: `contact:<kebab-slug-from-display-name>`, `evidence_date`: ISO **call** date for the strongest citation (transcript `DATE:` line).
+3. **Multi-call accounts:** Merge facts across calls in **one bullet per person** when the doc does not already list them separately; otherwise append once per distinct role change the customer cares about, with the **latest** material `evidence_date`.
+4. **Dedupe against `read_doc`:** If an active entry already covers the same person (normalize whitespace and case for comparison), skip with an explicit skip reason or enrich only when new evidence adds a **material** fact (departure date, title change), never for wording-only churn.
 
 - Never append housekeeping/meta text in customer-facing fields (for example: "Upsell Path item", "onboarding issue", "resolved xyz").
 - Keep evidence metadata in audit logs and mutation metadata only; do not render evidence markers/dates inline in customer-facing GDoc text.
@@ -127,7 +126,7 @@ When Upsell/commercial wording is in scope, ground proposals with this minimal b
 1. `read_doc` current account state.
 2. Relevant JSON snapshots under `docs/ai/cache/wiz_mcp_server/mcp_query_snapshots/<category>/` for SKUs in play (Cloud/Defend/Code/Sensor/CIEM/DSPM/ASM as applicable).
 3. Gap-framing references (NIST CSF, NIST AI RMF, OWASP SAMM, OWASP LLM Top 10) as listed in the playbook / operator packet when the customer context requires that framing.
-4. Then normal UCN transcripts/call-records/history processing.
+4. Then normal UCN transcripts/history processing.
 
 Do not treat this path as a full `Load Product Intelligence` sweep. If snapshot files are stale or missing, flag it in run output and either refresh or proceed with explicit uncertainty.
 

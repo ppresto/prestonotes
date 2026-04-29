@@ -64,38 +64,38 @@ Table columns:
 
 ## 4. Chronological call spine (optional)
 
-Compact table, sorted by **call date** ascending. Dates here are **always the call date from the record**, never the run date. Bounded to in-lookback calls by default; expand to full history only when the user asks.
+Compact table, sorted by **call date** ascending. Dates here are **always the call date from the transcript header**, never the run date. Bounded to in-lookback calls by default; expand to full history only when the user asks.
 
-| Date | call_id | call_type | summary_one_liner | sentiment |
-|------|---------|-----------|-------------------|-----------|
-| YYYY-MM-DD | … | discovery / technical_deep_dive / campaign / exec_qbr / poc_readout / renewal / internal | … | positive / neutral / cautious / negative |
+| Date | source transcript | headline (one line) | tone (optional) |
+|------|--------------------|--------------------|-----------------|
+| YYYY-MM-DD | `YYYY-MM-DD-*.txt` | … | positive / neutral / cautious / negative |
 
-Source: `read_call_records` (records are returned sorted by `(date, call_id)`).
+Source: per-call **`Transcripts/*.txt`** files (and `read_transcripts` / `read_doc` as needed).
 
 ---
 
 ## 5. Milestones (optional)
 
-Bullets for concrete inflection points in the account story. Each bullet cites a **`call_id`** + **call date** — never the run date. Derive from `call_type` transitions and lifecycle `history[]` entries (for example: first `discovery`, first POC, first POC readout, commercial close, champion transition, renewal gate).
+Bullets for concrete inflection points in the account story. Each bullet cites a **transcript date** + **filename** — never the run date. Derive from meeting content and lifecycle `history[]` entries (for example: first discovery, first POC, first POC readout, commercial close, champion transition, renewal gate).
 
-- `YYYY-MM-DD` — [milestone label] — `call_id: …`
-- `YYYY-MM-DD` — [milestone label] — `call_id: …`
+- `YYYY-MM-DD` — [milestone label] — `source: …txt`
+- `YYYY-MM-DD` — [milestone label] — `source: …txt`
 
-Do not invent milestones that are not in the record. If no milestones can be cited, say so in one line and move on.
+Do not invent milestones that are not in the evidence. If no milestones can be cited, say so in one line and move on.
 
 ---
 
 ## 6. Challenge review (optional)
 
-Table sourced from **`challenge-lifecycle.json`** (via MCP `read_challenge_lifecycle`) plus the latest call record that mentions each id. `current_state` and `last_updated` come from the lifecycle JSON — do **not** infer them from call records when the JSON is present.
+Table sourced from **`challenge-lifecycle.json`** (via MCP `read_challenge_lifecycle`) plus the latest **transcript** that mentions each id. `current_state` and `last_updated` come from the lifecycle JSON — when the JSON is present, **do not override those fields** using transcript-only guesses.
 
 | challenge_id | description | current_state | last_updated | evidence | stall / risk | recommended_action |
 |--------------|-------------|---------------|--------------|----------|--------------|--------------------|
-| … | short label | identified / acknowledged / in_progress / resolved / reopened / stalled | YYYY-MM-DD | latest `call_id` or short quote | `—` or `no movement 65d` or `at risk (drift)` | one imperative line |
+| … | short label | identified / acknowledged / in_progress / resolved / reopened / stalled | YYYY-MM-DD | latest transcript date or short quote | `—` or `no movement 65d` or `at risk (drift)` | one imperative line |
 
 **Stall rule:** flag `stall` when `current_state` is `identified`, `acknowledged`, or `in_progress` and `(today − last_updated) ≥ 60 days` per `docs/ai/references/challenge-lifecycle-model.md`. Phrase as `"no movement 65d"` using the actual day count. If `current_state` is already `stalled`, surface days since last transition in `recommended_action` instead of double-counting.
 
-**When no lifecycle JSON exists yet:** render the section as a single line — `No persisted lifecycle JSON yet; run Update Customer Notes to populate challenge-lifecycle.json.` — and do **not** substitute an inferred-from-call-records table.
+**When no lifecycle JSON exists yet:** render the section as a single line — `No persisted lifecycle JSON yet; run Update Customer Notes to populate challenge-lifecycle.json.` — and do **not** substitute a fabricated lifecycle table inferred only from transcripts.
 
 ---
 
@@ -103,12 +103,12 @@ Table sourced from **`challenge-lifecycle.json`** (via MCP `read_challenge_lifec
 
 | Name | Role | Champion? | Sentiment | First seen | Last seen | Last Contact |
 |------|------|-------------|------------|------------|-----------|--------------|
-| … | … | Yes / No / Unknown | Positive / Neutral / Cautious / Negative / Unknown | YYYY-MM-DD | YYYY-MM-DD | DATE or call id |
+| … | … | Yes / No / Unknown | Positive / Neutral / Cautious / Negative / Unknown | YYYY-MM-DD | YYYY-MM-DD | DATE or transcript ref |
 
 **Guidance:**
 
 - **Sentiment** must reflect **signals** from recent transcripts or notes — not guesswork.
-- **First seen / Last seen** come from `participants[]` across call records — first and latest call dates where the person appears.
+- **First seen / Last seen** come from **transcript** mentions (speaker lines) — first and latest call dates where the person appears.
 - **Last Contact:** Prefer a call date or meeting reference tied to evidence.
 
 ---
@@ -119,7 +119,7 @@ Bulleted or short paragraphs:
 
 - **Outcome** — what changed for the customer.
 - **When** — date or period.
-- **Evidence** — transcript, call record id, or doc section; include attribution tag.
+- **Evidence** — transcript filename, quoted line, or doc section; include attribution tag.
 
 ---
 

@@ -4,6 +4,8 @@ Trigger: **`Extract Call Records for [CustomerName]`**
 
 Purpose: Read **per-call** transcript text under **`MyNotes/Customers/[CustomerName]/Transcripts/`**, produce **`project_spec.md` §7.1** JSON for each meeting, and persist via MCP **`write_call_record`**.
 
+**Status (operator expectation):** **Update Customer Notes** and **Run Account Summary** are **transcript-first** today — they do **not** require `call-records/*.json` or MCP **`read_call_records`**. Use this playbook only when you **choose** to maintain §7.1 JSON on disk (experiments, linting, or downstream tools).
+
 > **Fixture customer:** **`_TEST_CUSTOMER`** is a first-class customer name for MCP + scripts (leading underscore is valid). In zsh/bash, quote Drive paths: `scripts/rsync-gdrive-notes.sh "_TEST_CUSTOMER"`.
 
 Supporting rule: **`.cursor/rules/21-extractor.mdc`**  
@@ -130,7 +132,7 @@ Output from this anchor goes to the v2 fields **only** — do **not** rewrite `s
 | **`products_discussed[]`** | Enum: `Wiz Cloud \| Wiz Sensor \| Wiz Defend \| Wiz DSPM \| Wiz CIEM \| Wiz Code \| Wiz CLI \| Wiz Sensor POV`, or `Other: <name>` for non-Wiz products. **Call-specific** — not a constant. | DSPM/PII → `["Wiz DSPM", "Wiz CIEM"]`; shift-left → `["Wiz Code", "Wiz CLI"]`; runtime hardening → `["Wiz Sensor"]`; procurement readout → `["Wiz Cloud", "Other: Splunk"]` |
 | **`action_items[]`** | Each `owner` `minLength: 1`; prefer a named individual when the transcript names one. Generic `"SE"` only when the transcript actually says `SE:` and no person is attached. | `[{owner: "Jane Smith", action: "Capture top 5 misconfigurations before handoff", due: "2026-04-15"}]` |
 | **`sentiment`** | Enum `positive \| neutral \| cautious \| negative`. Exec readout / QBR with budget freeze + champion exit ⇒ `cautious` at minimum. | Exec readout → `cautious`; DSPM/PII → `positive`; procurement readout → `neutral` |
-| **`deltas_from_prior_call[]`** | **Read the prior 3 records** via `read_call_records` before drafting this one. Populate when real state changed (Splunk: `in_progress → stalled`, Cloud: `pursue → purchased`, Sensor: `evaluate → POV`). `[]` only when there is genuinely no change. | `[{field: "ch-splunk-budget-freeze.status", from: "in_progress", to: "stalled"}]` |
+| **`deltas_from_prior_call[]`** | **Read the prior 3 per-call transcripts** (newest other meetings under `Transcripts/`, excluding the current file) before drafting this one. Populate when real state changed (Splunk: `in_progress → stalled`, Cloud: `pursue → purchased`, Sensor: `evaluate → POV`). `[]` only when there is genuinely no change. | `[{field: "ch-splunk-budget-freeze.status", from: "in_progress", to: "stalled"}]` |
 | **`verbatim_quotes[]`** | `maxItems: 3`; each `quote` `maxLength: 280`, **whitespace-normalized substring** of the referenced transcript; `speaker` MUST be in `participants[].name`. MCP rejects otherwise. | `[{speaker: "Jane Smith", quote: "We actually caught an unencrypted S3 bucket full of PII exposed via an overprivileged IAM role."}]` |
 | **`raw_transcript_ref`** | **Basename** of the `.txt` source under `Transcripts/`. Must exist on disk or write is rejected. | `"2026-04-08-dspm-pii-guardrails.txt"` |
 | **`extraction_date`** | Today `YYYY-MM-DD` (session date). | `2026-04-20` |

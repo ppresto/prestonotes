@@ -198,12 +198,17 @@ Pay special attention to:
 
 Follow **`docs/ai/references/customer-data-ingestion-weights.md`**. Set **lookback** to **1 month** by default; use **3 / 6 / 12** months if the user specified a longer window for this run.
 
+**Transcript-load guard (required):**
+- When using MCP **`read_transcripts`**, always pass an explicit `limit` that covers the full in-lookback corpus for the customer (for `_TEST_CUSTOMER` E2E v1 this is typically `limit=20`).
+- Do **not** rely on MCP default `limit`; it may return only the newest subset and silently drop older in-window calls.
+- Before Step 6, print the loaded transcript filenames and count. If expected in-window files are missing, stop and fix loading scope before mutation planning.
+
 Read all available customer source material using **weights**:
 - **Commercial grounding prereq (when Upsell/commercial is in scope):**
   1. Start with `read_doc` output from Step 3.
   2. Read only relevant JSON snapshots in `./docs/ai/cache/wiz_mcp_server/mcp_query_snapshots/<category>/` for SKUs in play (e.g. `licensing/wiz-code-billable-units.json`), not every file in the tree.
   3. Use TASK-074 §G4 references (NIST CSF, NIST AI RMF, OWASP SAMM, OWASP LLM Top 10) as gap-framing context when shaping upsell logic and discovery prompts.
-  4. Then continue with transcript/call-record/history reads below.
+  4. Then continue with transcript/history reads below.
 - This path is intentionally lighter than `Load Product Intelligence`; do not block UCN on a full product-intel sweep for this use case.
 - **+4 — Transcripts (inside lookback only):** `./MyNotes/Customers/[CustomerName]/Transcripts/` (all `.txt` files **dated inside lookback**). Raw transcripts remain UCN's primary evidence at full fidelity for delta detection and quoting.
 - **+3 — Daily Activity Logs:** In local notes or synced export, ingest **only** content under **Daily Activity Logs** with **date headings inside lookback**. Do **not** propose generic edits to this section; the **only** allowed write is the documented `prepend_daily_activity_ai_summary` flow (see `docs/ai/references/daily-activity-ai-prepend.md`), not part of the default UCN mutation plan.
@@ -213,14 +218,13 @@ Read all available customer source material using **weights**:
 - Optional: `Customer-Full-Context.md` if it exists
 - **Audit log:** `./MyNotes/Customers/[CustomerName]/pnotes_agent_log.md` (and `.archive.md` if present) — check for active rejection watermarks and prior run outcomes (not on the +1–+4 scale; operational requirement).
 
-#### Lookback split — transcripts vs call-records (TASK-051 §D)
+#### Lookback and older-call pulls (transcripts only)
 
-UCN stays **transcript-first inside lookback** and reaches for **targeted** call-records only when recent evidence names pre-lookback history by id, SKU, or stakeholder:
+UCN stays **transcript-first** for every call you cite:
 
-- **Inside lookback (default 1 month):** raw transcripts at weight **+4** (unchanged). Do **not** also load `call-records/*.json` for calls dated inside lookback — those are already covered by the raw transcripts and double-counting them inflates the signal.
-- **Outside lookback:** do **not** load raw transcripts. Instead, when Block A (Challenge Tracker) or the Deal Stage Tracker references history by **challenge id**, **SKU**, or **stakeholder name**, perform a **targeted** `read_call_records` and filter the result to **≤ 5 specific records** (by `call_id` and/or `raw_transcript_ref`). `read_call_records` does not currently accept an `ids=[…]` parameter — caller discipline: narrow the result set in memory to just the ids you actually need to cite. A wholesale `read_call_records()` sweep is an **Account Summary** concern, not a UCN concern.
-- **`challenge-lifecycle.json`** remains the cheap cross-call compressed state (one `read_challenge_lifecycle` per run).
-- **Signal preference:** When a targeted call-record exposes a schema v2 field (`metrics_cited`, `stakeholder_signals`, `goals_mentioned`, `risks_mentioned`), prefer that structured value over re-quoting the transcript — it is already the compressed memory of that call.
+- **Inside lookback (default 1 month):** raw transcripts at weight **+4**. Load **all** in-window per-call `.txt` files (explicit `read_transcripts` `limit` or disk reads) — do not rely on MCP defaults that return only a subset.
+- **Older meetings (outside lookback) still cited today:** when a **recent** transcript references a **challenge id**, **SKU**, **stakeholder**, or **older meeting**, open only the **specific older per-call `.txt` files** under **`Transcripts/`** needed for that citation (by date/filename). Keep reads **bounded**; do not load `_MASTER_TRANSCRIPT_*.txt` wholesale unless the playbook’s master exception applies.
+- **`challenge-lifecycle.json`** remains cross-call compressed challenge state (one **`read_challenge_lifecycle`** per run).
 
 Also read the Wiz solution lens:
 - `prestonotes_gdoc/config/prompts/010-wiz-solution-lens.md`
@@ -241,11 +245,37 @@ If no new evidence and no override, do not re-propose the same changes. Tell the
 
 Analyze the loaded transcripts and notes. Extract structured facts using the categories and rules defined in [`mutations-account-summary-tab.md`](../gdoc-customer-notes/mutations-account-summary-tab.md) (see hub [`README.md`](../gdoc-customer-notes/README.md)).
 
+#### Canonical must-check evidence and routing checkpoint (single source)
+
+Use this as the only required checklist block for UCN read/routing completeness. Do not duplicate this list elsewhere; other docs should link here.
+
+**Must-check evidence cues (before Step 8 planning):**
+- Named stakeholders in transcripts (new contacts, role changes, champion/exec buyer signals).
+- Challenge language (`blocked`, `stalled`, `can't`, `need`, `risk`, `urgent`, `escalation`, `unblocked`, `resolved`).
+- Explicit tool/platform mentions (cloud platforms, CI/CD/VCS, security tooling, ASPM tools, ticketing systems, languages/runtimes).
+- Account metadata signals (explicit owner changes; numeric values like coverage %, open issues, MTTR, reporting hours).
+- Daily Activity meeting blocks (each in-lookback transcript should map to exactly one recap or an explicit skip reason).
+
+**Evidence-routing checkpoint (required before Step 8):** for each row below, planner output must record either `mutate` or `skip` with an evidence-backed reason tied to the cue/source row from Step 6.
+
+| Critical section | Required routing decision | Typical evidence cue examples |
+|---|---|---|
+| `challenge_tracker` | `mutate` or `skip` with reason | blocker/risk/resolution language; challenge ids in transcripts |
+| `contacts.free_text` | `mutate` or `skip` with reason | named people, role changes, sponsor/champion signals |
+| `cloud_environment.platforms` | `mutate` or `skip` with reason | cloud platform/tool names and active usage context |
+| `cloud_environment.devops_vcs` | `mutate` or `skip` with reason | GitHub/GitLab/Jenkins/Azure DevOps style mentions |
+| `cloud_environment.security_tools` | `mutate` or `skip` with reason | SIEM/CNAPP/EDR/CSPM/other security tools in use |
+| `cloud_environment.aspm_tools` | `mutate` or `skip` with reason | ASPM/AppSec posture tooling explicitly cited |
+| `cloud_environment.ticketing` | `mutate` or `skip` with reason | Jira/ServiceNow/ticket workflow mentions |
+| `cloud_environment.languages` | `mutate` or `skip` with reason | language/runtime mentions tied to security workflow |
+| `account_motion_metadata` | `mutate` or `skip` with reason | explicit ownership changes or numeric metadata values |
+| `daily_activity_logs` | `mutate` or `skip` with reason | in-lookback meeting recap parity (one recap per usable call) |
+
 **Transcript scan — route “requirement” signal to Use Cases (not Goals):** While reading each in-lookback call, flag lines that are **requirements / operating asks** (reporting cadence or format, deliverable shape, must-have capability, compliance or evidence pack, integration behavior the product must support). For each **new** distinct requirement not already reflected under **Use Cases / Requirements** in Step 3’s `read_doc` JSON, plan **`use_cases` / `free_text`** with **`append_with_history`** in Step 8 (with `evidence_date`, `reasoning`, `theme_key`). **Do not** put those in **`exec_account_summary` / `top_goal`** unless the transcript states a **rolled-up strategic business outcome** (few big goals); see [`mutations-account-summary-tab.md`](../gdoc-customer-notes/mutations-account-summary-tab.md) — **Goals** vs **Use Cases / Requirements**.
 
-**Transcript scan — route expansion / cross-sell to Upsell Path (DSPM, CIEM, core SKUs):** After Step 3 `read_doc`, compare **active** `exec_account_summary.upsell_path` bullets to in-lookback transcripts (and optional bounded `read_call_records` fields such as `products_discussed`, `upsell_signals`). Plan **`append_with_history`** on **`upsell_path`** when **all** are true: (1) the transcript states a **clear solution-fit or expansion** narrative, (2) it is **not** already represented by an existing upsell bullet (same lead-in + same core claim — skip duplicates), (3) it belongs in exec cross-sell, not in Use Cases (requirements) or Workflows (process). **Routing cues (non-exhaustive):** sensitive data / PII / classification / “what sensitive data we have” / acquisition data posture → **`Wiz DSPM`**; cloud identity / entitlements / excessive permissions / IAM / non-human identities → **`Wiz CIEM`**. **Do not** absorb a distinct DSPM or CIEM thread into a single **`Wiz Cloud`** bullet just to save space — one bullet per **distinct** exec expansion line. Use `evidence_date` from the supporting call; `theme_key` stable per thread (e.g. `upsell-dspm-acquisition-data`). This is how E2E / UCN produces the mutation JSON **without** hand-maintaining `tmp/*.json`.
+**Transcript scan — route expansion / cross-sell to Upsell Path (DSPM, CIEM, core SKUs):** After Step 3 `read_doc`, compare **active** `exec_account_summary.upsell_path` bullets to in-lookback transcripts. Plan **`append_with_history`** on **`upsell_path`** when **all** are true: (1) the transcript states a **clear solution-fit or expansion** narrative, (2) it is **not** already represented by an existing upsell bullet (same lead-in + same core claim — skip duplicates), (3) it belongs in exec cross-sell, not in Use Cases (requirements) or Workflows (process). **Routing cues (non-exhaustive):** sensitive data / PII / classification / “what sensitive data we have” / acquisition data posture → **`Wiz DSPM`**; cloud identity / entitlements / excessive permissions / IAM / non-human identities → **`Wiz CIEM`**. **Do not** absorb a distinct DSPM or CIEM thread into a single **`Wiz Cloud`** bullet just to save space — one bullet per **distinct** exec expansion line. Use `evidence_date` from the supporting call; `theme_key` stable per thread (e.g. `upsell-dspm-acquisition-data`). This is how E2E / UCN produces the mutation JSON **without** hand-maintaining `tmp/*.json`.
 
-**Transcript scan — route competitive/vendor displacement to Accomplishments:** If transcripts or call-records show a non-Wiz product being displaced, decommissioned, or retired as part of adoption progress, plan an `accomplishments.free_text` `append_with_history` row with evidence date and concise business/security impact. Keep process implementation detail in `workflows` when helpful, but do not leave a clear adoption win only in Workflows.
+**Transcript scan — route competitive/vendor displacement to Accomplishments:** If transcripts show a non-Wiz product being displaced, decommissioned, or retired as part of adoption progress, plan an `accomplishments.free_text` `append_with_history` row with evidence date and concise business/security impact. Keep process implementation detail in `workflows` when helpful, but do not leave a clear adoption win only in Workflows.
 
 **Transcript scan — route named products to Cloud Environment `tools_list`:** For each **third-party product or service** the customer **actively uses** (stated in transcript), compare Step 3 `read_doc` `cloud_environment` tool maps. Plan **`add_tool`** with the correct **`field_key`** using the **rubric-first** table in [`mutations-account-summary-tab.md`](../gdoc-customer-notes/mutations-account-summary-tab.md) → **Cloud Environment — `tools_list` routing** (intent by role: CI/CD vs SIEM vs ticketing, etc.). **Do not** require a curated vendor list — route by **function in context**. If the rubric leaves **two** plausible `field_key`s, use **at most one** optional public lookup to disambiguate (same doc: Option 2 backup); if still unclear, skip or ask the operator. One coverage-table row per **distinct** missing tool.
 
@@ -269,11 +299,11 @@ Use these cross-references to:
 
 **Populatable-field walk (required; feed Step 8):** Enumerate every populatable GDoc field the planner must visit in Step 8 — 15 fields, listed in Step 8 below. For each, decide whether the in-lookback transcripts contain explicit signal; if yes, draft a candidate mutation; if no, pre-classify the skip reason (`no_in_scope_transcript_signal`, `same_as_current_entry`, `evidence_below_confidence_threshold`, `section_off_by_opt_out`). The per-field extraction rules are the canonical list in `.cursor/rules/21-extractor.mdc` § **Per-section GDoc extraction**.
 
-**Call records vs UCN (today):** Inside lookback, **raw transcripts stay primary** (+4); do **not** treat `call-records/*.json` as a second full evidence stream for the same dates (see **`.cursor/rules/20-orchestrator.mdc`** — *Call-record reads inside UCN*). **Optional gap check:** after the transcript scan, run **one** bounded **`read_call_records`** for the customer, then for each in-lookback `call_id` compare schema **v2** fields (`goals_mentioned`, `risks_mentioned`, `metrics_cited`, `stakeholder_signals`, `products_discussed`, etc.) to your Step 6 notes. If structured extract names a **theme** you did not route to a section yet, add it to the right row in the **coverage table** below or record why you skip—**transcript wording still wins** for quotes and strict metadata.
+**Transcript-only UCN:** Inside lookback, **raw transcripts are the only required evidence stream** (+4). After the transcript scan, every theme you route to the coverage table must be traceable to a **specific transcript line or header** (see **`.cursor/rules/20-orchestrator.mdc`** — transcript scope guard).
 
 **Show your work (required before Step 8):** Emit a **markdown table** in chat (no JSON yet) so the operator can see full coverage before mutations:
 
-| # | Source (transcript date + file or `call_id`) | Signal (one line) | Planned `section_key` / `field_key` (or “none”) | Planned action (`append_with_history` / `no_evidence` / other) | Skip reason if not mutating |
+| # | Source (transcript date + file) | Signal (one line) | Planned `section_key` / `field_key` (or “none”) | Planned action (`append_with_history` / `no_evidence` / other) | Skip reason if not mutating |
 |---|----------------------------------------------|-------------------|--------------------------------------------------|----------------------------------------------------------------|-----------------------------|
 
 - One row per **distinct** requirement (use **Use Cases** routing from the paragraph above), per **strategic** goal/risk candidate, per **distinct Upsell Path** lead-in (e.g. separate rows for **Wiz DSPM** vs **Wiz CIEM** vs **Wiz Cloud** when transcripts support separate threads), and per **meaningful** populatable-field hit from the 15-field walk; merge duplicates.
@@ -281,7 +311,7 @@ Use these cross-references to:
 
 **Where sections are “configured” (for the model):** **Shape** (which sections/fields exist, keys, strategies) → `prestonotes_gdoc/config/doc-schema.yaml`. **Meaning** (Goals vs Risk vs Use Cases vs Cloud, forbidden text, tool rules) → [`docs/ai/gdoc-customer-notes/README.md`](../gdoc-customer-notes/README.md) and the `mutations-*.md` packs it indexes. **Process** (this step order, lookback, DAL, tables) → this playbook and **`.cursor/rules/20-orchestrator.mdc`**.
 
-**Tell user:** "Step 6 of 11 — I read through all the notes, built the coverage table ([N] rows), optional call-record gap check [done / skipped], [N] conflicts, Daily Activity: [N] of [N] in-lookback calls still need a recap, and [N] of the 15 populatable fields carry in-scope transcript signal."
+**Tell user:** "Step 6 of 11 — I read through all the notes, built the coverage table ([N] rows), [N] conflicts, Daily Activity: [N] of [N] in-lookback calls still need a recap, and [N] of the 15 populatable fields carry in-scope transcript signal."
 
 ### Step 7 of 11 — Clarification gate (ask before acting on ambiguity)
 
@@ -389,8 +419,8 @@ If preflight prints `planner_contract_failed` / non-zero, do **not** proceed to 
 **Contacts — LLM-built `contacts.free_text` (required; no sidecar mutation generators):**
 
 - **You** (the agent executing UCN) compose `append_with_history` rows for `contacts` / `free_text` inside the **same** Step 8 mutation JSON as everything else. Do **not** substitute a repo Python “mutation builder” script or disposable `/tmp/*.json` as the plan — the next playbook run would not reproduce that path for 20+ real accounts.
-- **Evidence (multi-customer):** For each named person, tie the Step 6 table row to **(a)** a quoted or cited line from an in-lookback **transcript**, and **(b)** when `call-records/<call_id>.json` exists for that call, cite matching **`participants[]`** / **`stakeholder_signals[]`** as structured support (roles + `signal` enum). Rules and phrasing live in [`mutations-account-summary-tab.md`](../gdoc-customer-notes/mutations-account-summary-tab.md) → **Contacts — evidence and mutation shape**.
-- **Shape:** `Name - role/context` one bullet per distinct person; `theme_key` = `contact:<kebab-from-display-name>`; `evidence_date` = ISO **call** date (transcript `DATE:` / record `date`), not the run date; `reasoning` lists transcript path + optional call-record path (never paste harness or TASK ids into `new_value`).
+- **Evidence (multi-customer):** For each named person, tie the Step 6 table row to a quoted or cited line from an in-lookback **transcript** (speaker lines and stated roles). Rules and phrasing live in [`mutations-account-summary-tab.md`](../gdoc-customer-notes/mutations-account-summary-tab.md) → **Contacts — evidence and mutation shape**.
+- **Shape:** `Name - role/context` one bullet per distinct person; `theme_key` = `contact:<kebab-from-display-name>`; `evidence_date` = ISO **call** date from the transcript `DATE:` line, not the run date; `reasoning` lists transcript path (never paste harness or TASK ids into `new_value`).
 - **Dedupe:** If Step 3 `read_doc` already has an active contact line for the same normalized name, skip with `same_as_current_entry` or enrich via playbook-allowed actions only when evidence adds material fact.
 - If **no** named stakeholders exist in scope, use `no_evidence` / skip reason on the Step 6 row — do not fabricate names.
 
@@ -448,7 +478,7 @@ Display the proposed changes grouped by section using the diff preview format fr
 
 Save the approved change plan to **`./MyNotes/Customers/[CustomerName]/AI_Insights/ucn-approved-mutations.json`** (or another path **under that customer folder** so it rsyncs to Google Drive — avoid disposable `/tmp` paths as the only copy). For production recovery, `write_doc` also caches an always-latest copy and state under `AI_Insights/ucn-recovery/` (`latest-mutations.json`, `latest-write-state.json`).
 
-**Planner preflight (required every UCN write, all customers):** run **`scripts/ucn-planner-preflight.py`** on the same mutations JSON **before** calling **`write_doc`** / **`update-gdoc-customer-notes.py write`**. If preflight exits non-zero or returns `planner_contract_failed:*`, **do not** write — fix the mutation plan first. Preflight enforces the planner contract (coverage matrix, DAL parity, Deal Stage triggers, etc.); it is **not** the same as the writer’s Doc API **`dry_run`** preview.
+**Planner preflight (required every UCN write, all customers):** run **`scripts/ucn-planner-preflight.py`** on the same mutations JSON **before** calling **`write_doc`** / **`update-gdoc-customer-notes.py write`**. If preflight exits non-zero or returns `planner_contract_failed:*`, **do not** write — fix the mutation plan first. Preflight is a **coverage accounting gate** (`mutate` or valid evidence-backed `skip` for required sections), not a claim that evidence is sufficient or high quality by itself. It is also **not** the writer’s Doc API **`dry_run`** preview.
 
 **Production / normal customers (after Step 9 approval):** MCP **`write_doc`** with `doc_id`, `mutations_json`, **`dry_run=false`**, and **`customer_name`** when known. Step 9 already showed the diff; do not cycle `dry_run=true` as a default extra gate.
 
@@ -506,7 +536,7 @@ After a successful Google Doc write, assemble one **schema v3** row and append i
    | 11 | `goals_delta` | Extract as a free-text line (≤ 160 chars) describing goal shifts customers stated this run. Empty string if none. |
    | 12 | `tools_delta` | Extract as a free-text line (≤ 160 chars) describing tools that came online or were retired this run. |
    | 13 | `stakeholders_delta` | Extract as a free-text line (≤ 160 chars) describing who moved: departures, promotions, new sponsors. |
-   | 14 | `stakeholders_present` | Extract as a `list[str]` of normalized stakeholder names derived from call-record `participants[]` across the in-window calls (unique, deduped). |
+   | 14 | `stakeholders_present` | Extract as a `list[str]` of normalized customer-side stakeholder names spoken or named in the in-window **transcripts** (unique, deduped). |
    | 15 | `value_realized` | Extract as ≤ 240 chars of quantified / concrete outcomes this run. **MUST include at least one quantified element when any in-window transcript contains one** (regex — see `.cursor/rules/21-extractor.mdc` "Ledger cell extraction"). Otherwise free text is fine. |
    | 16 | `next_critical_event` | Extract as `YYYY-MM-DD: <desc>` when a date is known; otherwise `<desc>` alone (≤ 160 chars). |
    | 17 | `wiz_licensed_products` | Extract as a `list[str]` of normalized SKU ids actively licensed (e.g. `["wiz_cloud", "wiz_sensor"]`). Source: Deal Stage Tracker rows at "win" / "tech win" + prior ledger. |

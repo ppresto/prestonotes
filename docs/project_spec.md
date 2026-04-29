@@ -30,12 +30,12 @@ PrestoNotes is an AI-powered "account intelligence engine" for a cybersecurity S
 **The core loop, in plain English:**
 1. You have a customer meeting. Granola (or sync) records it; ingestion saves **one dated transcript file per meeting** under that customer’s `Transcripts/` folder.
 2. You run a trigger phrase in Cursor (e.g. `Update Customer Notes for Acme`).
-3. The AI loads **call records** via `read_call_records` (and only the raw `.txt` needed for quotes), uses domain tools for recommendations, and proposes updates as **mutation JSON**.
+3. The AI loads **per-call transcripts** (MCP `read_transcripts` with an explicit scope, or files under `Transcripts/`), uses domain tools for recommendations, and proposes updates as **mutation JSON**.
 4. You review and approve the proposed changes.
 5. **MCP + Python** apply approved changes to your Google Doc and append the history ledger / audit log.
 
 **Architecture highlights (current repo — v2 runtime):**
-- **Transcripts:** **One meeting per file** under each customer’s `Transcripts/` folder. **Call records** (structured JSON per meeting under `call-records/`) are the default inputs for reasoning outside tight quote checks.
+- **Transcripts:** **One meeting per file** under each customer’s `Transcripts/` folder. That tree is the **default evidence** for Update Customer Notes and related playbooks.
 - **Reasoning vs execution:** The LLM reads, reasons, and outputs **structured plans** (including **Google Doc mutation JSON**). **Approved** MCP tools run Python that performs file I/O and Google APIs — the LLM never calls the Docs API or writes customer files directly.
 - **Workflows:** Specialized sub-agents handle domains (security ops, app security, vulnerability management, attack surface, AI/ML security) instead of one monolithic prompt.
 - **Journey:** The system tracks the full customer journey over time: where they started, what challenges they have, what got resolved, and what value was delivered.
@@ -47,13 +47,13 @@ PrestoNotes is an AI-powered "account intelligence engine" for a cybersecurity S
 These rules must never be violated. The planner should refuse any task that breaks them.
 
 **Rule 1 — Python executes, AI proposes (including GDoc mutations).**
-The LLM reads, analyzes, and produces **structured output** — including **mutation JSON** that conforms to `prestonotes_gdoc/config/doc-schema.yaml` and the Customer Notes mutation packs under `docs/ai/gdoc-customer-notes/` (hub: `README.md`; schema/actions: `mutations-global.md`). **Only after explicit user approval** may an agent invoke MCP tools that mutate external or customer state. Python (via MCP: `write_doc`, `append_ledger` / `append_ledger_row`, call-record tools, etc.) performs **all** file writes, date calculations, and **Google Docs/Drive API** calls. **Never** instruct the model to paste content into the live Doc as a substitute for the mutation pipeline.
+The LLM reads, analyzes, and produces **structured output** — including **mutation JSON** that conforms to `prestonotes_gdoc/config/doc-schema.yaml` and the Customer Notes mutation packs under `docs/ai/gdoc-customer-notes/` (hub: `README.md`; schema/actions: `mutations-global.md`). **Only after explicit user approval** may an agent invoke MCP tools that mutate external or customer state. Python (via MCP: `write_doc`, `append_ledger` / `append_ledger_row`, etc.) performs **all** file writes, date calculations, and **Google Docs/Drive API** calls. **Never** instruct the model to paste content into the live Doc as a substitute for the mutation pipeline.
 
 **Rule 2 — No transcript context flooding.**
-Primary path: call MCP **`read_call_records`** to load the validated §7.1 JSON records directly (already sorted by `(date, call_id)`); filter by date range or call type when the task allows it. **Optional:** load **at most one** per-call raw `.txt` transcript file when a quote or boundary check requires verbatim text — each file represents **one meeting**, so there is no legacy “multi-call master in one slice” pattern. Do **not** load `_MASTER_TRANSCRIPT_*.txt` wholesale into context during normal workflows; if a master file still exists during migration, treat it as **ingestion/source only** until split into per-call files.
+Primary path: load **per-call `.txt` transcripts** via MCP **`read_transcripts`** (always pass an explicit `limit` large enough for the active lookback / task window — do not rely on small server defaults) or by reading files under `MyNotes/Customers/<Customer>/Transcripts/`. Each file represents **one meeting**, so there is no legacy “multi-call master in one slice” pattern. Do **not** load `_MASTER_TRANSCRIPT_*.txt` wholesale into context during normal workflows; if a master file still exists during migration, treat it as **ingestion/source only** until split into per-call files.
 
 **Rule 3 — User approves before any write.**
-Every MCP tool that mutates data (writes to GDoc, appends ledger, writes call records, writes the journey timeline or challenge lifecycle JSON under **`AI_Insights/`**) must be preceded by a human-readable summary of the proposed changes. The user must explicitly approve before the write tool is called.
+Every MCP tool that mutates data (writes to GDoc, appends ledger, writes the challenge lifecycle JSON under **`AI_Insights/`**, etc.) must be preceded by a human-readable summary of the proposed changes. The user must explicitly approve before the write tool is called.
 
 **Rule 4 — One customer per session.**
 Each Cursor session works on exactly one customer. The planner should ask for the customer name at the start if not given.
@@ -75,7 +75,7 @@ The old project at `../prestoNotes.orig` is used strictly to copy working code. 
 
 ### Google Doc mutation path (authoritative)
 
-1. Agents load **read-only** context (MCP `read_doc`, call records, ledger, etc.).
+1. Agents load **read-only** context (MCP `read_doc`, transcripts, ledger, etc.).
 2. The orchestrator / advisors produce a **mutation JSON** payload (sections, fields, actions per `doc-schema.yaml` and mutation docs under `docs/ai/gdoc-customer-notes/`).
 3. **User approval** in chat.
 4. **`write_doc`** MCP tool runs `prestonotes_gdoc/update-gdoc-customer-notes.py` with `--mutations`. For **UCN**, required planner preflight and write order live in **`docs/ai/playbooks/update-customer-notes.md`** Step 10; writer **`dry_run`** for doc preview is **required before each real write** **only** in the **`_TEST_CUSTOMER` E2E harness** — **`docs/ai/playbooks/tester-e2e-ucn.md`** (not production).
@@ -126,7 +126,7 @@ The old project at `../prestoNotes.orig` is used strictly to copy working code. 
 |---|---|---|
 | Python runtime | `uv` package manager | Never use pip or conda. Always `uv run` or `uv add`. |
 | Python version | 3.12.3+ | Set in pyproject.toml |
-| MCP server | `fastmcp >= 3.2.0` | **prestonotes** MCP: customer paths, GDoc I/O, ledger, sync, call records |
+| MCP server | `fastmcp >= 3.2.0` | **prestonotes** MCP: customer paths, GDoc I/O, ledger, sync, transcripts |
 | Wiz product search (Stage 3–4 bridge) | **wiz-local** (separate MCP server) | Interim: domain advisors call **`wiz_search_wiz_docs`** (or equivalent) on the Wiz docs MCP until **TASK-021** `wiz_knowledge_search` (Chroma) replaces direct search |
 | Testing | `pytest` | Write tests before code (TDD) |
 | Python linter | `ruff` | Run before every task is marked complete |
@@ -137,9 +137,9 @@ The old project at `../prestoNotes.orig` is used strictly to copy working code. 
 
 ### MCP tools and resources (prestonotes server)
 
-**Read tools (non-exhaustive):** `check_google_auth`, `list_customers`, `get_customer_status`, **`discover_doc`**, **`read_doc`**, `read_transcripts`, `read_ledger`, `read_challenge_lifecycle` (TASK-047), `read_audit_log` (tail of the file at `paths.audit_log_rel`, default **`logs/mcp-audit.log`**), `check_product_intelligence`, plus Stage 1+ tools as they land (`read_call_records`, …).
+**Read tools (non-exhaustive):** `check_google_auth`, `list_customers`, `get_customer_status`, **`discover_doc`**, **`read_doc`**, `read_transcripts`, `read_ledger`, `read_challenge_lifecycle` (TASK-047), `read_audit_log` (tail of the file at `paths.audit_log_rel`, default **`logs/mcp-audit.log`**), `check_product_intelligence`, plus Stage 1+ tools as they land.
 
-**Write / sync tools (TASK-003+):** `write_doc`, `append_ledger`, `append_ledger_row` (TASK-049, v3 schema), `log_run`, `sync_notes`, `sync_transcripts`, `bootstrap_customer`, `write_call_record`, `update_challenge_state` (TASK-010), and further backlog items as they land.
+**Write / sync tools (TASK-003+):** `write_doc`, `append_ledger`, `append_ledger_row` (TASK-049, v3 schema), `log_run`, `sync_notes`, `sync_transcripts`, `bootstrap_customer`, `update_challenge_state` (TASK-010), and further backlog items as they land.
 
 **MCP resources** (stable URIs for agents and tests): `prestonotes://config/doc-schema`, `prestonotes://config/section-sequence`, `prestonotes://config/task-budgets`, `prestonotes://prompts/persona`, `prestonotes://prompts/lens`. Payloads are read from files under **`prestonotes_gdoc/config/`** at runtime.
 
@@ -274,21 +274,17 @@ This is the full picture of how data moves through the system. Build the pieces 
 Granola app → granola-sync.py → per-call Transcripts/YYYY-MM-DD-[title].txt
                       (optional legacy: _MASTER_TRANSCRIPT_[Customer].txt during migration)
                                          ↓
-                              21-extractor.mdc (Cursor)
-                                         ↓
-                              call-records/YYYY-MM-DD-[type]-N.json
-                                         ↓
-                              [MCP] write_call_record
+                    Update Customer Notes (playbook; MCP read_doc / read_transcripts / write_doc)
+                    Optional experiments: call-records/*.json + write_call_record (not required)
 
 [Stage 2 — Account Narrative]
-call-records/*.json + History-Ledger.md + challenge-lifecycle.json
+Transcripts/*.txt + History-Ledger.md + challenge-lifecycle.json + read_doc
                                          ↓
                               run-account-summary.md (Cursor playbook)
                                          ↓
                               Account Summary (chat; optional manual save
                               to [CustomerName]-AI-AcctSummary.md)
-                              [MCP] read_call_records / read_ledger /
-                                    read_challenge_lifecycle (reads only)
+                              [MCP] read_ledger / read_challenge_lifecycle / read_transcripts (reads only)
                               [MCP] update_challenge_state (during UCN)
                               [MCP] append_ledger_row (during UCN)
 
@@ -368,9 +364,9 @@ Stored at: `MyNotes/Customers/[Name]/call-records/[YYYY-MM-DD]-[type]-[N].json`
 
 All four v2 arrays are **optional** — `[]` is a legal value. Extractor guidance for populating them (MEDDPICC anchor, prior-3-records rule, banned defaults) lives in `docs/ai/playbooks/extract-call-records.md` Step 6 and `.cursor/rules/21-extractor.mdc`.
 
-### 7.2 Call Record Listing (retired index)
+### 7.2 Call record listing (optional / legacy)
 
-The legacy **`transcript-index.json`** aggregate file and its companion index MCP tools were retired in **TASK-046**. The **`call-records/*.json`** directory is now the sole source of truth; callers enumerate records via MCP **`read_call_records`**, which returns `{count, records}` already sorted by `(date, call_id)`.
+The legacy **`transcript-index.json`** aggregate file and its companion index MCP tools were retired in **TASK-046**. **Default customer workflows** enumerate meetings from **`Transcripts/*.txt`** (and MCP **`read_transcripts`**). The **`call-records/*.json`** tree and MCP **`read_call_records`** / **`write_call_record`** remain **optional** for tooling or experiments; playbooks do **not** require them for Update Customer Notes or Account Summary.
 
 ### 7.3 Call Type Taxonomy
 
@@ -459,7 +455,7 @@ The old project lives at `../prestoNotes.orig` (relative to the new repo root). 
 
 **Stages (conceptual):**
 
-- **Stage 1 — Foundation:** Per-call transcripts, MCP read/write, call records, Granola sync, rsync to Drive, core **`.mdc`** rules and playbooks (e.g. `load-customer-context`, `update-customer-notes`, `run-license-evidence-check`), extractor + `extract-call-records`.
+- **Stage 1 — Foundation:** Per-call transcripts, MCP read/write, Granola sync, rsync to Drive, core **`.mdc`** rules and playbooks (e.g. `load-customer-context`, `update-customer-notes`, `run-license-evidence-check`).
 - **Stage 2 — Account narrative:** Challenge lifecycle tools, History Ledger (v3), exec + account summary (`run-account-summary`).
 - **Stage 3 — Orchestration:** Domain advisors, orchestrator + task router, UCN; see **§11** triggers.
 - **Stage 4 — RAG (optional):** Vector ingest, `wiz_knowledge_search`, when API keys and Chroma are configured.
@@ -488,13 +484,11 @@ These triggers are **in scope for the v2 MVP** (Stage 1–2 and Stage 3 where no
 |---|---|---|
 | `Load Customer Context for [Customer]` | Read-only snapshot for session prep | 1 |
 | `Update Customer Notes for [Customer]` | **MVP (TASK-007):** Monolithic playbook — sync/read, **Daily Activity AI recaps** + structured doc mutations, user-approved **`write_doc`** / ledger / log via MCP. **Later (TASK-017):** same trigger may route through multi-advisor orchestrator. | 1 → 3 |
-| `Extract Call Records for [Customer]` | Build/update **call-records** from per-call transcript files | 1 |
-| `Test Call Record Extraction for [Customer]` | Manual QA / coverage report for extraction | 1 |
 | `Run License Evidence Check for [Customer]` | SKU / entitlement evidence matrix; may **update** local **`[Customer]-AI-AcctSummary.md`** (**Wiz Commercials**) and **History Ledger** license columns; **wiz docs MCP** + optional cache tooling | 1 |
-| `Run Account Summary for [Customer]` | Structured exec + account narrative via **`docs/ai/playbooks/run-account-summary.md`** and **`docs/ai/references/exec-summary-template.md`** (TASK-013, expanded in TASK-047 to absorb the retired Stage-2 narrative sidecar). **Read-heavy:** optional **`sync_notes`** MCP or **`scripts/rsync-gdrive-notes.sh`**, then MCP reads such as **`discover_doc`**, **`read_doc`**, **`read_ledger`**, **`read_call_records`**, **`read_challenge_lifecycle`**, **`read_transcripts`**, optional **`read_audit_log`**; weighted context per **`docs/ai/references/customer-data-ingestion-weights.md`**. No mandatory writes; optional **`log_run`** only if the user asks for an audit trail entry. For a **short exec-only blurb**, skip the optional sections (Metadata, Health, Chronological call spine, Milestones, Challenge review) and output sections 2–3 + 7–11. | 2 |
+| `Run Account Summary for [Customer]` | Structured exec + account narrative via **`docs/ai/playbooks/run-account-summary.md`** and **`docs/ai/references/exec-summary-template.md`** (TASK-013, expanded in TASK-047 to absorb the retired Stage-2 narrative sidecar). **Read-heavy:** optional **`sync_notes`** MCP or **`scripts/rsync-gdrive-notes.sh`**, then MCP reads such as **`discover_doc`**, **`read_doc`**, **`read_ledger`**, **`read_challenge_lifecycle`**, **`read_transcripts`**, optional **`read_audit_log`**; weighted context per **`docs/ai/references/customer-data-ingestion-weights.md`**. No mandatory writes; optional **`log_run`** only if the user asks for an audit trail entry. For a **short exec-only blurb**, skip the optional sections (Metadata, Health, Chronological call spine, Milestones, Challenge review) and output sections 2–3 + 7–11. | 2 |
 | `Run Tech Acct Plan for [Customer] [Domain]` | **Single-domain** advisor pass (used to validate SOC-first, then others as their `.mdc` ship) | 3 |
 
-**Customer-local MCP writes (MyNotes mirror, not GDoc):** Stage 1–2 tools that mutate files under **`MyNotes/Customers/<Customer>/`** include **`write_call_record`** and **`update_challenge_state`** ( **`AI_Insights/challenge-lifecycle.json`** ). Each requires the **Rule 3** approval gate in chat before the tool runs. Challenge transitions follow §7.4 states; the JSON file stores **`current_state`** and an append-only **`history`** (`state`, `at`, `evidence`) per challenge id. The companion read tool is **`read_challenge_lifecycle`** (TASK-047), which mirrors the shape of `read_ledger` / `read_call_records`.
+**Customer-local MCP writes (MyNotes mirror, not GDoc):** Stage 1–2 tools that mutate files under **`MyNotes/Customers/<Customer>/`** include **`update_challenge_state`** ( **`AI_Insights/challenge-lifecycle.json`** ). Each requires the **Rule 3** approval gate in chat before the tool runs. Challenge transitions follow §7.4 states; the JSON file stores **`current_state`** and an append-only **`history`** (`state`, `at`, `evidence`) per challenge id. The companion read tool is **`read_challenge_lifecycle`** (TASK-047), which mirrors the shape of `read_ledger`.
 
 ---
 
@@ -515,6 +509,7 @@ These triggers are **in scope for the v2 MVP** (Stage 1–2 and Stage 3 where no
 | `Run Step 9 Post-Seed Synthesis` / `Polish Account Summary` (and related) | Heavy **replace_field_entries** passes — reference `run-seeded-notes-replay.md` in orig |
 | `build-product-intelligence` / deep doc-harvest flows | Revisit with **wiz-local** + Stage 4 RAG; avoid context flooding |
 | Any playbook depending on **`run_pipeline`** / `run-main-task.py` | **Unsupported** in v2 — rewrite to LLM mutation JSON + `write_doc` if a capability must return |
+| **`Extract Call Records for [Customer]`** / **`Test Call Record Extraction for [Customer]`** | **Optional** §7.1 JSON under `call-records/` — not required for **Update Customer Notes** or **Run Account Summary** (transcript-first). See **`docs/ai/playbooks/extract-call-records.md`** when you intentionally maintain that tree. |
 
 **Promotion rule:** A post-MVP playbook graduates into MVP only when it has an **explicit owner** (plan or team decision) and passes Definition of Done (§10).
 

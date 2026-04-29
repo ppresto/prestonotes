@@ -59,7 +59,7 @@ For repeatable E2E loops, use the shell harness and keep prep behavior centraliz
   - `list-steps` / `run-step <1-5>`: harness map from `scripts/lib/e2e-catalog.txt` (E2E UCN only; not Account Summary).
 - **Cleanup ownership:** greenfield cleanup (`pnotes_agent_log*` + `AI_Insights/*`) is owned by `prep-v1` (`clean_local_harness_artifacts`), not spread across multiple scripts.
 - **Artifact survival rule:** round-1 outputs must be on Drive before any v2 pull. `prep-v2` enforces this by pushing first.
-- **Materialize v2 behavior:** `scripts/e2e-test-customer-materialize.py apply --v2` preserves existing `call-records/*.json`; it only merges v2 transcript seeds.
+- **Materialize v2 behavior:** `scripts/e2e-test-customer-materialize.py apply --v2` merges v2 transcript seeds into `MyNotes/Customers/_TEST_CUSTOMER/Transcripts/`.
 - **Current caveat:** `prestonotes_gdoc/e2e_rebaseline_customer_gdoc.py` still performs a copy-trash-rename flow, so the Notes `doc_id` may change; re-`discover_doc` after prep.
 
 ### Capability at a glance
@@ -143,9 +143,6 @@ Use these **exact trigger phrases** (replace `[Customer]` / `[CustomerName]` wit
 | **`Load Customer Context for [Customer]`** | Read-only snapshot (ingestion weights, transcripts, exports). | [`load-customer-context.md`](docs/ai/playbooks/load-customer-context.md) |
 | **`Update Customer Notes for [Customer]`** | Daily Activity + structured Google Doc updates (**approval** before **`write_doc`**), ledger, audit. | [`update-customer-notes.md`](docs/ai/playbooks/update-customer-notes.md) |
 | **`Run License Evidence Check for [Customer]`** | License / SKU evidence matrix; may update local summary + ledger columns. | [`run-license-evidence-check.md`](docs/ai/playbooks/run-license-evidence-check.md) |
-| **`Extract Call Records for [Customer]`** | Per-call **`Transcripts/*.txt`** → **`call-records/*.json`** (sole enumeration API: **`read_call_records`**). | [`extract-call-records.md`](docs/ai/playbooks/extract-call-records.md) |
-| **`Test Call Record Extraction for [Customer]`** | Coverage report **`X of Y meetings indexed…`** (gate before leaning on extraction). | [`test-call-record-extraction.md`](docs/ai/playbooks/test-call-record-extraction.md) |
-
 ### Stage 2 — Account summary
 
 | Trigger (example) | Purpose | Playbook / rule |
@@ -164,8 +161,8 @@ Use these **exact trigger phrases** (replace `[Customer]` / `[CustomerName]` wit
 
 ## MCP tools (cheat sheet)
 
-- **Reads (examples):** **`check_google_auth`**, **`list_customers`**, **`discover_doc`**, **`read_doc`**, **`read_transcripts`**, **`read_call_records`**, **`read_ledger`**, **`read_challenge_lifecycle`**, **`read_audit_log`** (tail of **`logs/mcp-audit.log`** by default), **`wiz_knowledge_search`**, **`sync_notes`**, **`sync_transcripts`**, …
-- **Writes (always show a plan + get approval in chat):** **`write_doc`**, **`append_ledger`** (v1 row via subprocess), **`append_ledger_row`** (v3 JSON row — see **`prestonotes_mcp/ledger.py`** `LEDGER_V3_COLUMNS` and **§7** in **[`docs/project_spec.md`](docs/project_spec.md)**), **`write_call_record`**, **`update_challenge_state`** (requires `transitioned_at` as the ISO **call date** of the cited transcript, not the run date; see **§7.4** in **`docs/project_spec.md`**), **`bootstrap_customer`** (`dry_run=false` only after approval), **`log_run`**, …
+- **Reads (examples):** **`check_google_auth`**, **`list_customers`**, **`discover_doc`**, **`read_doc`**, **`read_transcripts`**, **`read_ledger`**, **`read_challenge_lifecycle`**, **`read_audit_log`** (tail of **`logs/mcp-audit.log`** by default), **`wiz_knowledge_search`**, **`sync_notes`**, **`sync_transcripts`**, …
+- **Writes (always show a plan + get approval in chat):** **`write_doc`**, **`append_ledger`** (v1 row via subprocess), **`append_ledger_row`** (v3 JSON row — see **`prestonotes_mcp/ledger.py`** `LEDGER_V3_COLUMNS` and **§7** in **[`docs/project_spec.md`](docs/project_spec.md)**), **`update_challenge_state`** (requires `transitioned_at` as the ISO **call date** of the cited transcript, not the run date; see **§7.4** in **`docs/project_spec.md`**), **`bootstrap_customer`** (`dry_run=false` only after approval), **`log_run`**, …
 
 Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (especially **Rule 3** / customer-local writes). **Auth failures** often include **`run_in_terminal_to_fix`** — paste that command from **`.cursor/mcp.env`** (or **`GCLOUD_AUTH_LOGIN_COMMAND`** there).
 
