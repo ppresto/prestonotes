@@ -13,5 +13,6 @@
   - `expected_missing_keys` (`YYYY-MM-DD:<slug>` list),
   - optional `skips` with `{meeting_key, reason}`.
   Run `scripts/ucn-planner-preflight.py` before write; if DAL parity fails (`dal_parity_failed`), do not call `write_doc`.
+- **Full UCN bundle** (all targets, Step 10; E2E-only required writer preview before each real write): **[`docs/ai/playbooks/update-customer-notes.md`](../playbooks/update-customer-notes.md)** (E2E harness: [`tester-e2e-ucn.md`](../playbooks/tester-e2e-ucn.md)).
 
 ---

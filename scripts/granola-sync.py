@@ -10,7 +10,7 @@ segment lists). Most meetings still have **notes_plain** / **notes_markdown** wh
 script **falls back to notes** so those meetings export; use ``--transcript-only`` to
 require segment-based transcript text only.
 
-See docs/MIGRATION_GUIDE.md for cache format notes and Internal-folder routing.
+See scripts/README.md and docs/project_spec.md (Transcript files / §2) for layout and Internal-folder routing.
 """
 
 from __future__ import annotations

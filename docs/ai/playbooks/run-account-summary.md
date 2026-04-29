@@ -65,21 +65,19 @@ At every step, tell the user what you are doing in plain English. Start each ste
 
 1. **`read_challenge_lifecycle`** MCP with `customer_name=[CustomerName]`.
 2. If the tool returns `{"error": "file not found", ...}` (first run, or the customer has no approved lifecycle writes yet), note **"no persisted lifecycle yet"** in your working state and move on — Step 7 will flag the challenge review as unavailable instead of inferring state silently.
-3. If the tool returns data, treat the JSON as the **source of truth** for `current_state`, `history[]`, and `last_updated` per challenge id. **Do not** infer lifecycle state from call records when persisted JSON is present — the JSON wins.
+3. If the tool returns data, treat the JSON as the **source of truth** for `current_state`, `history[]`, and `last_updated` per challenge id. **Do not** infer lifecycle state from transcripts alone when persisted JSON is present — the JSON wins.
 
 **Tell user:** "Step 3.5 of 8 — Read persisted lifecycle ([N] challenge ids loaded / no lifecycle file yet)."
 
 ---
 
-## Step 4 of 8 — Load ledger and call records
+## Step 4 of 8 — Load ledger (and optional transcript index)
 
 1. **`read_ledger`** MCP with `customer_name=[CustomerName]` and an appropriate `max_rows` (start with **20** unless the user wants deeper history). The tool returns **schema v3** rows (20 snake_case columns per `prestonotes_mcp/ledger.py` `LEDGER_V3_COLUMNS`) with **typed** values — `int` for `wiz_score`, `list[str]` for id-list columns (`challenges_new`, `challenges_in_progress`, `challenges_stalled`, `challenges_resolved`, `stakeholders_present`, `wiz_licensed_products`, `wiz_license_purchases`, `wiz_license_renewals`), and `str` for free-text / enum columns. Empty cells come back as `""`. A missing ledger returns `{"empty": true, ...}` — treat that as first-run / no-history.
    - **Derived, not stored:** the open-challenges count is computed on read as `len(row["challenges_in_progress"]) + len(row["challenges_stalled"])`. There is no stored count column; do not look for one.
-2. **`read_call_records`** MCP for recent calls (filter by date or limit as supported) to ground challenges, value realized, stakeholder first-seen / last-seen, and the chronological call spine in **structured call metadata** — pair with transcript pulls for nuance. Records are returned sorted by `(date, call_id)`.
+2. For **meeting ordering, titles, and long-horizon facts**, use **per-call transcripts** under `Transcripts/` (MCP **`read_transcripts`** with an explicit `limit` large enough for the window you need, or read files from the repo mirror). Do **not** rely on a separate structured JSON corpus for Account Summary.
 
-**Call-record schema v2 preference (TASK-051 §D).** Account Summary is the sole full-history consumer of `call-records/*.json` — Journey Timeline was retired in TASK-047 and its narrative is absorbed here. For anything **outside the active lookback window** (stakeholder evolution, historical metric trends, older goals / risks, prior challenge context), prefer the schema v2 structured fields on each call-record — **`metrics_cited`**, **`stakeholder_signals`**, **`goals_mentioned`**, **`risks_mentioned`** — over re-reading the raw transcript. Those fields are the compressed memory of the call and were shaped specifically so Account Summary's **Stakeholders**, **Goals**, **Risk**, and **Value Realized** sections can aggregate across the full corpus without pulling transcripts back into context.
-
-**Tell user:** "Step 4 of 8 — Ledger and call records loaded."
+**Tell user:** "Step 4 of 8 — Ledger loaded; transcript corpus scoped for the requested lookback."
 
 ---
 
@@ -118,23 +116,23 @@ Emit markdown following **`docs/ai/references/exec-summary-template.md`** in ord
 2. **Health (optional)** — single line `Health: 🟢|🟡|🔴|⚪ …` per **`docs/ai/references/health-score-model.md`**. Use the spec's verbatim band rules. If the corpus is thin (fewer than 2 calls or no recent data), use **⚪ Unknown** and say so.
 3. **The 30-Second Brief** (≤ 3 sentences, no jargon).
 4. **Challenges → Solutions Map** (table populated where evidence exists; otherwise say what is unknown).
-5. **Chronological call spine (optional)** — compact table sourced from Step 4's `read_call_records` output, filtered to the lookback window by default:
+5. **Chronological call spine (optional)** — compact table sourced from **transcript headers** (`DATE:` + meeting title from each in-scope `.txt`), filtered to the lookback window by default:
 
-   | Date | call_id | call_type | summary_one_liner | sentiment |
-   |---|---|---|---|---|
+   | Date | source file | headline (one line) |
+   |---|---|---|
 
-   **Dates are the call dates from each record, never the run date.** Expand to the full history only on explicit user ask.
-6. **Milestones (optional)** — bullets drawn from `call_type` transitions and lifecycle `history[]` entries (first discovery, first POC, first POC readout, commercial close, champion transition, renewal gate, etc.). Each bullet cites `call_id` + call date. Do not invent milestones that are not in the record.
+   **Dates are the call dates from each transcript, never the run date.** Expand to the full history only on explicit user ask.
+6. **Milestones (optional)** — bullets drawn from transcript-evident transitions and lifecycle `history[]` entries (first discovery, first POC, first POC readout, commercial close, champion transition, renewal gate, etc.). Each bullet cites transcript date + filename. Do not invent milestones that are not in the evidence.
 7. **Challenge review (optional)** — table sourced from `challenge-lifecycle.json` (Step 3.5) with evidence drawn from the latest call that mentions each id:
 
    | challenge_id | description | current_state | last_updated | evidence | stall / risk | recommended_action |
    |---|---|---|---|---|---|---|
 
    - `current_state` and `last_updated` come from the lifecycle JSON (`current_state`, latest `history[].at`).
-   - `evidence` cites the latest `call_id` (or short quote) mentioning the challenge.
+   - `evidence` cites the latest transcript date (or short quote) mentioning the challenge.
    - `stall / risk` flags **stall** when `current_state` is `identified`, `acknowledged`, or `in_progress` and the days since `last_updated` is **≥ 60** (per `docs/ai/references/challenge-lifecycle-model.md`). Phrase as `"no movement 65d"` with the actual count.
-   - If Step 3.5 reported "no persisted lifecycle yet," render the section as a single line — `No persisted lifecycle JSON yet; run Update Customer Notes to populate challenge-lifecycle.json.` — and do not infer challenge state from call records in its place.
-8. **Stakeholders** — extend the template table with **First seen** and **Last seen** columns derived from `participants[]` across call records. Sentiment signals are required when named stakeholders appear in source material.
+   - If Step 3.5 reported "no persisted lifecycle yet," render the section as a single line — `No persisted lifecycle JSON yet; run Update Customer Notes to populate challenge-lifecycle.json.` — and do not fabricate persisted lifecycle rows from transcript guesses in place of that file.
+8. **Stakeholders** — extend the template table with **First seen** and **Last seen** columns derived from when each person is named across **transcripts** (and **`read_doc`** contacts when present). Summarize tone when named stakeholders appear in source material.
 9. **Value Realized** (dated, attributed).
 10. **Strategic Position** (journey, risks, next move).
 11. **Wiz Commercials** (evidence table; unknowns explicit).

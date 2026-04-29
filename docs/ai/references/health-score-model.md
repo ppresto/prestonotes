@@ -19,7 +19,7 @@ Use this rubric in **`Run Account Summary for [CustomerName]`** when you assign 
 
 - **“Stalled challenge”** aligns with lifecycle **`stalled`** or with §7.4 intent (no movement for 60+ days) when the JSON file does not yet reflect **`stalled`** — cite the dated gap when inferring.
 - **“Missed follow-up”** means an **`action_items`** commitment or clear next step from a prior call lacks a later call record or narrative closure by the agreed horizon (cite **`due`** dates and subsequent calls).
-- **“Champion departure”** requires evidence in **`participants`** deltas, explicit statements, or role changes across **`read_call_records`** — not rumor.
+- **“Champion departure”** requires evidence in explicit transcript lines (named departures, role changes) — not rumor.
 - **“No recent data”** for ⚪ Unknown: use when you cannot establish a meaningful current-state read (e.g., no calls in a long window and none scheduled in records, or exports are missing).
 
 When in doubt between Yellow and Red, choose **Yellow** unless **two independent yellow-class signals** or an explicit **red-class** signal from the spec list is documented.

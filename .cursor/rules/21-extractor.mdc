@@ -10,7 +10,7 @@ alwaysApply: false
 
 When the user invokes **`Extract Call Records for [CustomerName]`** (or clearly the same intent), follow **`docs/ai/playbooks/extract-call-records.md`** end-to-end.
 
-**`_TEST_CUSTOMER` E2E override (test-only):** when this extraction is part of **`Run E2E Test Customer`** for **`_TEST_CUSTOMER`**, skip approval pauses and execute **`write_call_record`** directly. See **`docs/ai/playbooks/tester-e2e-ucn.md`**.
+**`_TEST_CUSTOMER` E2E override (test-only):** the default reserved-trigger E2E harness (**`Run E2E Test Customer`**) does **not** include Extract. When the operator **explicitly** runs **`Extract Call Records for _TEST_CUSTOMER`** (same session or separate), skip approval pauses and execute **`write_call_record`** directly for that customer per **`.cursor/rules/11-e2e-test-customer-trigger.mdc`**.
 
 ## Authority and validation
 
@@ -28,7 +28,7 @@ When the user invokes **`Extract Call Records for [CustomerName]`** (or clearly 
 - **`products_discussed`:** Enum `Wiz Cloud | Wiz Sensor | Wiz Defend | Wiz DSPM | Wiz CIEM | Wiz Code | Wiz CLI | Wiz Sensor POV`, or `Other: <name>` for non-Wiz products. Pick per-call; never a constant across all records in a corpus.
 - **`action_items[].owner`:** Named individual when the transcript names one; `"SE"` only when the transcript itself says `SE:` and no person is attached.
 - **`sentiment`:** Enum `positive | neutral | cautious | negative`. A call dominated by budget freeze / champion exit is at minimum `cautious`, not `positive`.
-- **`deltas_from_prior_call`:** **Read the prior 3 call-records** via `read_call_records` before drafting the current one so this field reflects real state change (`in_progress → stalled`, `pursue → purchased`, etc.). `[]` only when nothing actually changed.
+- **`deltas_from_prior_call`:** **Read the prior 3 per-call transcripts** (newest other meetings under `Transcripts/`, excluding the current file) before drafting the current record so this field reflects real state change (`in_progress → stalled`, `pursue → purchased`, etc.). `[]` only when nothing actually changed.
 - **v2 optional richness arrays:** `goals_mentioned[]`, `risks_mentioned[]`, `metrics_cited[]`, `stakeholder_signals[]`. Populate from a light MEDDPICC pass; empty arrays are valid but ≥ 3 empties force a downgrade of `extraction_confidence` (`high → medium`; ≥ 5 empties → `low`). Accept the downgrade rather than fabricate.
 - **`extraction_confidence`:** `high` | `medium` | `low`. The MCP writer mutates this in-place per the emptiness rule above; document the downgrade reason in run notes.
 
@@ -64,7 +64,7 @@ Use one of: **`positive`**, **`neutral`**, **`cautious`**, **`negative`**. Pick 
 
 ## Output
 
-Produce **compact JSON** objects ready for **`write_call_record`**. For normal (non-E2E) runs: after user approval, write **one file per meeting**. For the `_TEST_CUSTOMER` E2E override, execute without waiting for approval.
+Produce **compact JSON** objects ready for **`write_call_record`**. For normal runs: after user approval, write **one file per meeting**. For **`_TEST_CUSTOMER`** when the operator explicitly invoked Extract under the E2E bypass rule, execute **`write_call_record`** without waiting for approval.
 
 ---
 
@@ -96,7 +96,7 @@ Every UCN run that reaches Step 11 builds one **schema v3** row for `append_ledg
 Every UCN run MUST visit the **15 populatable GDoc fields** below. For each field, the planner either proposes a mutation backed by an in-lookback transcript quote OR records a skip with one of four reasons: `no_in_scope_transcript_signal`, `same_as_current_entry`, `evidence_below_confidence_threshold`, `section_off_by_opt_out`. Skip accounting is what the UCN writer surfaces in the `appendix.agent_run_log` entry (TASK-050 §F). Fields not listed here (e.g. `cloud_environment.csp_regions`, `cloud_environment.idp_sso`, `cloud_environment.sizing`, `challenge_tracker` rows) retain their existing Step 9 / daily UCN rules — they are covered by the four planner coverage guard fields and the table-row policies elsewhere in this rule.
 
 1. **`company_overview.free_text`** — industry + size + platform stance. Quote one transcript line.
-2. **`contacts.free_text`** — every **customer-side** (and materially relevant) person named in in-lookback transcripts; include role if stated; flag departures (e.g. champion exit) explicitly. **When `call-records/*.json` exists**, use `participants[]` and `stakeholder_signals[]` from those records as structured support for the same calls — the agent composes `append_with_history` mutations in UCN Step 8 per `docs/ai/playbooks/update-customer-notes.md` and `docs/ai/gdoc-customer-notes/mutations-account-summary-tab.md` (Contacts section). Do **not** replace that with ad-hoc `/tmp` JSON or non-playbook mutation sidecars.
+2. **`contacts.free_text`** — every **customer-side** (and materially relevant) person named in in-lookback transcripts; include role if stated; flag departures (e.g. champion exit) explicitly. The agent composes `append_with_history` mutations in UCN Step 8 per `docs/ai/playbooks/update-customer-notes.md` and `docs/ai/gdoc-customer-notes/mutations-account-summary-tab.md` (Contacts section). Do **not** replace that with ad-hoc `/tmp` JSON or non-playbook mutation sidecars.
 3. **`org_structure.free_text`** — identity hub, tenant structure, acquisition relationships.
 4. **`cloud_environment.platforms`** — `tools_list` entries for container orchestrator, compute, serverless.
 5. **`cloud_environment.devops_vcs`** — CI/CD systems named in transcripts.
@@ -117,7 +117,7 @@ The `STRICT_METADATA_FIELDS` constraint from `docs/ai/gdoc-customer-notes/mutati
 
 ## Challenge Tracker row discipline (TASK-048 §B.1)
 
-The **same "call date wins over run date" rule** applies to a **second write path** that bypasses `update_challenge_state`: UCN's GDoc mutation plan writes **Challenge Tracker** rows directly via **`write_doc`**, and those rows have their own `date` column and `notes_references` evidence string. **`write_doc`** is a generic doc writer and does not validate these — enforcement is extractor-side preflight only.
+The **same "call date wins over run date" rule** applies to a **second write path** that bypasses `update_challenge_state`: UCN's GDoc mutation plan writes **Challenge Tracker** rows directly via **`write_doc`**, and those rows have their own `date` column and `notes_references` evidence string. **`write_doc`** is a generic doc writer and does not validate row shape. Enforce §B.1 when **building** the mutation plan; for UCN, **`scripts/ucn-planner-preflight.py`** (planner preflight — see **`docs/ai/playbooks/update-customer-notes.md`** Step 10) is also required before write. **Do not confuse** that script with informal “preflight” wording elsewhere in this rule — they are different layers.
 
 1. **Challenge Tracker row `date` column** MUST be the ISO call date of the most recent transcript that touched this challenge, **not** the run date.
 2. **`notes_references` `Evidence: YYYY-MM-DD` dates** MUST cite ISO dates that exist in the customer's `MyNotes/Customers/<Customer>/Transcripts/` folder. Preflight: for every `YYYY-MM-DD` referenced in `notes_references`, verify a transcript file with that date prefix exists on disk. If the check fails, skip the row and emit `skip challenge_tracker_row ch=<id> reason=evidence_date_not_in_corpus`.

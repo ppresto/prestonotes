@@ -135,7 +135,7 @@ At every step, tell the user what you are doing in plain English. Follow the for
 - "Full sync" means full coverage of the **finite** discovered WIN catalog (`win_apis_doc_index.json`) plus configured external seed sources, not an infinite crawl of all `docs.wiz.io`.
 - WIN sync completeness is measured against discovered `doc_name` entries materialized into `mcp_materializations/`.
 - Discovery expansion is wave-based: run discovery waves until two consecutive waves produce no unexpected net-new URLs/doc names, then stop and record stability evidence.
-- Track discovery-wave process details and proof in `docs/tasks/archive/2026-04/TASK-027-wiz-discovery-catalog.md`.
+- Track discovery-wave process details in operator run notes; **`win_apis_doc_index.json`** and **`manifest.json`** are the file-level audit trail.
 
 ## 2.53) Discovery wave run order and rollback
 
@@ -162,9 +162,9 @@ At every step, tell the user what you are doing in plain English. Follow the for
 - **Coverage spot-check:** `uv run python scripts/wiz_vector_coverage_report.py --repo-root .`
 - **Operator tutorial:** `docs/tutorials/wiz-rag-from-cache-to-search.md`
 
-## 2.59) TASK-074 tied caches — hosted docs KB JSON + §G4 external gap refs (Required on default + refresh paths)
+## 2.59) Hosted docs KB JSON + external gap refs (Required on default + refresh paths)
 
-Cross-ref: **`docs/tasks/active/TASK-074-ucn-accomplishments-vendor-wins-and-upsell-path-sku-gaps.md`** (**§G3.a** seeds, **§G4** URLs, **§G8** snapshot file shape) and `docs/ai/cache/wiz_mcp_server/kb_seed_queries.yaml`.
+Seeds and snapshot layout: `docs/ai/cache/wiz_mcp_server/kb_seed_queries.yaml` and `docs/ai/cache/wiz_mcp_server/kb_licensing_seed_sources/README.md`.
 
 This section applies on the **§2.51 default path** (hydrate-if-needed), and also on the broad **refresh path**. It is skipped only in explicit **cache-only** mode.
 

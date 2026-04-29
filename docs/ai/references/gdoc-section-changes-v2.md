@@ -7,7 +7,7 @@ v2 **does not** ship `run-main-task.py` or Python “section builder” modules 
 1. Edit **`prestonotes_gdoc/config/doc-schema.yaml`** and the matching **`config/sections/*.yaml`** policy for that section.
 2. Align **`prestonotes_gdoc/config/section-sequence.yaml`** with load order.
 3. Update prompts under **`prestonotes_gdoc/config/prompts/`** if the model needs new boundaries (MCP resources `prestonotes://prompts/*` may mirror these files).
-4. Validate with **`read_doc`** (parse/structure) and, when write tools exist, **`write_doc`** with **`dry_run=true`** before applying.
+4. Validate with **`read_doc`** (parse/structure). For **template / schema smoke tests** against a scratch or fixture doc, you may use MCP **`write_doc`** with **`dry_run=true`** once to preview what the writer would apply — that is a **Doc engine** check, **not** the UCN planner preflight (`scripts/ucn-planner-preflight.py`). For **Update Customer Notes**, follow **`docs/ai/playbooks/update-customer-notes.md`** Step 10 instead (required preflight + normal write order).
 
 ## Mutations
 

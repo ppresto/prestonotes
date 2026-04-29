@@ -4,7 +4,7 @@ globs: ["*"]
 ---
 # Migration Mode Rules
 
-1. Always read `docs/MIGRATION_GUIDE.md` before starting any task that involves porting code from `../prestoNotes.orig`.
+1. Read `docs/project_spec.md` **§8** before starting any work that involves porting code from `../prestoNotes.orig`.
 
 2. The old project is at `../prestoNotes.orig`. It is **READ-ONLY**. Never write to it.
 
@@ -14,6 +14,6 @@ globs: ["*"]
 
 5. Do not build Stage 2 components until **TASK-009** (Stage 1 validation) is complete. Tasks are ordered for a reason.
 
-6. Keep migration notes: when you discover a difference between old code and the spec, add a row to `docs/MIGRATION_GUIDE.md` under **Discrepancies found**.
+6. When you discover a difference between old code and the spec, record it in your working notes or a Cursor plan; keep the committed spec accurate.
 
 7. **Google Docs Python** ports **into `prestonotes_gdoc/`** (v2 name). Do **not** recreate a `custom-notes-agent/` folder in this repo; the legacy name exists only under `../prestoNotes.orig/`.

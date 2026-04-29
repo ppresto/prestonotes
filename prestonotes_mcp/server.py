@@ -52,12 +52,13 @@ from prestonotes_mcp.security import (
 mcp = FastMCP(
     "prestonotes",
     instructions=(
-        "prestoNotes MCP v2: customer notes, Google Docs, ledger, sync, call records, lifecycle. "
+        "prestoNotes MCP v2: customer notes, Google Docs, ledger, sync, transcripts, lifecycle. "
         "For writes (write_doc, write_call_record, update_challenge_state, "
         "append_ledger_row, bootstrap_customer with dry_run=false), sync_notes, sync_transcripts: "
         "show the user the plan first and obtain approval in chat before calling. "
         "Mutation path: approved mutation JSON → write_doc (prestonotes_gdoc/update-gdoc-customer-notes.py). "
-        "Call records: JSON per docs/project_spec §7.1 under MyNotes/Customers/<name>/call-records/. "
+        "Default evidence: per-call transcripts under MyNotes/Customers/<name>/Transcripts/. "
+        "Optional call-record JSON (docs/project_spec §7.1) under call-records/ when you run Extract. "
         "run_pipeline is not available in v2. "
         "Before discover_doc or read_doc, call check_google_auth if unsure whether gcloud is logged in. "
         "If any Google tool returns run_in_terminal_to_fix, show that exact command to the user first "
@@ -567,7 +568,13 @@ def write_doc(
     dry_run: bool = False,
     customer_name: str | None = None,
 ) -> str:
-    """Apply an approved mutation JSON plan to a Google Doc. Modifies external state — get user approval in chat first. Use dry_run=true to preview.
+    """Apply an approved mutation JSON plan to a Google Doc. Modifies external state — get user approval in chat first.
+
+    For **Update Customer Notes**, run planner preflight (``scripts/ucn-planner-preflight.py``) per
+    ``docs/ai/playbooks/update-customer-notes.md`` Step 10 before a real write. ``dry_run=true`` previews
+    Doc-engine output only; it does **not** replace preflight. For ``_TEST_CUSTOMER`` **E2E** harness runs,
+    ``dry_run=true`` once before each real write is **required** per ``docs/ai/playbooks/tester-e2e-ucn.md``
+    (not production).
 
     When ``customer_name`` is set, runs lifecycle ↔ Challenge Tracker parity checks against
     ``MyNotes/Customers/<name>/AI_Insights/challenge-lifecycle.json`` (see mutation rules).

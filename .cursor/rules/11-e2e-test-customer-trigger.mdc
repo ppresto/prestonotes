@@ -1,5 +1,5 @@
 ---
-description: Trigger rule for the _TEST_CUSTOMER E2E flow. On any recognized trigger, the agent executes the full 8-step harness in one session, without stopping for approval, without substituting session context for the actual playbook work, and without skipping chat-playbook steps.
+description: Trigger rule for the _TEST_CUSTOMER E2E flow. On any recognized trigger, the agent runs the default E2E harness in one session as defined in scripts/lib/e2e-catalog.txt, without stopping for approval, without substituting session context for the actual playbook work, and without skipping chat-playbook steps.
 globs: ["*"]
 alwaysApply: true
 ---
@@ -16,44 +16,49 @@ When the user sends any of these (case / spacing flexible), begin the canonical 
 
 Only customer `_TEST_CUSTOMER` is in scope. If the user substitutes a different customer name, ignore this rule and fall back to the normal per-playbook approval pipeline.
 
-## Contract — execute all 8 steps in one session
+## Contract — run the default E2E harness in one session
 
-Follow `docs/ai/playbooks/tester-e2e-ucn.md` exactly:
+**Order and step count are not duplicated here.** The only committed source is [`scripts/lib/e2e-catalog.txt`](../../scripts/lib/e2e-catalog.txt) (see **HARNESS STEPS (E2E)** and `e2e_default` under **WORKFLOW MODES**). On trigger, run that sequence end-to-end with the `_TEST_CUSTOMER` write-approval override.
 
-1. Shell: `./scripts/e2e-test-customer.sh prep-v1`
-2. Chat: `Load Customer Context for _TEST_CUSTOMER`
-3. Chat: `Extract Call Records for _TEST_CUSTOMER`
-4. Chat: `Update Customer Notes for _TEST_CUSTOMER`
-5. Shell: `./scripts/e2e-test-customer.sh prep-v2`
-6. Chat: `Extract Call Records for _TEST_CUSTOMER`
-7. Chat: `Update Customer Notes for _TEST_CUSTOMER`
-8. Chat: `Run Account Summary for _TEST_CUSTOMER`
+- Procedure detail: [`docs/ai/playbooks/tester-e2e-ucn.md`](../../docs/ai/playbooks/tester-e2e-ucn.md)
+- Shell: `./scripts/e2e-test-customer.sh list-steps` to print the current table
+- Debugger: `./scripts/e2e-test-customer.sh run-step <n>` per catalog (shell only for steps that map to `prep-v1` / `prep-v2`)
 
-For debugger mode, use `./scripts/e2e-test-customer.sh run-step <1-8>` and keep shell/chat ordering exactly as listed.
+**E2E scope is UCN + prep only** — it does not include `Run Account Summary` or other playbooks outside the catalog harness.
+
+## Harness result: `success` vs `failed` vs `blocked` (orchestrator + `/tester`)
+
+This aligns with [`.cursor/agents/tester.md`](../agents/tester.md) — **Completion and status semantics**.
+
+- **`success`** — Pre-flight passed and **every** catalog step **1–5** for the default `e2e_default` run actually **completed** (real MCP / playbook work through both UCNs), including **writer** `dry_run=true` / `write --dry-run` **after** planner preflight and **before** each real `write_doc` in steps **3** and **5** per **`docs/ai/playbooks/tester-e2e-ucn.md`** (E2E only — not production). A partial run is **not** `success`.
+- **`failed`** — Stopping before step 5, skipping a required step, or a failed playbook step. **Do not** return `blocked` for “we will continue UCN in a later session”; that is **`failed`**.
+- **`blocked`** — **Only** for pre-flight or environment you cannot fix in the flow (e.g. auth, `lint` hard failure, MCP down) — per tester Phase 1 and the same `blocked` definition in `tester.md`. Do not use for partial harness completion.
+
+For **full** default E2E, prefer the **main Cursor chat** with the work **in the foreground**; **background** `/tester` full 1–5 is **not** reliable without extra automation (see `tester.md` and `docs/ai/playbooks/tester-e2e-ucn.md`).
 
 ## Hard rules (any violation is a defect — stop, fix, re-run)
 
-1. **Do not skip steps.** All 8 steps must run. The chat-driven steps (2, 3, 4, 6, 7, 8) invoke real playbooks under the `_TEST_CUSTOMER` E2E override; do not answer in-chat with "simulated" or "prepared" outputs that were never produced by the underlying MCP tools.
+1. **Do not skip steps.** Every step in the catalog’s default harness for the trigger must run. Chat-driven steps invoke real playbooks under the `_TEST_CUSTOMER` E2E override; do not answer in-chat with "simulated" or "prepared" outputs that were never produced by the underlying MCP tools.
 2. **Do not stop for approval.** The `_TEST_CUSTOMER` E2E override in `20-orchestrator.mdc`, `21-extractor.mdc`, and `core.mdc` applies. Execute customer-data write tools (`write_doc`, `append_ledger_row`, `update_challenge_state`, `write_call_record`, `sync_notes`) directly in order.
 3. **Do not substitute session context for artifacts.** If a step's output depends on a file that a prior step was supposed to produce, re-read the file from disk or MCP — do not claim "from context" that the file exists without checking.
-4. **Do not reorder.** The shell seed at step 1 must complete before the chat playbooks at steps 2-4. Step 4 (first UCN) must complete before the shell merge at step 5. The shell merge at step 5 must complete before extraction and UCN at steps 6-7.
+4. **Do not reorder.** The shell seed at **prep-v1** must complete before the first chat block. The first UCN must complete before **prep-v2**. **prep-v2** must complete before the second UCN. Exact numbering is in the catalog.
 5. **Shell steps use `./scripts/e2e-test-customer.sh` only.** Older harness scripts that predate `e2e-test-customer.sh` are not part of this flow; never attempt to invoke them.
 6. **On failure, stop and fix in the repo.** If a step fails or produces unexpected output, stop, diagnose, and land the fix in the script / playbook / rule. Never paper over the issue inside a chat response. Once fixed, resume from the failing step (or re-run from step 1 if state was corrupted).
 7. **Surface progress after each step.** Print a brief status line stating which step just completed and what runs next, so the operator can follow along.
 
 ## Artifact hygiene
 
-Customer artifacts (the Google Doc, History Ledger, `challenge-lifecycle.json`, Account Summary, call records) must be indistinguishable from a real-customer run.
+Customer artifacts (the Google Doc, History Ledger, `challenge-lifecycle.json`) must be indistinguishable from a real-customer run.
 
 - **Do not** mention any `TASK-NNN` identifier, `round 1`, `round 2`, `v1 corpus`, `v2 corpus`, `phase`, `E2E`, `harness`, `fixture`, or any other test-only vocabulary in artifact content.
 - **Section dates** in any artifact (Daily Activity, call spine, milestones, ledger rows, challenge history) must be **call dates** or **milestone dates** — never the run date.
 - A section explicitly named **Metadata** may carry the run date labeled as `Generated: YYYY-MM-DD`; no other field should carry the run date.
-- If a chat-facing progress line cites the E2E flow (e.g. "step 4 of 8"), that line is operator-facing and does not enter any persisted artifact.
+- If a chat-facing progress line cites the E2E flow, that line is operator-facing and does not enter any persisted artifact.
 - After UCN, `appendix.agent_run_log` MUST have one new entry; `exec_account_summary.*` entries MUST have `timestamp` set (rendered in the Doc as `<value> [YYYY-MM-DD]` on every newly appended `append_with_history` entry — pre-existing null-timestamp entries are left alone per TASK-050 §A).
 
 ## Post-write diff requirement (TASK-069 pointer)
 
-For `v1_full` / `full` runs, the mandatory post-write diff and severity rubric live in **`.cursor/agents/tester.md` §6**.
+For `v1_full` / `e2e_default` / `full` runs, the mandatory post-write diff and severity rubric live in **`.cursor/agents/tester.md` §6**.
 
 - Planner `KEY_FIELD_COVERAGE` is not a substitute for this review.
-- The delta table must explicitly score **Contacts**, **Challenge Tracker**, **Cloud Environment**, and **Account Metadata** when corpus evidence exists.
+- The delta table must explicitly score **Contacts**, **Challenge Tracker**, **Cloud Environment**, and **Account Metadata** when corpus evidence exists (use **transcripts** as ground truth).

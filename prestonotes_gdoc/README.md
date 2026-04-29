@@ -20,7 +20,7 @@
 
 - **Granola meeting summary templates:** [`docs/ai/references/granola-meeting-summary-templates.md`](../docs/ai/references/granola-meeting-summary-templates.md) (legacy reference; revise for v2 as needed).
 
-See [`docs/MIGRATION_GUIDE.md`](../docs/MIGRATION_GUIDE.md) for porting rules.
+For porting from v1, see **`docs/project_spec.md`** **§8** (legacy → v2 table).
 
 ## Full E2E `_TEST_CUSTOMER` flow (runbook + scripts)
 
@@ -49,7 +49,7 @@ From repo root:
 ./scripts/e2e-test-customer.sh list-steps
 ```
 
-For `v1_full`, use `prep-v1` then complete extract/UCN/read/ledger validations per `tester-e2e-ucn.md`.
+For `v1_full`, use `prep-v1` then **Load Customer Context** + first **Update Customer Notes** + `read_doc` / diff per `tester-e2e-ucn.md` (default harness is five catalog steps; no mandatory Extract).
 
 ### 2) Step 1 shell prep (`prep-v1`)
 
@@ -65,49 +65,31 @@ This orchestrates:
 
 After rebaseline, always use the newly discovered doc id (do not trust a stale id).
 
-### 3) Step 2-6 data prep + extract gates
+### 3) Chat: Load Customer Context + first Update Customer Notes (UCN)
 
-- Load context via playbook/MCP (`sync_notes`, transcript read)
-- Build/refresh call records (extract path)
-- Hard gate before UCN:
+- Follow **`docs/ai/playbooks/tester-e2e-ucn.md`** (steps 2–3). Optional: run **Extract Call Records** + `call_records lint` only when debugging extraction; not part of the default five-step harness.
 
-```bash
-uv run python -m prestonotes_mcp.call_records lint _TEST_CUSTOMER
-```
+**Full `e2e_default` harness:** then `./scripts/e2e-test-customer.sh prep-v2` and a second **Update Customer Notes** (catalog steps 4–5 in `tester-e2e-ucn.md`).
 
-Must exit `0` before UCN write.
+### 4) UCN mutation JSON → preflight → write (this package)
 
-### 4) Step 7-10 UCN plan + write (this package)
+**UCN policy** (when to run preflight, full TASK-072 / DAL / Deal Stage matrix, Step 10 write order): **[`docs/ai/playbooks/update-customer-notes.md`](../docs/ai/playbooks/update-customer-notes.md)** — do **not** treat this README as a second copy of that contract.
 
-Create approved mutation JSON under customer artifacts (not `/tmp`), e.g.:
-- `MyNotes/Customers/_TEST_CUSTOMER/AI_Insights/ucn-approved-mutations.json`
-
-#### TASK-072 deterministic preflight (required)
-
-Run before `write`:
+Create approved mutation JSON under the customer folder (not `/tmp` only), e.g. `MyNotes/Customers/_TEST_CUSTOMER/AI_Insights/ucn-approved-mutations.json`.
 
 ```bash
 uv run python scripts/ucn-planner-preflight.py \
-  --mutations "./MyNotes/Customers/_TEST_CUSTOMER/AI_Insights/ucn-approved-mutations.json" \
+  --mutations "./MyNotes/Customers/[CustomerName]/AI_Insights/ucn-approved-mutations.json" \
   --json-output
-```
 
-Interpretation:
-- exit `0` + `ok: true` -> planner contract passed
-- exit `2` / `planner_contract_failed:*` -> fix plan first (no write)
-
-#### Write execution (dry-run then apply)
-
-```bash
 uv run prestonotes_gdoc/update-gdoc-customer-notes.py write \
   --doc-id "<DOC_ID>" \
   --config prestonotes_gdoc/config/doc-schema.yaml \
-  --mutations "./MyNotes/Customers/_TEST_CUSTOMER/AI_Insights/ucn-approved-mutations.json" \
-  --customer-name "_TEST_CUSTOMER" \
-  --dry-run
+  --mutations "./MyNotes/Customers/[CustomerName]/AI_Insights/ucn-approved-mutations.json" \
+  --customer-name "[CustomerName]"
 ```
 
-Then rerun without `--dry-run` when approved.
+**Required** **`write --dry-run`** / MCP **`dry_run=true`** before each real write: **`_TEST_CUSTOMER` E2E harness only**, after preflight — [`docs/ai/playbooks/tester-e2e-ucn.md`](../docs/ai/playbooks/tester-e2e-ucn.md) (**Required writer dry-run**). Not production.
 
 Post-write readback:
 
@@ -131,7 +113,7 @@ Run is not complete until ledger outcome is reported and Drive mirror is up to d
 
 ### 6) Required post-write quality checks
 
-For `v1_full`:
+For `v1_full` / `e2e_default`:
 - `read_doc` + tester §6 delta table including:
   - Exec Account Summary
   - Contacts

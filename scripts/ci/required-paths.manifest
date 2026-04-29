@@ -56,7 +56,6 @@ docs/ai/references/wiz-mcp-tools-inventory.md
 docs/examples/README.md
 docs/ai/references/granola-meeting-summary-templates.md
 docs/project_spec.md
-docs/MIGRATION_GUIDE.md
 scripts/ci/check-repo-integrity.sh
 scripts/ci/check-docs-no-embedded-gdoc-file-ids.sh
 scripts/ci/required-paths.manifest
@@ -94,7 +93,6 @@ scripts/e2e-test-push-gdrive-notes.sh
 docs/archive/cursor-rules-retired/workflow.mdc
 docs/archive/cursor-rules-retired/README.md
 docs/archive/cursor-rules-retired/99-migration-mode.mdc
-docs/tasks/archive/2026-04/PHASE3-PLAN.md
 .cursor/rules/15-user-preferences.mdc
 .cursor/agents/coder.md
 .cursor/agents/code-tester.md

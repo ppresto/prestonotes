@@ -54,11 +54,10 @@ When analyzing transcripts and notes, extract structured facts into these catego
 
 These rules exist so **Update Customer Notes** produces `contacts.free_text` mutations **inside the normal Step 8 JSON** — the same path for `_TEST_CUSTOMER` and for every production account (no fixture-only scripts, no throwaway `/tmp` plans as the source of truth).
 
-1. **Names must appear in source text.** Prefer verbatim spellings from **in-lookback transcripts**. If Extract has written **`call-records/<call_id>.json`** for that call, you may also cite **`participants[].name`** and roles from **`participants[].role`** when they match the transcript. Do **not** invent people who appear only in generic action-item placeholders (e.g. a bare `"SE"` owner with no named person).
-2. **Use `stakeholder_signals[]` for nuance, not for copying enums into the doc.** Translate `signal` values into plain customer-facing language in the **bullet** (e.g. champion transition, sponsor stepping in). Keep enum tokens and internal field paths in **`reasoning` only**.
-3. **Mutation payload:** `section_key`: `contacts`, `field_key`: `free_text`, `action`: `append_with_history`, `new_value`: one line `Name - role/context; short factual tail`, `theme_key`: `contact:<kebab-slug-from-display-name>`, `evidence_date`: ISO **call** date for the strongest citation (transcript header or record `date`).
-4. **Multi-call accounts:** Merge facts across calls in **one bullet per person** when the doc does not already list them separately; otherwise append once per distinct role change the customer cares about, with the **latest** material `evidence_date`.
-5. **Dedupe against `read_doc`:** If an active entry already covers the same person (normalize whitespace and case for comparison), skip with an explicit skip reason or enrich only when new evidence adds a **material** fact (departure date, title change), never for wording-only churn.
+1. **Names must appear in source text.** Prefer verbatim spellings from **in-lookback transcripts** (speaker lines and stated roles). Do **not** invent people who appear only in generic action-item placeholders (e.g. a bare `"SE"` owner with no named person).
+2. **Mutation payload:** `section_key`: `contacts`, `field_key`: `free_text`, `action`: `append_with_history`, `new_value`: one line `Name - role/context; short factual tail`, `theme_key`: `contact:<kebab-slug-from-display-name>`, `evidence_date`: ISO **call** date for the strongest citation (transcript `DATE:` line).
+3. **Multi-call accounts:** Merge facts across calls in **one bullet per person** when the doc does not already list them separately; otherwise append once per distinct role change the customer cares about, with the **latest** material `evidence_date`.
+4. **Dedupe against `read_doc`:** If an active entry already covers the same person (normalize whitespace and case for comparison), skip with an explicit skip reason or enrich only when new evidence adds a **material** fact (departure date, title change), never for wording-only churn.
 
 - Never append housekeeping/meta text in customer-facing fields (for example: "Upsell Path item", "onboarding issue", "resolved xyz").
 - Keep evidence metadata in audit logs and mutation metadata only; do not render evidence markers/dates inline in customer-facing GDoc text.
@@ -120,20 +119,20 @@ If a prior run wrote meta lines into the doc, fix them with an approved **`repla
   - Keep nuance explicit when transcripts support it (for example, DSPM/ASM expansion posture vs CIEM identity posture) and do not invent pricing or unit counts.
   **Deal Stage Tracker auto-motion** (`advance_deal_stage_from_upsell`) still keys only on **`cloud|sensor|defend|code`** substrings inside `upsell_path` text — DSPM/CIEM bullets are exec-facing truth regardless; add or retain a `Wiz Cloud` / `Wiz Sensor` / etc. line when you also need that automation to fire.
 
-### Upsell grounding bundle (TASK-074)
+### Upsell grounding bundle
 
 When Upsell/commercial wording is in scope, ground proposals with this minimal bundle before transcript-heavy synthesis:
 
 1. `read_doc` current account state.
 2. Relevant JSON snapshots under `docs/ai/cache/wiz_mcp_server/mcp_query_snapshots/<category>/` for SKUs in play (Cloud/Defend/Code/Sensor/CIEM/DSPM/ASM as applicable).
-3. Gap-framing references from **TASK-074 §G4** (NIST CSF, NIST AI RMF, OWASP SAMM, OWASP LLM Top 10): [Task 74](../../tasks/active/TASK-074-ucn-accomplishments-vendor-wins-and-upsell-path-sku-gaps.md).
-4. Then normal UCN transcripts/call-records/history processing.
+3. Gap-framing references (NIST CSF, NIST AI RMF, OWASP SAMM, OWASP LLM Top 10) as listed in the playbook / operator packet when the customer context requires that framing.
+4. Then normal UCN transcripts/history processing.
 
 Do not treat this path as a full `Load Product Intelligence` sweep. If snapshot files are stale or missing, flag it in run output and either refresh or proceed with explicit uncertainty.
 
 ### Upsell when evidence is thin
 
-If evidence cannot support a high-confidence upsell line, do not fabricate commercial claims. Emit 3-7 targeted discovery questions for the next customer interaction and hand off to [TASK-075](../../tasks/active/TASK-075-ucn-upsell-path-discovery-questions.md) for deeper template coverage.
+If evidence cannot support a high-confidence upsell line, do not fabricate commercial claims. Emit 3-7 targeted discovery questions for the next customer interaction; expand templates in a Cursor plan or playbook note if you need a longer form.
 
 ### Ingestion Mode
 
@@ -153,7 +152,7 @@ The append-only JSON journal under **`MyNotes/Customers/<Customer>/AI_Insights/c
 
 ### Anchor convention (machine-checkable)
 
-For every persisted lifecycle **`challenge_id`**, ensure the corresponding tracker row includes this exact token (challenge cell and/or **Notes & References**):
+For every persisted lifecycle **`challenge_id`**, ensure the corresponding tracker row includes this exact token in **Notes & References** only (not the Challenge column):
 
 `[lifecycle_id:<challenge_id>]`
 
@@ -161,7 +160,7 @@ Example: `[lifecycle_id:splunk-renewal-planning-q2]` at the end of **Notes & Ref
 
 When **`write_doc`** is called with MCP argument **`customer_name`** (forwarded as **`--customer-name`** to `prestonotes_gdoc/update-gdoc-customer-notes.py`):
 
-- If the lifecycle file has ids but **no** row contains `[lifecycle_id:` → the writer prints a **stderr warning** (migration / legacy docs).
+- If the lifecycle file has ids but **no** row has `[lifecycle_id:` in **Notes & References** → the writer prints a **stderr warning** (migration / legacy docs).
 - If **any** anchor exists → **every** lifecycle id must have a matching anchor or the write **fails** with `LIFECYCLE_PARITY_FAIL` (prevents partial sync).
 - Emergency bypass: **`--skip-lifecycle-parity-check`** on the write CLI (MCP: omit `customer_name` or add a future MCP flag if needed).
 
@@ -169,9 +168,9 @@ When **`write_doc`** is called with MCP argument **`customer_name`** (forwarded 
 
 ### Writer-side mechanics (code paths)
 
-- **`prestonotes_gdoc/update-gdoc-customer-notes.py`** — after mutations apply, **`_reconcile_with_lifecycle`** updates Challenge Tracker **status** only for rows that already contain **`[lifecycle_id:<id>]`** (or legacy `lifecycle:`); rows without an anchor are unchanged.
-- **`prestonotes_gdoc/challenge_lifecycle_parity.py`** — invoked at end of **`cmd_write`**: **`auto_insert_missing_lifecycle_anchors`** appends a canonical **`[lifecycle_id:…]`** to **Notes & References** when the row text already includes the raw id token but the bracket form is missing; **`check_tracker_lifecycle_parity`** then requires **every** id in `challenge-lifecycle.json` to appear as an anchor in the table or the write **raises** (unless `--skip-lifecycle-parity-check`).
-- **New `challenge_id` only in JSON:** `update_challenge_state` does not create a Doc row. The approved mutation batch must add a **Challenge Tracker** row (or extend text) that includes **`[lifecycle_id:<id>]`** for each new id; otherwise parity fails after auto-insert (which cannot invent rows).
+- **`prestonotes_gdoc/update-gdoc-customer-notes.py`** — after mutations apply, **`_reconcile_with_lifecycle`** updates Challenge Tracker **status** only for rows whose **Notes & References** cell already contains **`[lifecycle_id:<id>]`** (or legacy `lifecycle:`); rows without an anchor there are unchanged.
+- **`prestonotes_gdoc/challenge_lifecycle_parity.py`** — invoked at end of **`cmd_write`**: **`auto_insert_missing_lifecycle_anchors`** appends a canonical **`[lifecycle_id:…]`** to **Notes & References** when the row text already includes the raw id token but the bracket form is missing, then strips misplaced anchors from the Challenge column; **`check_tracker_lifecycle_parity`** then requires **every** id in `challenge-lifecycle.json` to appear as an anchor in **Notes & References** or the write **raises** (unless `--skip-lifecycle-parity-check`).
+- **New `challenge_id` only in JSON:** `update_challenge_state` does not create a Doc row. The approved mutation batch must add a **Challenge Tracker** row (or extend **Notes & References**) that includes **`[lifecycle_id:<id>]`** for each new id; otherwise parity fails after auto-insert (which cannot invent rows).
 
 ---
 
@@ -233,6 +232,8 @@ TASK-050 §E: on every approved UCN write, the writer scans each applied `exec_a
 - If no `upsell_path` mutations applied this run, Deal Stage Tracker is not touched — use `update_table_row` manually per § Mutation Actions Reference when you need a one-off stage change.
 
 **TASK-072 deterministic planner contract (required in UCN plan):**
+
+Full coverage matrix, CLI, exit codes, and Step 10 write order: **[`docs/ai/playbooks/update-customer-notes.md`](../playbooks/update-customer-notes.md)** — this subsection stays **Deal Stage–specific**; do not fork the global contract here.
 
 - Add `planner_contract.deal_stage.expected_skus` (`cloud|sensor|defend|code`) for SKUs expected to move this run.
 - For each expected SKU, provide one trigger path:
