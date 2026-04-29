@@ -49,7 +49,7 @@ From repo root:
 ./scripts/e2e-test-customer.sh list-steps
 ```
 
-For `v1_full`, use `prep-v1` then complete extract/UCN/read/ledger validations per `tester-e2e-ucn.md`.
+For `v1_full`, use `prep-v1` then **Load Customer Context** + first **Update Customer Notes** + `read_doc` / diff per `tester-e2e-ucn.md` (default harness is five catalog steps; no mandatory Extract).
 
 ### 2) Step 1 shell prep (`prep-v1`)
 
@@ -65,19 +65,13 @@ This orchestrates:
 
 After rebaseline, always use the newly discovered doc id (do not trust a stale id).
 
-### 3) Step 2-6 data prep + extract gates
+### 3) Chat: Load Customer Context + first Update Customer Notes (UCN)
 
-- Load context via playbook/MCP (`sync_notes`, transcript read)
-- Build/refresh call records (extract path)
-- Hard gate before UCN:
+- Follow **`docs/ai/playbooks/tester-e2e-ucn.md`** (steps 2–3). Optional: run **Extract Call Records** + `call_records lint` only when debugging extraction; not part of the default five-step harness.
 
-```bash
-uv run python -m prestonotes_mcp.call_records lint _TEST_CUSTOMER
-```
+**Full `e2e_default` harness:** then `./scripts/e2e-test-customer.sh prep-v2` and a second **Update Customer Notes** (catalog steps 4–5 in `tester-e2e-ucn.md`).
 
-Must exit `0` before UCN write.
-
-### 4) Step 7-10 UCN plan + write (this package)
+### 4) UCN plan + write (this package)
 
 Create approved mutation JSON under customer artifacts (not `/tmp`), e.g.:
 - `MyNotes/Customers/_TEST_CUSTOMER/AI_Insights/ucn-approved-mutations.json`
@@ -131,7 +125,7 @@ Run is not complete until ledger outcome is reported and Drive mirror is up to d
 
 ### 6) Required post-write quality checks
 
-For `v1_full`:
+For `v1_full` / `e2e_default`:
 - `read_doc` + tester §6 delta table including:
   - Exec Account Summary
   - Contacts

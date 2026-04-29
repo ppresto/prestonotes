@@ -2,7 +2,7 @@
 """Materialize `_TEST_CUSTOMER` E2E transcript corpus from `tests/fixtures/e2e/` into `MyNotes/`.
 
 Subcommands:
-  to-fixtures   Copy current MyNotes Transcripts → tests/fixtures/e2e/_TEST_CUSTOMER/v1/ (no call-records; those come from Extract)
+  to-fixtures   Copy current MyNotes Transcripts → tests/fixtures/e2e/_TEST_CUSTOMER/v1/ (no call-records in fixtures)
   apply         Copy v1 (and optional v2) Transcripts from fixtures; optionally clear call-records on v1 only (never copy JSON from v1)
 
 Environment:
@@ -11,7 +11,7 @@ Environment:
 Typical flow:
   1. uv run python scripts/e2e-test-customer-materialize.py to-fixtures   # snapshot transcripts into tests/ (v1/Transcripts only)
   2. uv run python scripts/e2e-test-customer-materialize.py apply --v2 # v2 merge (transcripts only)
-  3. ./scripts/e2e-test-customer.sh   # bump dates, report (unchanged)
+  3. ./scripts/e2e-test-customer.sh prep-v1 / prep-v2   # bump dates + push as implemented in the shell
 """
 
 from __future__ import annotations
@@ -74,7 +74,7 @@ def _clear_per_call_corpus(
     """Remove prior per-call transcripts (and optionally JSON call records) so ``apply`` is idempotent.
 
     v1 ``apply`` clears both dirs, then copies only transcripts from the v1 fixture (no JSON from tests/). v2 ``apply`` clears **only** transcripts, then merges
-    v1+v2 fixture transcripts while **preserving** round-1 ``call-records/*.json`` (TASK-052 / Extract).
+    v1+v2 fixture transcripts while **preserving** round-1 ``call-records/*.json`` when present (TASK-052).
     """
     transcripts_dir.mkdir(parents=True, exist_ok=True)
     call_records_dir.mkdir(parents=True, exist_ok=True)
@@ -115,7 +115,8 @@ def cmd_apply(root: Path, *, v2: bool) -> int:
         print(f"Applied v1 (transcripts only, call-records preserved): {n_tx} transcript(s)")
     else:
         print(
-            f"Applied v1: {n_tx} transcript(s); call-records/ cleared (re-populate with Extract, not from fixtures)"
+            f"Applied v1: {n_tx} transcript(s); call-records/ cleared "
+            "(optional JSON via Extract Call Records playbook outside default E2E)"
         )
 
     if v2:
@@ -125,7 +126,7 @@ def cmd_apply(root: Path, *, v2: bool) -> int:
         n_tx2 = _copy_files_only(p2 / "Transcripts", t_dst, "*.txt")
         print(
             "Applied v2: "
-            f"{n_tx2} transcript(s), 0 new call record JSON (v2 extraction is runtime-generated)"
+            f"{n_tx2} transcript(s); call-record JSON unchanged (optional Extract outside E2E)"
         )
 
     return 0

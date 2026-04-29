@@ -11,7 +11,7 @@
 #   reset     Nuclear: trash Drive folder, wipe local mirror, restart Google Drive, poll.
 #   list-steps   Harness steps (see scripts/lib/e2e-catalog.txt; only that file lists counts).
 #   list-catalog, list-all  Triggers, harness, e2e_workflow modes (v1_full, e2e_default, ...).
-#   run-step <n> Run only shell step n (1 or 5) or print chat trigger for other n (debugger).
+#   run-step <n> Run only shell step n (1 or 4) or print chat trigger for other n (debugger).
 #
 # Options (prep-v1 only):
 #   --skip-rebaseline   Do not run e2e_rebaseline_customer_gdoc.py (faster re-seed of files only).
@@ -80,7 +80,7 @@ Usage: $(basename "$0") <command> [args]
   list-catalog, list-all
                  Triggers, harness, e2e_workflow modes, /tester note.
   debug-path  Print active e2e-debug path (PRESTONOTES_E2E_DEBUG=1 only).
-  run-step <1-7>  Run shell step 1 or 5 only; for other numbers print the chat trigger.
+  run-step <1-5>  Run shell step 1 or 4 only; for other numbers print the chat trigger.
 
 SSoT: ${REPO_ROOT}/scripts/lib/e2e-catalog.txt
 Full docs: docs/ai/playbooks/tester-e2e-ucn.md
@@ -111,17 +111,15 @@ debug_init_templates_if_missing() {
 EOF
   fi
 
-  if [[ ! -f "${E2E_DEBUG_RUN_DIR}/harness-steps-1-7.checklist.md" ]]; then
-    cat > "${E2E_DEBUG_RUN_DIR}/harness-steps-1-7.checklist.md" <<'EOF'
-# Harness 1-7 checklist (E2E UCN only; see scripts/lib/e2e-catalog.txt)
+  if [[ ! -f "${E2E_DEBUG_RUN_DIR}/harness-steps-1-5.checklist.md" ]]; then
+    cat > "${E2E_DEBUG_RUN_DIR}/harness-steps-1-5.checklist.md" <<'EOF'
+# Harness 1-5 checklist (E2E UCN only; see scripts/lib/e2e-catalog.txt)
 
 - [ ] 1 Shell: prep-v1
 - [ ] 2 Chat: Load Customer Context for _TEST_CUSTOMER
-- [ ] 3 Chat: Extract Call Records for _TEST_CUSTOMER
-- [ ] 4 Chat: Update Customer Notes for _TEST_CUSTOMER
-- [ ] 5 Shell: prep-v2
-- [ ] 6 Chat: Extract Call Records for _TEST_CUSTOMER
-- [ ] 7 Chat: Update Customer Notes for _TEST_CUSTOMER
+- [ ] 3 Chat: Update Customer Notes for _TEST_CUSTOMER (first UCN)
+- [ ] 4 Shell: prep-v2
+- [ ] 5 Chat: Update Customer Notes for _TEST_CUSTOMER (second UCN)
 EOF
   fi
 
@@ -402,20 +400,14 @@ cmd_prep_v1() {
 
 cmd_prep_v2() {
   debug_prepare_run_dir continue
-  debug_mark_shell_step 5 started
-  if [[ ! -d "${LOCAL_CUSTOMER_DIR}/call-records" ]] \
-     || ! find "${LOCAL_CUSTOMER_DIR}/call-records" -maxdepth 1 -name '*.json' -print -quit | grep -q .; then
-    echo "ERROR: ${LOCAL_CUSTOMER_DIR}/call-records/ has no JSON records." >&2
-    echo "       prep-v2 needs round-1 call records. Run prep-v1 and round-1 Extract (and UCN) first." >&2
-    exit 1
-  fi
+  debug_mark_shell_step 4 started
 
-  echo "==> [prep-v2] Pushing local repo → Drive (round-1 UCN and call-records must be on Drive before pull) ..."
+  echo "==> [prep-v2] Pushing local repo → Drive (round-1 UCN artifacts should be on Drive before pull) ..."
   "${REPO_ROOT}/scripts/e2e-test-push-gdrive-notes.sh" "${CUSTOMER}"
 
   ensure_bootstrapped
   materialize_bump_push v2
-  debug_mark_shell_step 5 completed
+  debug_mark_shell_step 4 completed
   print_after_v2
 }
 
@@ -440,12 +432,10 @@ run_one_step() {
   case "${1:-}" in
     1) shift; cmd_prep_v1 "$@" ;;
     2) echo "Chat: Load Customer Context for _TEST_CUSTOMER" ;;
-    3) echo "Chat: Extract Call Records for _TEST_CUSTOMER" ;;
-    4) echo "Chat: Update Customer Notes for _TEST_CUSTOMER" ;;
-    5) cmd_prep_v2 ;;
-    6) echo "Chat: Extract Call Records for _TEST_CUSTOMER" ;;
-    7) echo "Chat: Update Customer Notes for _TEST_CUSTOMER" ;;
-    *) echo "Step must be 1-7 (see list-steps)" >&2; return 2 ;;
+    3) echo "Chat: Update Customer Notes for _TEST_CUSTOMER" ;;
+    4) cmd_prep_v2 ;;
+    5) echo "Chat: Update Customer Notes for _TEST_CUSTOMER" ;;
+    *) echo "Step must be 1-5 (see list-steps)" >&2; return 2 ;;
   esac
 }
 
@@ -462,7 +452,7 @@ case "${SUB}" in
   run-step)
     shift
     if [[ -z "${1:-}" ]]; then
-      echo "run-step needs a number 1-7" >&2
+      echo "run-step needs a number 1-5" >&2
       exit 2
     fi
     s="$1"

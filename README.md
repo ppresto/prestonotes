@@ -56,7 +56,7 @@ For repeatable E2E loops, use the shell harness and keep prep behavior centraliz
 - **Entry point:** `./scripts/e2e-test-customer.sh`
   - `prep-v1`: rebaseline Notes doc, pull Drive, clear logs + `AI_Insights/`, materialize v1, bump dates, push.
   - `prep-v2`: **push local first**, then pull, materialize v2 (transcripts only), bump, push.
-  - `list-steps` / `run-step <1-7>`: harness map from `scripts/lib/e2e-catalog.txt` (E2E UCN only; not Account Summary).
+  - `list-steps` / `run-step <1-5>`: harness map from `scripts/lib/e2e-catalog.txt` (E2E UCN only; not Account Summary).
 - **Cleanup ownership:** greenfield cleanup (`pnotes_agent_log*` + `AI_Insights/*`) is owned by `prep-v1` (`clean_local_harness_artifacts`), not spread across multiple scripts.
 - **Artifact survival rule:** round-1 outputs must be on Drive before any v2 pull. `prep-v2` enforces this by pushing first.
 - **Materialize v2 behavior:** `scripts/e2e-test-customer-materialize.py apply --v2` preserves existing `call-records/*.json`; it only merges v2 transcript seeds.

@@ -23,7 +23,6 @@ Run these sequentially. If any fail, return `status: blocked` with the exact err
 1. **Environment:** Run `source ./setEnv.sh` from the repo root. 
 2. **Google/Drive Auth:** Verify `GCLOUD_AUTH_LOGIN_COMMAND` is set.
 3. **MCP Smoke:** Call `check_google_auth` on the `prestonotes` server.
-4. **Data Lint:** Run `uv run python -m prestonotes_mcp.call_records lint _TEST_CUSTOMER`. Must exit 0.
 
 ## Phase 2: Execution Workflow
 
@@ -33,15 +32,15 @@ Run these sequentially. If any fail, return `status: blocked` with the exact err
 
 ## Phase 3: Post-Write Diff
 
-1. **Validate (read_doc):** After a UCN write, run `read_doc`. You must compare the resulting JSON against the original transcripts and `call-records`. 
+1. **Validate (read_doc):** After a UCN write, run `read_doc`. Compare the resulting JSON to **in-scope transcripts** (fixture `Transcripts/*.txt` after prep). If `call-records/*.json` exists from a manual Extract run, you may use it as extra structured context; it is **not** required for the default E2E harness.
 2. **Delta Table:** Generate a strict diff table checking coverage for: Exec Account Summary, Contacts, Challenge Tracker, Cloud Environment, Account Metadata, and Daily Activity.
 
 ## Completion and status semantics (e2e_default / full harness)
 
-- **`status: success`** — Phase 1 pre-flight passed **and** every **required** step for the run completed. For the default `e2e_default` / reserved-trigger harness, that means **all catalog steps 1 through 7** in [`scripts/lib/e2e-catalog.txt`](../../scripts/lib/e2e-catalog.txt) finished for real: both UCNs with actual customer-data writes as the playbook requires (`write_doc` / ledger / lifecycle, etc., per [`docs/ai/playbooks/tester-e2e-ucn.md`](../../docs/ai/playbooks/tester-e2e-ucn.md)), and post-write checks (e.g. `read_doc`, post-write diff where applicable) for that mode. Partial runs are **not** `success`.
+- **`status: success`** — Phase 1 pre-flight passed **and** every **required** step for the run completed. For the default `e2e_default` / reserved-trigger harness, that means **all catalog steps 1 through 5** in [`scripts/lib/e2e-catalog.txt`](../../scripts/lib/e2e-catalog.txt) finished for real: both UCNs with actual customer-data writes as the playbook requires (`write_doc` / ledger / lifecycle, etc., per [`docs/ai/playbooks/tester-e2e-ucn.md`](../../docs/ai/playbooks/tester-e2e-ucn.md)), and post-write checks (e.g. `read_doc`, post-write diff where applicable) for that mode. Partial runs are **not** `success`.
 - **`status: failed`** — The harness did **not** complete (stopped early, skipped a required step, or a playbook step failed) **or** the run did not meet the pass criteria for the declared `e2e_workflow` mode. Use **`failed`** for “stop mid-harness and hand off to a future session” — that outcome is a **failed** E2E, not a soft `blocked` or a substitute for completion. Do **not** introduce a separate `incomplete` status.
-- **`status: blocked`** — Use **only** when Phase 1 pre-flight fails, or the run cannot proceed due to **infra / environment** the operator must fix (e.g. `check_google_auth` failure, missing `GCLOUD_AUTH_LOGIN_COMMAND`, `call_records lint` not exit 0, Drive mount missing). You may also use `blocked` after a **genuine** write or MCP attempt returns an unrecoverable error when fixing auth or env is the next step. A partial harness with no pre-flight failure is **`failed`**, not `blocked`.
-- **Background / orchestrator delegations** — A single background `/tester` subagent is **not** a supported, reliable way to run the **full** 1–7 harness until further automation (split runs, checkpointing, and/or fixture-driven UCN) lands; for full E2E today, the operator should run the harness in the **main chat** with the work **in the foreground** (see `docs/ai/playbooks/tester-e2e-ucn.md`). Treat background full E2E as **experimental**; if the run ends before step 7, report **`failed`**, not `success`.
+- **`status: blocked`** — Use **only** when Phase 1 pre-flight fails, or the run cannot proceed due to **infra / environment** the operator must fix (e.g. `check_google_auth` failure, missing `GCLOUD_AUTH_LOGIN_COMMAND`, Drive mount missing). You may also use `blocked` after a **genuine** write or MCP attempt returns an unrecoverable error when fixing auth or env is the next step. A partial harness with no pre-flight failure is **`failed`**, not `blocked`.
+- **Background / orchestrator delegations** — A single background `/tester` subagent is **not** a supported, reliable way to run the **full** 1–5 harness until further automation (split runs, checkpointing, and/or fixture-driven UCN) lands; for full E2E today, the operator should run the harness in the **main chat** with the work **in the foreground** (see `docs/ai/playbooks/tester-e2e-ucn.md`). Treat background full E2E as **experimental**; if the run ends before step 5, report **`failed`**, not `success`.
 
 ## Output Contract (reply to orchestrator)
 

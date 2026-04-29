@@ -25,8 +25,9 @@ jobs:
 
       - name: Lint E2E Test Data (_TEST_CUSTOMER)
         run: |
-          if [ -d "MyNotes/Customers/_TEST_CUSTOMER/call-records" ]; then
+          cr="MyNotes/Customers/_TEST_CUSTOMER/call-records"
+          if [ -d "$cr" ] && compgen -G "$cr/*.json" > /dev/null; then
             uv run python -m prestonotes_mcp.call_records lint _TEST_CUSTOMER
           else
-            echo "skip: Test data not materialized; lint is a no-op."
+            echo "skip: No call-records JSON under _TEST_CUSTOMER; lint is a no-op."
           fi

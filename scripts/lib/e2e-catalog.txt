@@ -30,18 +30,13 @@ Quality/diff: .cursor/agents/tester.md §6. Rule: 11-e2e-test-customer-trigger.m
 Authoritative step list for this file only. E2E scope: prep-v1, chat round 1, prep-v2, chat
 round 2. Does not include Run Account Summary (use run-account-summary.md outside this harness).
 
-  Shell (automated, no prompts):
-    1  prep-v1   ./scripts/e2e-test-customer.sh prep-v1
-    5  prep-v2   ./scripts/e2e-test-customer.sh prep-v2
+  1  prep-v1   ./scripts/e2e-test-customer.sh prep-v1                    (shell)
+  2  Load Customer Context for _TEST_CUSTOMER                            (chat)
+  3  Update Customer Notes for _TEST_CUSTOMER                            (chat — first UCN)
+  4  prep-v2   ./scripts/e2e-test-customer.sh prep-v2                    (shell)
+  5  Update Customer Notes for _TEST_CUSTOMER                            (chat — second UCN)
 
-  Chat (Cursor; full auto when triggers above, _TEST_CUSTOMER approval bypass on writes):
-    2  Load Customer Context for _TEST_CUSTOMER
-    3  Extract Call Records for _TEST_CUSTOMER
-    4  Update Customer Notes for _TEST_CUSTOMER
-    6  Extract Call Records for _TEST_CUSTOMER
-    7  Update Customer Notes for _TEST_CUSTOMER
-
-  Debugger:  ./scripts/e2e-test-customer.sh run-step <1-7>   (only 1 and 5 run shell)
+  Debugger:  ./scripts/e2e-test-customer.sh run-step <1-5>   (only 1 and 4 run shell)
 
   Optional nuclear (delete entire customer on Drive and locally):
     ./scripts/e2e-test-customer.sh reset
@@ -58,23 +53,21 @@ round 2. Does not include Run Account Summary (use run-account-summary.md outsid
     read_doc + post-write diff (tester.md §6) after each UCN where applicable.
 
   v1_full
-    prep-v1 → Load Context → Extract → call_records lint (0) → first UCN
-    (all applicable UCN sub-steps; include Step 11 ledger when write applies) →
+    prep-v1 → Load Context → first UCN (all applicable UCN sub-steps; include Step 11 ledger when write applies) →
     read_doc → post-write diff (tester.md §6).
 
   v1_partial
-    A subset: e.g. prep-v1 --skip-rebaseline, or extract+lint only, or UCN-only
-    on existing data. DAL-only belongs here. List explicit skips + reasons in report.
+    A subset: e.g. prep-v1 --skip-rebaseline, or UCN-only on existing data. DAL-only belongs here.
+    List explicit skips + reasons in report.
 
   v2_full
-    Needs round-1 done: prep-v2 → second Extract → lint → second UCN →
-    read_doc → diff (new transcripts + regressions).
+    Needs round-1 done: prep-v2 → second UCN → read_doc → diff (new transcripts + regressions).
 
   v2_partial
     A narrow slice; document out-of-scope sections in the report.
 
   full
-    End-to-end through both UCN rounds (harness 1–7) with diffs; same E2E scope as e2e_default,
+    End-to-end through both UCN rounds (harness 1–5) with diffs; same E2E scope as e2e_default,
     explicit name when you need a report label. Does not add Run Account Summary to the harness.
 
 === /tester SUBAGENT (same workflows; chat-only) ===
@@ -94,11 +87,9 @@ round 2. Does not include Run Account Summary (use run-account-summary.md outsid
 === AFTER_PREP_V1_NEXT_CHAT ===
 [prep-v1 / v1] COMPLETE. Next chat steps (in order):
     Load Customer Context for _TEST_CUSTOMER
-    Extract Call Records for _TEST_CUSTOMER
     Update Customer Notes for _TEST_CUSTOMER
 Then: ./scripts/e2e-test-customer.sh prep-v2
 
 === AFTER_PREP_V2_NEXT_CHAT ===
 [prep-v2] COMPLETE. Next chat steps (in order):
-    Extract Call Records for _TEST_CUSTOMER
     Update Customer Notes for _TEST_CUSTOMER

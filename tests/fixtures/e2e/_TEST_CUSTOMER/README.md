@@ -1,6 +1,6 @@
 # E2E corpus (canonical copy)
 
-This directory is the **durable source** for `_TEST_CUSTOMER` transcript + call-record fixtures used by the E2E flow described in **`docs/ai/playbooks/tester-e2e-ucn.md`** and **`scripts/lib/e2e-catalog.txt`**.
+This directory is the **durable source** for `_TEST_CUSTOMER` transcript fixtures used by the E2E flow described in **`docs/ai/playbooks/tester-e2e-ucn.md`** and **`scripts/lib/e2e-catalog.txt`**.
 
 ## Layout
 
@@ -13,8 +13,8 @@ v2/Transcripts/YYYY-MM-DD-NN-<slug>.txt   # NN = 07–08 (commercial expansion)
 
 ## Intent
 
-- **v1** seeds **transcripts only** in `MyNotes/.../Transcripts/`. **Call-record JSON** is not copied from this tree; the **Extract Call Records** playbook produces `call-records/*.json` at runtime.
-- **v2** layers a commercial expansion on top of v1 (`2026-04-28-07-wiz-cloud-sku-purchase`, `2026-05-05-08-wiz-sensor-pov-kickoff`). **v2** materialize merges **transcripts only**; round-1 call records on disk are preserved.
+- **v1** seeds **transcripts only** in `MyNotes/.../Transcripts/`. **Call-record JSON** is not copied from this tree; add **`call-records/*.json`** only if you run the **Extract Call Records** playbook (outside the default five-step E2E harness).
+- **v2** layers a commercial expansion on top of v1 (`2026-04-28-07-wiz-cloud-sku-purchase`, `2026-05-05-08-wiz-sensor-pov-kickoff`). **v2** materialize merges **transcripts only**; any existing `call-records/*.json` on disk after round 1 are preserved.
 
 ## Refreshing fixtures
 
@@ -24,4 +24,4 @@ To resnapshot the current on-disk corpus into `v1/` (use after intentionally imp
 uv run python scripts/e2e-test-customer-materialize.py to-fixtures
 ```
 
-All other entry points for the E2E harness go through the single `scripts/e2e-test-customer.sh <reset|v1|v2>` command described in the playbook.
+All other entry points for the E2E harness go through **`scripts/e2e-test-customer.sh`** (`reset`, `prep-v1`, `prep-v2`, `v1`, etc.) as described in the playbook.

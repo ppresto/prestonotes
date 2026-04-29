@@ -10,7 +10,7 @@ alwaysApply: false
 
 When the user invokes **`Extract Call Records for [CustomerName]`** (or clearly the same intent), follow **`docs/ai/playbooks/extract-call-records.md`** end-to-end.
 
-**`_TEST_CUSTOMER` E2E override (test-only):** when this extraction is part of **`Run E2E Test Customer`** for **`_TEST_CUSTOMER`**, skip approval pauses and execute **`write_call_record`** directly. See **`docs/ai/playbooks/tester-e2e-ucn.md`**.
+**`_TEST_CUSTOMER` E2E override (test-only):** the default reserved-trigger E2E harness (**`Run E2E Test Customer`**) does **not** include Extract. When the operator **explicitly** runs **`Extract Call Records for _TEST_CUSTOMER`** (same session or separate), skip approval pauses and execute **`write_call_record`** directly for that customer per **`.cursor/rules/11-e2e-test-customer-trigger.mdc`**.
 
 ## Authority and validation
 
@@ -64,7 +64,7 @@ Use one of: **`positive`**, **`neutral`**, **`cautious`**, **`negative`**. Pick 
 
 ## Output
 
-Produce **compact JSON** objects ready for **`write_call_record`**. For normal (non-E2E) runs: after user approval, write **one file per meeting**. For the `_TEST_CUSTOMER` E2E override, execute without waiting for approval.
+Produce **compact JSON** objects ready for **`write_call_record`**. For normal runs: after user approval, write **one file per meeting**. For **`_TEST_CUSTOMER`** when the operator explicitly invoked Extract under the E2E bypass rule, execute **`write_call_record`** without waiting for approval.
 
 ---
 
