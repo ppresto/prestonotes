@@ -567,7 +567,12 @@ def write_doc(
     dry_run: bool = False,
     customer_name: str | None = None,
 ) -> str:
-    """Apply an approved mutation JSON plan to a Google Doc. Modifies external state — get user approval in chat first. Use dry_run=true to preview.
+    """Apply an approved mutation JSON plan to a Google Doc. Modifies external state — get user approval in chat first.
+
+    For **Update Customer Notes**, run planner preflight (``scripts/ucn-planner-preflight.py``) per
+    ``docs/ai/playbooks/update-customer-notes.md`` Step 10 before a real write. ``dry_run=true`` previews
+    Doc-engine output only; it does **not** replace preflight. Optional writer preview for ``_TEST_CUSTOMER``
+    E2E: ``docs/ai/playbooks/tester-e2e-ucn.md``.
 
     When ``customer_name`` is set, runs lifecycle ↔ Challenge Tracker parity checks against
     ``MyNotes/Customers/<name>/AI_Insights/challenge-lifecycle.json`` (see mutation rules).

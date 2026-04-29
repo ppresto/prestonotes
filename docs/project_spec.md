@@ -78,7 +78,7 @@ The old project at `../prestoNotes.orig` is used strictly to copy working code. 
 1. Agents load **read-only** context (MCP `read_doc`, call records, ledger, etc.).
 2. The orchestrator / advisors produce a **mutation JSON** payload (sections, fields, actions per `doc-schema.yaml` and mutation docs under `docs/ai/gdoc-customer-notes/`).
 3. **User approval** in chat.
-4. **`write_doc`** MCP tool runs `prestonotes_gdoc/update-gdoc-customer-notes.py` with `--mutations` (and `dry_run` first when appropriate).
+4. **`write_doc`** MCP tool runs `prestonotes_gdoc/update-gdoc-customer-notes.py` with `--mutations`. For **UCN**, required planner preflight and write order live in **`docs/ai/playbooks/update-customer-notes.md`** Step 10; optional writer **`dry_run`** for doc preview is **E2E-only** for `_TEST_CUSTOMER` — **`docs/ai/playbooks/tester-e2e-ucn.md`**.
 
 **Deprecated:** MCP tool **`run_pipeline`** is **not** part of this architecture. Do not register it on the MCP server. Historical playbooks that referenced it remain **reference only** under §12.
 

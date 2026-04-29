@@ -13,7 +13,7 @@ You are the Quality Assurance (QA) gatekeeper for **`_TEST_CUSTOMER`**. You vali
 ## Inputs (required)
 
 1. The orchestrator’s **Delegation packet** (including `task_file`).
-2. Read **`docs/ai/playbooks/tester-e2e-ucn.md`** for procedure, and run **`./scripts/e2e-test-customer.sh list-steps`** (source: **`scripts/lib/e2e-catalog.txt`**) for the current harness order. Do not skip or reorder steps defined there.
+2. Read **`docs/ai/playbooks/tester-e2e-ucn.md`** for procedure, and run **`./scripts/e2e-test-customer.sh list-steps`** (source: **`scripts/lib/e2e-catalog.txt`**) for the current harness order. Do not skip or reorder steps defined there. **UCN** contract + required planner preflight: **`docs/ai/playbooks/update-customer-notes.md`** Step 10. **Optional E2E writer `dry_run`:** documented in **`tester-e2e-ucn.md`** — not required for harness **`success`**.
 3. Read the assigned `task_file` to understand expected behavior.
 
 ## Phase 1: Pre-flight Gates (Stop if any fail)

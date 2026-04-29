@@ -71,37 +71,25 @@ After rebaseline, always use the newly discovered doc id (do not trust a stale i
 
 **Full `e2e_default` harness:** then `./scripts/e2e-test-customer.sh prep-v2` and a second **Update Customer Notes** (catalog steps 4–5 in `tester-e2e-ucn.md`).
 
-### 4) UCN plan + write (this package)
+### 4) UCN mutation JSON → preflight → write (this package)
 
-Create approved mutation JSON under customer artifacts (not `/tmp`), e.g.:
-- `MyNotes/Customers/_TEST_CUSTOMER/AI_Insights/ucn-approved-mutations.json`
+**UCN policy** (when to run preflight, full TASK-072 / DAL / Deal Stage matrix, Step 10 write order): **[`docs/ai/playbooks/update-customer-notes.md`](../docs/ai/playbooks/update-customer-notes.md)** — do **not** treat this README as a second copy of that contract.
 
-#### TASK-072 deterministic preflight (required)
-
-Run before `write`:
+Create approved mutation JSON under the customer folder (not `/tmp` only), e.g. `MyNotes/Customers/_TEST_CUSTOMER/AI_Insights/ucn-approved-mutations.json`.
 
 ```bash
 uv run python scripts/ucn-planner-preflight.py \
-  --mutations "./MyNotes/Customers/_TEST_CUSTOMER/AI_Insights/ucn-approved-mutations.json" \
+  --mutations "./MyNotes/Customers/[CustomerName]/AI_Insights/ucn-approved-mutations.json" \
   --json-output
-```
 
-Interpretation:
-- exit `0` + `ok: true` -> planner contract passed
-- exit `2` / `planner_contract_failed:*` -> fix plan first (no write)
-
-#### Write execution (dry-run then apply)
-
-```bash
 uv run prestonotes_gdoc/update-gdoc-customer-notes.py write \
   --doc-id "<DOC_ID>" \
   --config prestonotes_gdoc/config/doc-schema.yaml \
-  --mutations "./MyNotes/Customers/_TEST_CUSTOMER/AI_Insights/ucn-approved-mutations.json" \
-  --customer-name "_TEST_CUSTOMER" \
-  --dry-run
+  --mutations "./MyNotes/Customers/[CustomerName]/AI_Insights/ucn-approved-mutations.json" \
+  --customer-name "[CustomerName]"
 ```
 
-Then rerun without `--dry-run` when approved.
+Optional **`write --dry-run`** / MCP **`dry_run=true`** for Doc preview: **`_TEST_CUSTOMER` E2E only**, after preflight — [`docs/ai/playbooks/tester-e2e-ucn.md`](../docs/ai/playbooks/tester-e2e-ucn.md) (**Optional writer dry-run**).
 
 Post-write readback:
 

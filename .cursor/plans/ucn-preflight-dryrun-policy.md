@@ -1,6 +1,6 @@
 # Plan: UCN preflight (required) vs writer dry-run (E2E-only)
 
-**Status:** Draft — not implemented in repo.
+**Status:** Implemented in repo (docs + rules sprawl cleanup; see git history).
 
 ---
 
@@ -85,13 +85,13 @@ These entries are **not** a second SSoT; they **overlap** the UCN playbook or mi
 
 ## Open questions (narrowed)
 
-- E2E: is writer dry-run **required** in harness or **optional**? (Decide in `tester-e2e-ucn.md` only.)
+- **Resolved:** E2E writer dry-run is **optional** (documented in `tester-e2e-ucn.md`); not required for harness `success`.
 
 ---
 
 ## Checklist (implementation)
 
-- [ ] UCN playbook: preflight required; link to `scripts/ucn-planner-preflight.py` and exit / `ok` behavior (reuse existing blocks where possible).
-- [ ] E2E playbook: optional (or required) writer dry-run; link to UCN for preflight.
-- [ ] **Sprawl cleanup (see table):** `prestonotes_gdoc/README`, `scripts/README`, `core.mdc`, `20-orchestrator` Block B, `gdoc-section-changes-v2`, `project_spec` (optional), tab packs + `21-extractor` as listed — **remove** duplicate SSoT text, **add** one-line UCN (or UCN+E2E) pointers only per “when to link” above.
-- [ ] At most: orchestrator + tester one-liner pointers; no 10-file blast of **repeated** policy paragraphs.
+- [x] UCN playbook: preflight required; link to `scripts/ucn-planner-preflight.py` and exit / `ok` behavior (reuse existing blocks where possible).
+- [x] E2E playbook: optional writer dry-run; link to UCN for preflight.
+- [x] **Sprawl cleanup (see table):** `prestonotes_gdoc/README`, `scripts/README`, `core.mdc`, `20-orchestrator` Block B, `gdoc-section-changes-v2`, `project_spec` (optional), tab packs + `21-extractor` as listed — **remove** duplicate SSoT text, **add** one-line UCN (or UCN+E2E) pointers only per “when to link” above.
+- [x] At most: orchestrator + tester one-liner pointers; no 10-file blast of **repeated** policy paragraphs.

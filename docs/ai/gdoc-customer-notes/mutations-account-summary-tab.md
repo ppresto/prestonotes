@@ -234,6 +234,8 @@ TASK-050 §E: on every approved UCN write, the writer scans each applied `exec_a
 
 **TASK-072 deterministic planner contract (required in UCN plan):**
 
+Full coverage matrix, CLI, exit codes, and Step 10 write order: **[`docs/ai/playbooks/update-customer-notes.md`](../playbooks/update-customer-notes.md)** — this subsection stays **Deal Stage–specific**; do not fork the global contract here.
+
 - Add `planner_contract.deal_stage.expected_skus` (`cloud|sensor|defend|code`) for SKUs expected to move this run.
 - For each expected SKU, provide one trigger path:
   - `upsell_auto` via an `exec_account_summary.upsell_path` line containing a recognized token, or
