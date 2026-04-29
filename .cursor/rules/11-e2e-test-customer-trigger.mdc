@@ -30,7 +30,7 @@ Only customer `_TEST_CUSTOMER` is in scope. If the user substitutes a different 
 
 This aligns with [`.cursor/agents/tester.md`](../agents/tester.md) — **Completion and status semantics**.
 
-- **`success`** — Pre-flight passed and **every** catalog step **1–5** for the default `e2e_default` run actually **completed** (real MCP / playbook work through both UCNs). A partial run is **not** `success`.
+- **`success`** — Pre-flight passed and **every** catalog step **1–5** for the default `e2e_default` run actually **completed** (real MCP / playbook work through both UCNs), including **writer** `dry_run=true` / `write --dry-run` **after** planner preflight and **before** each real `write_doc` in steps **3** and **5** per **`docs/ai/playbooks/tester-e2e-ucn.md`** (E2E only — not production). A partial run is **not** `success`.
 - **`failed`** — Stopping before step 5, skipping a required step, or a failed playbook step. **Do not** return `blocked` for “we will continue UCN in a later session”; that is **`failed`**.
 - **`blocked`** — **Only** for pre-flight or environment you cannot fix in the flow (e.g. auth, `lint` hard failure, MCP down) — per tester Phase 1 and the same `blocked` definition in `tester.md`. Do not use for partial harness completion.
 
