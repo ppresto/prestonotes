@@ -120,20 +120,20 @@ If a prior run wrote meta lines into the doc, fix them with an approved **`repla
   - Keep nuance explicit when transcripts support it (for example, DSPM/ASM expansion posture vs CIEM identity posture) and do not invent pricing or unit counts.
   **Deal Stage Tracker auto-motion** (`advance_deal_stage_from_upsell`) still keys only on **`cloud|sensor|defend|code`** substrings inside `upsell_path` text — DSPM/CIEM bullets are exec-facing truth regardless; add or retain a `Wiz Cloud` / `Wiz Sensor` / etc. line when you also need that automation to fire.
 
-### Upsell grounding bundle (TASK-074)
+### Upsell grounding bundle
 
 When Upsell/commercial wording is in scope, ground proposals with this minimal bundle before transcript-heavy synthesis:
 
 1. `read_doc` current account state.
 2. Relevant JSON snapshots under `docs/ai/cache/wiz_mcp_server/mcp_query_snapshots/<category>/` for SKUs in play (Cloud/Defend/Code/Sensor/CIEM/DSPM/ASM as applicable).
-3. Gap-framing references from **TASK-074 §G4** (NIST CSF, NIST AI RMF, OWASP SAMM, OWASP LLM Top 10): [Task 74](../../tasks/active/TASK-074-ucn-accomplishments-vendor-wins-and-upsell-path-sku-gaps.md).
+3. Gap-framing references (NIST CSF, NIST AI RMF, OWASP SAMM, OWASP LLM Top 10) as listed in the playbook / operator packet when the customer context requires that framing.
 4. Then normal UCN transcripts/call-records/history processing.
 
 Do not treat this path as a full `Load Product Intelligence` sweep. If snapshot files are stale or missing, flag it in run output and either refresh or proceed with explicit uncertainty.
 
 ### Upsell when evidence is thin
 
-If evidence cannot support a high-confidence upsell line, do not fabricate commercial claims. Emit 3-7 targeted discovery questions for the next customer interaction and hand off to [TASK-075](../../tasks/active/TASK-075-ucn-upsell-path-discovery-questions.md) for deeper template coverage.
+If evidence cannot support a high-confidence upsell line, do not fabricate commercial claims. Emit 3-7 targeted discovery questions for the next customer interaction; expand templates in a Cursor plan or playbook note if you need a longer form.
 
 ### Ingestion Mode
 

@@ -15,7 +15,7 @@ You are the **unit / CI-style verification** subagent. The **main Agent** delega
 ## Inputs (required)
 
 1. The orchestrator’s **Delegation packet** must include **`prior_artifacts`** (full **coder** Output Contract) and **`files_changed_prior`**.
-2. Read the **task file** at **`task_file`** for acceptance criteria and any verification notes.
+2. Read the **scope** the orchestrator set (e.g. **`.cursor/plans/...`**) or the acceptance criteria in the **coder** Output Contract.
 
 ## Verification workflow
 
@@ -36,7 +36,7 @@ You are the **unit / CI-style verification** subagent. The **main Agent** delega
 ```text
 ## Output Contract (subagent → orchestrator)
 - status: success | blocked
-- task_file: <path>
+- plan_or_scope: <.cursor/plans/... or "inline scope">
 - attempt_count: <integer>
 - files_changed: [<paths you modified during repair>]
 - checks_run: [<names or exact commands>]

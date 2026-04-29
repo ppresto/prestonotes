@@ -20,7 +20,7 @@
 
 - **Granola meeting summary templates:** [`docs/ai/references/granola-meeting-summary-templates.md`](../docs/ai/references/granola-meeting-summary-templates.md) (legacy reference; revise for v2 as needed).
 
-See [`docs/MIGRATION_GUIDE.md`](../docs/MIGRATION_GUIDE.md) for porting rules.
+For porting from v1, see **`docs/project_spec.md`** **§8** (legacy → v2 table).
 
 ## Full E2E `_TEST_CUSTOMER` flow (runbook + scripts)
 

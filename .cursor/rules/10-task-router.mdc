@@ -14,7 +14,7 @@ alwaysApply: false
 - The user invokes an **alias** trigger (same **`[CustomerName]`** token): **`Update Customer Notes with Challenge Review first for [CustomerName]`** or **`Lifecycle-first Update Customer Notes for [CustomerName]`** (same as default UCN — see **`.cursor/rules/20-orchestrator.mdc`**), or
 - The user invokes an **opt-out** trigger: **`Update Customer Notes (no challenge review) for [CustomerName]`**, **`UCN without challenge review for [CustomerName]`**, or **`Light UCN for [CustomerName]`**.
 
-Repo-wide planning habits (task files, approvals) are described in **`.cursor/rules/core.mdc`** and `docs/tasks/INDEX.md`. This file only **routes product workflows**; it does **not** redefine engineering workflow or task-plan approval details.
+Repo-wide planning habits (approvals, Cursor plans) are described in **`.cursor/rules/core.mdc`**. This file only **routes product workflows**; it does **not** redefine engineering workflow details.
 
 ## Preferred path: multi-advisor orchestrator
 

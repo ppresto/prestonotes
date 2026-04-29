@@ -2,11 +2,11 @@
 
 Trigger: **`Bootstrap Customer`** (MCP **`bootstrap_customer`**) or manual folder creation.
 
-This v2 stub documents **customer folder + History Ledger lifecycle** aligned with **TASK-023**. Full Google Doc bootstrap flows remain under **`docs/MIGRATION_GUIDE.md`** and MCP **`bootstrap_customer`**.
+This v2 stub documents **customer folder + History Ledger lifecycle** and MCP **`bootstrap_customer`**. Deeper porting context for legacy files lives in **`docs/project_spec.md`** **§8**.
 
 > **Fixture customer:** **`_TEST_CUSTOMER`** is a first-class customer name for MCP + scripts (leading underscore is valid). In zsh/bash, quote Drive paths: `scripts/rsync-gdrive-notes.sh "_TEST_CUSTOMER"`.
 
-## One-time bootstrap vs E2E `prep-v1` vs nuclear `reset` ([TASK-052](../../tasks/archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md))
+## One-time bootstrap vs E2E `prep-v1` vs nuclear `reset`
 
 Do **not** conflate these three. Pick **one** path for the situation:
 
@@ -41,8 +41,8 @@ Follow **`.cursor/rules/15-user-preferences.mdc`**. Show plans before writes; us
 
 - **Path:** **`MyNotes/Customers/<Customer>/AI_Insights/<Customer>-History-Ledger.md`**
 - **Greenfield:** the ledger file may be **absent** until the first successful **`append_ledger_row`** — the MCP path creates an empty **20-column** `schema_version: 3` table, then appends the row.
-- **`read_ledger`:** returns an **`empty`** JSON shape when **`AI_Insights/`** exists but the ledger file does not (see **`docs/MIGRATION_GUIDE.md`** §History Ledger v3).
-- **E2E nuclear path:** A full [E2E `reset`](tester-e2e-ucn.md) (see [`e2e-test-customer.sh`](../../../scripts/e2e-test-customer.sh) `reset`) trashes the customer folder (local + Drive) **only when** the operator opts in. After that, `bootstrap_customer` (or a fresh bootstrap) recreates the tree; the ledger is absent until the first approved **`append_ledger_row`**. The **default** E2E loop ([TASK-052](../../tasks/archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md) §0) is **`prep-v1` / `prep-v2`** on an **existing** customer — no delete each run.
+- **`read_ledger`:** returns an **`empty`** JSON shape when **`AI_Insights/`** exists but the ledger file does not (see **`docs/project_spec.md`** **§7** and **`prestonotes_mcp/ledger.py`**).
+- **E2E nuclear path:** A full [E2E `reset`](tester-e2e-ucn.md) (see [`e2e-test-customer.sh`](../../../scripts/e2e-test-customer.sh) `reset`) trashes the customer folder (local + Drive) **only when** the operator opts in. After that, `bootstrap_customer` (or a fresh bootstrap) recreates the tree; the ledger is absent until the first approved **`append_ledger_row`**. The **default** E2E loop is **`prep-v1` / `prep-v2`** on an **existing** customer — no delete each run.
 
 ## 3) Google Docs (separate)
 
@@ -52,5 +52,4 @@ Doc discovery and mutations use **`discover_doc`**, **`read_doc`**, **`write_doc
 
 - [`tester-e2e-ucn.md`](tester-e2e-ucn.md) — E2E for `_TEST_CUSTOMER` (harness: [`../../../scripts/lib/e2e-catalog.txt`](../../../scripts/lib/e2e-catalog.txt); shell: [`../../../scripts/e2e-test-customer.sh`](../../../scripts/e2e-test-customer.sh))
 - [`.cursor/agents/tester.md`](../../../.cursor/agents/tester.md) — E2E tester doctrine; when `prep-v1` runs vs `bootstrap`
-- **`docs/MIGRATION_GUIDE.md`** — ledger migration, lazy create
-- **`docs/tasks/archive/2026-04/TASK-023-history-ledger-lazy-bootstrap.md`** — archived task definition
+- **`docs/project_spec.md`** **§7** — History Ledger v3, `read_ledger` / `append_ledger_row`

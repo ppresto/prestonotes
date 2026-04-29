@@ -6,17 +6,16 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
 paths=(docs README.md)
-# Exclude archived task text (historical session dumps may still contain examples).
 tmpf="$(mktemp)"
 trap 'rm -f "${tmpf}"' EXIT
 
-rg -n -S --glob '!**/docs/tasks/archive/**' \
+rg -n -S \
   -e '/document/d/[0-9A-Za-z_-]{20,}' \
   -e 'docs\.google\.com/spreadsheets/d/[0-9A-Za-z_-]{20,}' \
   "${paths[@]}" 2>/dev/null >>"${tmpf}" || true
 
 # Unquoted or quoted 32+ char id after --doc-id (CLI examples)
-rg -n -S --glob '!**/docs/tasks/archive/**' \
+rg -n -S \
   -e '--doc-id[[:space:]]+[0-9A-Za-z_-]{32,}' \
   -e '--doc-id[[:space:]]+["'"'"'`][0-9A-Za-z_-]{32,}' \
   "${paths[@]}" 2>/dev/null >>"${tmpf}" || true

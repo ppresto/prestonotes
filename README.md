@@ -2,21 +2,21 @@
 
 **PrestoNotes** is a **Cursor-first** workspace for Solutions Engineers: **meeting transcripts**, a **local `MyNotes/` mirror** of Google Drive, **playbooks** (step-by-step markdown), and a **local MCP server** that talks to **Google Docs**, **customer files**, and **sync scripts** — so you can load context, update customer notes, extract structured call records, and (as migration progresses) build journey and account views **without** pasting secrets into chat.
 
-**Migration status:** **Stages 1–3** implementation **artifacts** through **[`docs/tasks/INDEX.md`](docs/tasks/INDEX.md)** are **in this repo** — domain advisor **`.mdc`** files, **[`.cursor/rules/10-task-router.mdc`](.cursor/rules/10-task-router.mdc)** / **[`20-orchestrator.mdc`](.cursor/rules/20-orchestrator.mdc)**, and playbooks under **`docs/ai/playbooks/`**. **Stage 4** adds optional **Wiz doc RAG** (MCP **`wiz_knowledge_search`**, local Chroma) — see **Wiz RAG (Stage 4)** below. See **[`docs/V2_MVP_BUILD_PLAN.md`](docs/V2_MVP_BUILD_PLAN.md)** §11 and the roadmap. Legacy **v1** lived under `../prestoNotes.orig/` (read-only reference).
+**Status:** **Stages 1–3** behaviors live in this repo as rules and playbooks — domain advisor **`.mdc`** files, **[`.cursor/rules/10-task-router.mdc`](.cursor/rules/10-task-router.mdc)** / **[`20-orchestrator.mdc`](.cursor/rules/20-orchestrator.mdc)**, and everything under **`docs/ai/playbooks/`**. **Stage 4** adds optional **Wiz doc RAG** (MCP **`wiz_knowledge_search`**, local Chroma) — see **Wiz RAG (Stage 4)** below. Roadmap: **[`docs/project_spec.md`](docs/project_spec.md)** **§9**. **Multi-step work** is usually tracked in **Cursor plans** (`.cursor/plans/`). Legacy **v1** lived under `../prestoNotes.orig/` (read-only reference).
 
 ### Activity recap
 
 **Who this is for:** Solutions Engineers using Cursor with **MyNotes**, Google Drive–backed notes, and optional Wiz search.
 
 - You can jump to each **MVP playbook** from one list and match it to what you type in chat.
-- You can scan **Full**, **Partial**, or **Gap** for those five flows plus vector RAG, using the same labels as **[`docs/tasks/archive/2026-04/TASK-034-mvp-five-flows-readiness.md`](docs/tasks/archive/2026-04/TASK-034-mvp-five-flows-readiness.md)**.
+- You can scan **Full**, **Partial**, or **Gap** for those five flows plus vector RAG (labels defined in the **Capability at a glance** table below).
 - You get a **short checklist** of what to configure before you ask the model to run customer or Wiz-heavy work so tools do not fail without a clear reason.
 
 ---
 
 ## If you are new here (10-minute path)
 
-1. **Read** **[`docs/V2_MVP_BUILD_PLAN.md`](docs/V2_MVP_BUILD_PLAN.md)** — what shipped in each stage and what “MVP” means for this repo.  
+1. **Read** **[`docs/project_spec.md`](docs/project_spec.md)** (especially **§9** roadmap and **§11** triggers).  
 2. **Install** Python **3.12+**, **[uv](https://docs.astral.sh/uv/)**, **Google Drive for Desktop**, **`gcloud`**, **[Cursor](https://cursor.com)**.  
 3. **Bootstrap:** from the repo root run **`./setEnv.sh --bootstrap`** (creates **`.venv`**, runs **`uv sync`**).  
 4. **Secrets:** copy **[`.cursor/mcp.env.example`](.cursor/mcp.env.example)** → **`.cursor/mcp.env`** (gitignored). Fill Drive path, **`MYNOTES_ROOT_FOLDER_ID`**, and `gcloud` account.  
@@ -30,10 +30,9 @@
 
 | You want to… | Start here |
 |--------------|------------|
-| Understand architecture, schemas, backlog | **[`docs/project_spec.md`](docs/project_spec.md)** |
-| Task order and gates | **[`docs/V2_MVP_BUILD_PLAN.md`](docs/V2_MVP_BUILD_PLAN.md)** |
-| What is done / next | **[`docs/tasks/INDEX.md`](docs/tasks/INDEX.md)** |
-| GDrive + Granola + ledger v2 | **[`docs/MIGRATION_GUIDE.md`](docs/MIGRATION_GUIDE.md)** |
+| Understand architecture, schemas, roadmap | **[`docs/project_spec.md`](docs/project_spec.md)** |
+| Drive sync, Granola, scripts | **[`scripts/README.md`](scripts/README.md)** |
+| Customer folder layout, ledger | **[`docs/project_spec.md`](docs/project_spec.md)** **§4** / **§7** and [`bootstrap-customer.md`](docs/ai/playbooks/bootstrap-customer.md) |
 | Wiz cache, MCP vs firewall, scripts | **[`docs/ai/references/wiz-mcp-tools-inventory.md`](docs/ai/references/wiz-mcp-tools-inventory.md)** · **[`docs/ai/cache/wiz_mcp_server/README.md`](docs/ai/cache/wiz_mcp_server/README.md)** |
 | Run cache -> vector -> search tutorial | **[`docs/tutorials/wiz-rag-from-cache-to-search.md`](docs/tutorials/wiz-rag-from-cache-to-search.md)** |
 | Shell scripts (rsync, Wiz, e2e) | **[`scripts/README.md`](scripts/README.md)** |
@@ -50,8 +49,6 @@ Each item is the playbook file under **`docs/ai/playbooks/`** (use the trigger p
 | Run account summary (narrative in chat today) | **[`run-account-summary.md`](docs/ai/playbooks/run-account-summary.md)** |
 | Update customer notes (plan + approval before Doc updates) | **[`update-customer-notes.md`](docs/ai/playbooks/update-customer-notes.md)** |
 
-Readiness detail and follow-up tasks: **[`TASK-034-mvp-five-flows-readiness.md`](docs/tasks/archive/2026-04/TASK-034-mvp-five-flows-readiness.md)**.
-
 ## E2E `_TEST_CUSTOMER` harness
 
 For repeatable E2E loops, use the shell harness and keep prep behavior centralized in one place:
@@ -63,11 +60,11 @@ For repeatable E2E loops, use the shell harness and keep prep behavior centraliz
 - **Cleanup ownership:** greenfield cleanup (`pnotes_agent_log*` + `AI_Insights/*`) is owned by `prep-v1` (`clean_local_harness_artifacts`), not spread across multiple scripts.
 - **Artifact survival rule:** round-1 outputs must be on Drive before any v2 pull. `prep-v2` enforces this by pushing first.
 - **Materialize v2 behavior:** `scripts/e2e-test-customer-materialize.py apply --v2` preserves existing `call-records/*.json`; it only merges v2 transcript seeds.
-- **Current caveat:** `prestonotes_gdoc/e2e_rebaseline_customer_gdoc.py` still performs a copy-trash-rename flow, so the Notes `doc_id` may change; re-`discover_doc` after prep. Historical harness spec: `docs/tasks/archive/2026-04/TASK-052-e2e-test-customer-drive-sync-and-artifact-survival.md` §0 (optional same-`doc_id` in-place rebaseline remains deferred).
+- **Current caveat:** `prestonotes_gdoc/e2e_rebaseline_customer_gdoc.py` still performs a copy-trash-rename flow, so the Notes `doc_id` may change; re-`discover_doc` after prep.
 
 ### Capability at a glance
 
-Labels match **TASK-034**: **Full** = main agent path works with normal approvals and documented setup; **Partial** = works with clear limits or extra operator steps; **Gap** = planned file or tool still missing.
+**Full** = main agent path works with normal approvals and documented setup; **Partial** = works with clear limits or extra operator steps; **Gap** = planned file or tool still missing.
 
 | MVP flow or capability | Status |
 |------------------------|--------|
@@ -78,7 +75,7 @@ Labels match **TASK-034**: **Full** = main agent path works with normal approval
 | Update customer notes (Doc updates + approval) | **Partial** |
 | Vector RAG (**`wiz_knowledge_search`**) | **Partial** |
 
-**Partial** on bootstrap: local **`bootstrap_customer`** is ready; first remote Drive folder + doc is still you + Google. **Partial** on load PI: read path is **local** cache unless you run materialize / spider. **Full** on load customer context: the playbook now includes explicit Wiz pivot + stale-cache refresh guidance during the same session. **Partial** on account summary: playbook now defines canonical `AI_Insights/*-AI-AcctSummary.md` path, but saving is manual until a dedicated MCP writer exists. **Partial** on update notes: **largely ready** with source-order and quality-bar tuning landed in **TASK-038**. **Partial** on vectors: needs keys, cache roots, and **`build_vector_db`** (see **Wiz product docs + RAG** below and tutorial link).
+**Partial** on bootstrap: local **`bootstrap_customer`** is ready; first remote Drive folder + doc is still you + Google. **Partial** on load PI: read path is **local** cache unless you run materialize / spider. **Full** on load customer context: the playbook includes Wiz pivot + stale-cache refresh guidance. **Partial** on account summary: canonical `AI_Insights/*-AI-AcctSummary.md` path is documented, but saving is still manual. **Partial** on update notes: monolithic UCN path is largely ready. **Partial** on vectors: needs keys, cache roots, and **`build_vector_db`** (see **Wiz product docs + RAG** below and tutorial link).
 
 ### Before you ask the LLM
 
@@ -88,7 +85,7 @@ Labels match **TASK-034**: **Full** = main agent path works with normal approval
 - **`GOOGLE_API_KEY`** or **`GEMINI_API_KEY`** when you want embeddings / **`wiz_knowledge_search`** after **`build_vector_db`**.
 - **`gcloud` login** the first time tools return **`run_in_terminal_to_fix`** — run the exact command from **`mcp.env`**, finish browser login, retry.
 
-The model should **ask** for any missing item instead of failing without saying why (**TASK-034**).
+The model should **ask** for any missing item instead of failing without saying why.
 
 ---
 
@@ -131,7 +128,7 @@ Set **`GOOGLE_API_KEY`** (or **`GEMINI_API_KEY`**) and optionally **`PRESTONOTES
 
 Hands-on walkthrough: **[`docs/tutorials/wiz-rag-from-cache-to-search.md`](docs/tutorials/wiz-rag-from-cache-to-search.md)**.
 
-**First customer folder:** use MCP **`bootstrap_customer`** (default **`dry_run=true`**) or create **`MyNotes/Customers/<Customer>/`** and sync — see **[`docs/MIGRATION_GUIDE.md`](docs/MIGRATION_GUIDE.md)**.
+**First customer folder:** use MCP **`bootstrap_customer`** (default **`dry_run=true`**) or create **`MyNotes/Customers/<Customer>/`** and sync — see **[`docs/ai/playbooks/bootstrap-customer.md`](docs/ai/playbooks/bootstrap-customer.md)** and **[`docs/project_spec.md`](docs/project_spec.md)** **§4**.
 
 ---
 
@@ -168,7 +165,7 @@ Use these **exact trigger phrases** (replace `[Customer]` / `[CustomerName]` wit
 ## MCP tools (cheat sheet)
 
 - **Reads (examples):** **`check_google_auth`**, **`list_customers`**, **`discover_doc`**, **`read_doc`**, **`read_transcripts`**, **`read_call_records`**, **`read_ledger`**, **`read_challenge_lifecycle`**, **`read_audit_log`** (tail of **`logs/mcp-audit.log`** by default), **`wiz_knowledge_search`**, **`sync_notes`**, **`sync_transcripts`**, …
-- **Writes (always show a plan + get approval in chat):** **`write_doc`**, **`append_ledger`** (v1 row via subprocess), **`append_ledger_row`** (20-column v3 JSON row — see **`prestonotes_mcp/ledger.py`** `LEDGER_V3_COLUMNS` and **`TASK-049`**), **`write_call_record`**, **`update_challenge_state`** (requires `transitioned_at` — the ISO **call date** of the cited transcript, **not** the run date; see **TASK-048**), **`bootstrap_customer`** (`dry_run=false` only after approval), **`log_run`**, …
+- **Writes (always show a plan + get approval in chat):** **`write_doc`**, **`append_ledger`** (v1 row via subprocess), **`append_ledger_row`** (v3 JSON row — see **`prestonotes_mcp/ledger.py`** `LEDGER_V3_COLUMNS` and **§7** in **[`docs/project_spec.md`](docs/project_spec.md)**), **`write_call_record`**, **`update_challenge_state`** (requires `transitioned_at` as the ISO **call date** of the cited transcript, not the run date; see **§7.4** in **`docs/project_spec.md`**), **`bootstrap_customer`** (`dry_run=false` only after approval), **`log_run`**, …
 
 Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (especially **Rule 3** / customer-local writes). **Auth failures** often include **`run_in_terminal_to_fix`** — paste that command from **`.cursor/mcp.env`** (or **`GCLOUD_AUTH_LOGIN_COMMAND`** there).
 
@@ -186,16 +183,14 @@ Details and guardrails: **[`docs/project_spec.md`](docs/project_spec.md)** (espe
 
 | Doc | Use it for |
 |-----|------------|
-| **[`docs/V2_MVP_BUILD_PLAN.md`](docs/V2_MVP_BUILD_PLAN.md)** | Task order, gates, what each stage builds |
-| **[`docs/project_spec.md`](docs/project_spec.md)** | Architecture, schemas (e.g. §7), full backlog §9 |
-| **[`docs/MIGRATION_GUIDE.md`](docs/MIGRATION_GUIDE.md)** | `prestonotes_gdoc/` vs v1, Granola, rsync, ledger v2, journey tools |
-| **[`docs/tasks/INDEX.md`](docs/tasks/INDEX.md)** | What shipped / what’s next |
+| **[`docs/project_spec.md`](docs/project_spec.md)** | Architecture, schemas (e.g. §7), roadmap **§9**, triggers **§11** |
 | **[`scripts/README.md`](scripts/README.md)** | **`granola-sync`**, **`rsync-gdrive-notes`**, flags, Drive helpers |
+| **[`.cursor/plans/`](.cursor/plans/)** | Optional Cursor plans for multi-step work (empty except **`.gitkeep`** until you add plans) |
 | **[`docs/ai/references/`](docs/ai/references/)** | Ingestion weights, mutation rules, taxonomies, templates |
 | **[`.cursor/rules/10-task-router.mdc`](.cursor/rules/10-task-router.mdc)** / **[`20-orchestrator.mdc`](.cursor/rules/20-orchestrator.mdc)** | Routes **`Update Customer Notes for [Name]`** toward the orchestrator; multi-advisor flow and UCN approval gates. |
 | Domain advisors **`23`–`27`** | **[`.cursor/rules/23-domain-advisor-soc.mdc`](.cursor/rules/23-domain-advisor-soc.mdc)** … **`27-domain-advisor-ai.mdc`** — SOC / APP / VULN / ASM / AI context for structured updates. |
 
-**Cursor:** subagents **`coder` / `code-tester` / `doc`** and **`tester`** ( **`_TEST_CUSTOMER`** E2E harness only) live under **[`.cursor/agents/`](.cursor/agents/)**; the repo no longer ships an always-on “subagent pipeline” Cursor rule (archived copy: **[`docs/archive/cursor-rules-retired/workflow.mdc`](docs/archive/cursor-rules-retired/workflow.mdc)**). The former **migration-mode** Cursor rule was **retired** at Phase 3 close-out; a read-only copy lives under **[`docs/archive/cursor-rules-retired/`](docs/archive/cursor-rules-retired/)**. Ongoing porting discipline: **`docs/MIGRATION_GUIDE.md`**.
+**Cursor:** subagents **`coder` / `code-tester` / `doc`** and **`tester`** ( **`_TEST_CUSTOMER`** E2E harness only) live under **[`.cursor/agents/`](.cursor/agents/)**; the repo no longer ships an always-on “subagent pipeline” Cursor rule (archived copy: **[`docs/archive/cursor-rules-retired/workflow.mdc`](docs/archive/cursor-rules-retired/workflow.mdc)**). The former **migration-mode** Cursor rule was **retired**; a read-only copy lives under **[`docs/archive/cursor-rules-retired/`](docs/archive/cursor-rules-retired/)**. Port from `../prestoNotes.orig` using **§8** in **`docs/project_spec.md`**.
 
 ---
 
@@ -222,7 +217,7 @@ To fork the **pattern** (not this PrestoNotes product): copy the tree, then in t
 |---------|----------------|
 | **Google / Docs tools fail** | Ensure **`.cursor/mcp.env`** exists (copy from **`mcp.env.example`**). Run **`check_google_auth`**. If the response includes **`run_in_terminal_to_fix`**, paste that **exact** command from **`mcp.env`** in Terminal, finish browser login, retry. |
 | **MCP server fails to start (missing env)** | Create **`.cursor/mcp.env`** from the example; **`mcp.json`** no longer embeds Drive / account variables. |
-| **`Invalid customer_name (pattern)` for `_TEST_CUSTOMER`** | Restart the **prestonotes** MCP server (or reload Cursor) after pulling the fix. If you copied **`prestonotes_mcp/prestonotes-mcp.yaml`** from the example earlier, update **`security.customer_name_pattern`** to allow a leading underscore (see **`TASK-041`**). |
+| **`Invalid customer_name (pattern)` for `_TEST_CUSTOMER`** | Restart the **prestonotes** MCP server (or reload Cursor). If you copied **`prestonotes_mcp/prestonotes-mcp.yaml`** from the example, set **`security.customer_name_pattern`** to allow a leading underscore (see **`prestonotes_mcp/prestonotes-mcp.yaml.example`**). |
 | **Drive path not found** | Confirm **Google Drive for Desktop** is running; **`GDRIVE_BASE_PATH`** matches your mount; optional **`./scripts/restart-google-drive.sh`**. |
 | **Ruff / pre-commit reformats Python** | Stage the changes and commit again. |
 | **Terraform hooks complain** | You have **`.tf`** files; install Terraform / tflint or narrow the hook in **`.pre-commit-config.yaml`**. |

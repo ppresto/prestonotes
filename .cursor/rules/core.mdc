@@ -5,7 +5,7 @@ alwaysApply: true
 ---
 # Core Developer Guidelines
 - **Planner-led pipeline**: You are the **planner/orchestrator** (main Agent). After approval, default is **`/coder` → `/tester` → `/doc`** (subagents) unless the user said **`same session, inline`** for that task (see `.cursor/rules/workflow.mdc`). Do not skip verification or document before tests pass — in subagent mode via **`/tester`** then **`/doc`**; in inline mode run the same checks yourself in order.
-- **Think First**: Ensure `docs/project_spec.md` exists and an active task is approved in `docs/tasks/active/` before writing code.
+- **Think First**: Ensure `docs/project_spec.md` exists. For multi-step work, use a **Cursor plan** under `.cursor/plans/` (or equivalent) when a written checklist helps; there is no `docs/tasks/` system.
 - **Small Steps**: Break work down into atomic, testable tasks.
 - **TDD**: Write the test case before or alongside the code implementation.
 - **Linting**: Always format and validate code before considering a task complete.
@@ -17,7 +17,7 @@ These rules apply when working on **customer folders**, **Google Docs customer n
 
 ### Path resolution
 
-- **Repo mirror:** `./MyNotes/Customers/[CustomerName]/` (synced from Drive via **`sync_notes` MCP** or **`scripts/rsync-gdrive-notes.sh`**; see **`docs/MIGRATION_GUIDE.md`**).
+- **Repo mirror:** `./MyNotes/Customers/[CustomerName]/` (synced from Drive via **`sync_notes` MCP** or **`scripts/rsync-gdrive-notes.sh`**; see **`README.md`** and **`scripts/README.md`**).
 - **Mounted Drive root:** Use **`GDRIVE_BASE_PATH`** from **`.cursor/mcp.env`** for paths that must refer to the live Google Drive for Desktop tree (never hardcode user-specific mount points in committed files).
 
 ### Tool registry

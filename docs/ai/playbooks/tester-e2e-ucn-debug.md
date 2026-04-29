@@ -153,7 +153,7 @@ The agent should **open this file** and follow it **in order** unless the operat
 
 - **Not** a replacement for the **full** unattended E2E run in [`tester-e2e-ucn.md`](tester-e2e-ucn.md) / the catalog when you need **end-to-end coverage with no pauses** (e.g. regression guard).
 - **Not** a guarantee the model will catch every GDoc edge case; it is a **procedure** so the **same** investigation can be repeated.
-- **Not** permission to skip **`gcloud`**/Drive requirements or leave secrets in the repo; follow **`.cursor/mcp.env`** and `MIGRATION_GUIDE.md` patterns.
+- **Not** permission to skip **`gcloud`**/Drive requirements or leave secrets in the repo; follow **`.cursor/mcp.env`** and **`README.md`** setup.
 
 ---
 

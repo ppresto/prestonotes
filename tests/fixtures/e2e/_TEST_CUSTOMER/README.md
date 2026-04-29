@@ -1,6 +1,6 @@
 # E2E corpus (canonical copy)
 
-This directory is the **durable source** for `_TEST_CUSTOMER` transcript + call-record fixtures used by the E2E flow described in **`docs/ai/playbooks/tester-e2e-ucn.md`** and **`scripts/lib/e2e-catalog.txt`** (harness; see also archived intent doc **`docs/tasks/archive/2026-04/TASK-044-e2e-test-customer-rebuild.md`**).
+This directory is the **durable source** for `_TEST_CUSTOMER` transcript + call-record fixtures used by the E2E flow described in **`docs/ai/playbooks/tester-e2e-ucn.md`** and **`scripts/lib/e2e-catalog.txt`**.
 
 ## Layout
 

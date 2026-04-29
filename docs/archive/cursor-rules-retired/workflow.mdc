@@ -8,6 +8,8 @@ alwaysApply: false
 
 **Former path:** `.cursor/rules/workflow.mdc`
 
+**2026 update:** The repo no longer uses **`docs/tasks/`** or **`docs/MIGRATION_GUIDE.md`**. Use **`docs/project_spec.md`**, **`.cursor/plans/`**, and **`README.md`** for planning and porting context. Mentions of **task files** below are **historical**.
+
 # Main Agent = planner / orchestrator
 
 **You are the lead project planner and orchestrator.** You are **not** implemented as a file under `.cursor/agents/` (you are the main Agent, not a named subagent in settings). You own workflow control, approvals, and phase transitions in this chat.
