@@ -73,11 +73,11 @@ Options: `prep-v1 --skip-rebaseline` (no GDoc replace), `prep-v1 --skip-clean` (
 
 First UCN. Persists `challenge-lifecycle.json`, updates the GDoc, appends History Ledger, etc. Run [`update-customer-notes.md`](update-customer-notes.md) end-to-end (especially Step 6 **Upsell Path** routing for **`Wiz DSPM`** / **`Wiz CIEM`** vs a single generic **`Wiz Cloud`** line, and **Contacts** from transcripts per that playbook — optional structured support from `call-records/*.json` if those files exist). For `_TEST_CUSTOMER` E2E, Step 7 clarification and Step 9 approval are logged as bypass outcomes (no user pause) per `.cursor/rules/11-e2e-test-customer-trigger.mdc`; for non-E2E customers, normal pauses remain required.
 
-#### Optional writer dry-run (`dry_run` / `--dry-run`) — E2E only
+#### Required writer dry-run (`dry_run` / `--dry-run`) — E2E only (`_TEST_CUSTOMER`)
 
 **Planner preflight** (`scripts/ucn-planner-preflight.py`) is **required** before every real `write_doc` / `write` — see [`update-customer-notes.md`](update-customer-notes.md) **Step 10**. That validates the planner contract; it does **not** replace a Doc API render preview.
 
-After preflight passes, you **may** optionally run **`write_doc`** with **`dry_run=true`** or **`update-gdoc-customer-notes.py write --dry-run`** once to preview what the writer would apply, then run the real write. This preview is **not** required for default harness **`success`**; use it when debugging doc-engine output.
+For **this harness only** (not production customers): after preflight passes, you **must** run **`write_doc`** with **`dry_run=true`** once **or** **`update-gdoc-customer-notes.py write --dry-run`** once on the same mutations payload, **then** run the real write (`dry_run=false` / no `--dry-run`). **Skipping** the writer dry-run before the real write in step **3** or step **5** is a **`failed`** harness run for `e2e_default`, not `success`.
 
 ### 4. Shell: `prep-v2` (push, merge expansion transcripts, push)
 
@@ -93,7 +93,7 @@ After preflight passes, you **may** optionally run **`write_doc`** with **`dry_r
 
 ### 5. Chat: `Update Customer Notes for _TEST_CUSTOMER`
 
-Second UCN. Same playbook contract as step 3 (Step 6 coverage table → Step 8 UCN sub-steps in [`update-customer-notes.md`](update-customer-notes.md) for mutations, including distinct upsell lead-ins when transcripts support them). Use the same E2E bypass logging (`clarification_gate: none`, `approval: bypassed per 11-e2e`) while keeping production behavior unchanged. **Optional writer dry-run** after preflight: same as step 3 — see **Optional writer dry-run** above (still **not** required for harness success).
+Second UCN. Same playbook contract as step 3 (Step 6 coverage table → Step 8 UCN sub-steps in [`update-customer-notes.md`](update-customer-notes.md) for mutations, including distinct upsell lead-ins when transcripts support them). Use the same E2E bypass logging (`clarification_gate: none`, `approval: bypassed per 11-e2e`) while keeping production behavior unchanged. **Required writer dry-run** after preflight, then real write: same as step 3 — see **Required writer dry-run** above.
 
 `Run Account Summary` is a **separate** playbook (see `run-account-summary.md`) and is **not** part of this E2E harness.
 

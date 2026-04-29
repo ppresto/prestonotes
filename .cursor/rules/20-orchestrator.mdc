@@ -40,7 +40,7 @@ This is a **product-run playbook** for the **main Agent in this chat**; it does 
 Present in **one** message:
 
 1. **Block A** — Table of proposed **`update_challenge_state`** rows (or **“none proposed”**).
-2. **Block B** — Plain-language summary, **mutation JSON** for **`write_doc`**, proposed **ledger** row, and diff/summary per **`docs/ai/gdoc-customer-notes/mutations-global.md`**. **Before the real `write_doc`:** run **`scripts/ucn-planner-preflight.py`** as required in **`docs/ai/playbooks/update-customer-notes.md`** Step 10. **Writer** `dry_run` / `--dry-run` (Doc preview) is **optional** and only for **`_TEST_CUSTOMER` E2E** after preflight — **`docs/ai/playbooks/tester-e2e-ucn.md`** — not the default production step after the user already approved in Step 9.
+2. **Block B** — Plain-language summary, **mutation JSON** for **`write_doc`**, proposed **ledger** row, and diff/summary per **`docs/ai/gdoc-customer-notes/mutations-global.md`**. **Before the real `write_doc`:** run **`scripts/ucn-planner-preflight.py`** as required in **`docs/ai/playbooks/update-customer-notes.md`** Step 10. **Writer** `dry_run` / `--dry-run` (Doc preview) is **required** before each real write **only** for **`_TEST_CUSTOMER` E2E** after preflight — **`docs/ai/playbooks/tester-e2e-ucn.md`** — not the default production step after the user already approved in Step 9.
 3. Say explicitly: **Approve all (A then B), Block B only, Block A only, or reject / edit.** **No** **`update_challenge_state`**, **`write_doc`**, **`append_ledger`**, **`append_ledger_row`**, **`sync_notes`** for mutation purposes until the user answers.
 
 **STOP — legacy (opt-out UCN only)**

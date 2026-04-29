@@ -10,11 +10,11 @@ Aliases (same as default): `Update Customer Notes with Challenge Review first fo
 
 Purpose: the **single source of truth** workflow for maintaining a customer's account story. Reads all transcripts, notes, the live Google Doc (both tabs), the History Ledger, and the audit log. Proposes targeted updates. After user approval, writes to the Google Doc, appends a History Ledger row, and logs to the audit file.
 
-**This playbook is also the SSoT for UCN write validation:** required **`ucn-planner-preflight.py`** before any real write (Step 10), and how **`write_doc` / `update-gdoc-customer-notes.py write`** fit together. **Writer** `dry_run` / `--dry-run` (Doc API preview) is **optional** and **E2E-only** for `_TEST_CUSTOMER` — see [`tester-e2e-ucn.md`](tester-e2e-ucn.md); it is **not** a substitute for preflight and is **not** the default production path after Step 9 approval.
+**This playbook is also the SSoT for UCN write validation:** required **`ucn-planner-preflight.py`** before any real write (Step 10), and how **`write_doc` / `update-gdoc-customer-notes.py write`** fit together. **Writer** `dry_run` / `--dry-run` (Doc API preview) is **E2E-only** for `_TEST_CUSTOMER`: **required** before each real write in the default harness — see [`tester-e2e-ucn.md`](tester-e2e-ucn.md). It is **not** a substitute for preflight and is **not** used on the default production path after Step 9 approval.
 
 **Routing (Stage 3):** Prefer **`.cursor/rules/20-orchestrator.mdc`** (via **`.cursor/rules/10-task-router.mdc`**) for the **multi-advisor** flow (Phase 0 challenge review + Block A proposals → sync → load → extractor delta → SOC → APP → VULN → ASM → AI → compile → **one** combined STOP → ordered writes). This playbook remains the **monolithic, step-by-step fallback** until **TASK-019** validates the orchestrator path end-to-end.
 
-> **v2 (TASK-007):** In Cursor, prefer **prestonotes** MCP tools where they map 1:1 — `check_google_auth`, `sync_notes`, `discover_doc`, `read_doc`, `write_doc` (after user approval in Step 9; **production:** real write after successful **planner preflight** in Step 10 — do **not** treat MCP `dry_run=true` as the gate that replaces preflight), `append_ledger`, `log_run`. The bash / `uv run prestonotes_gdoc/...` blocks below are the **terminal equivalent** when not using MCP. **E2E `_TEST_CUSTOMER`:** optional writer `dry_run` after preflight — [`tester-e2e-ucn.md`](tester-e2e-ucn.md).
+> **v2 (TASK-007):** In Cursor, prefer **prestonotes** MCP tools where they map 1:1 — `check_google_auth`, `sync_notes`, `discover_doc`, `read_doc`, `write_doc` (after user approval in Step 9; **production:** real write after successful **planner preflight** in Step 10 — do **not** treat MCP `dry_run=true` as the gate that replaces preflight), `append_ledger`, `log_run`. The bash / `uv run prestonotes_gdoc/...` blocks below are the **terminal equivalent** when not using MCP. **E2E `_TEST_CUSTOMER`:** required writer `dry_run` after preflight, before each real write — [`tester-e2e-ucn.md`](tester-e2e-ucn.md).
 
 Operating persona: **Wiz cybersecurity Solutions Engineer (post-sale, value-realization focused)**. Updates must prioritize customer business/security outcomes, measurable blockers to value realization, operational adoption and expansion readiness, and executive signal quality over transcript volume.
 
@@ -62,7 +62,7 @@ At every step, tell the user what you are doing in plain English. Start each ste
 
 - Follow **`.cursor/rules/15-user-preferences.mdc`** for the final response.
 - After multi-step work, include **`### Activity recap`** with: what changed, what was skipped, and why.
-- Always state approval/write status clearly (no writes run, preflight failed, optional E2E writer preview only, or approved writes executed).
+- Always state approval/write status clearly (no writes run, preflight failed, E2E harness writer `dry_run` only vs real write completed, or approved production writes executed).
 
 ---
 
@@ -452,7 +452,7 @@ Save the approved change plan to **`./MyNotes/Customers/[CustomerName]/AI_Insigh
 
 **Production / normal customers (after Step 9 approval):** MCP **`write_doc`** with `doc_id`, `mutations_json`, **`dry_run=false`**, and **`customer_name`** when known. Step 9 already showed the diff; do not cycle `dry_run=true` as a default extra gate.
 
-**`_TEST_CUSTOMER` E2E harness only:** after preflight passes, you **may** optionally call **`write_doc`** with **`dry_run=true`** once (or `update-gdoc-customer-notes.py write --dry-run`) to preview engine output, then run the real write — see [`tester-e2e-ucn.md`](tester-e2e-ucn.md). Optional means **not** required for harness success.
+**`_TEST_CUSTOMER` E2E harness only:** after preflight passes, you **must** call **`write_doc`** with **`dry_run=true`** once (or `update-gdoc-customer-notes.py write --dry-run`) to preview engine output, **then** run the real write — see [`tester-e2e-ucn.md`](tester-e2e-ucn.md) (**Required writer dry-run**). Skipping the writer preview before the real write is a **failed** E2E for `e2e_default`, not production policy.
 
 **In Terminal (same order as MCP):**
 
@@ -468,7 +468,7 @@ uv run prestonotes_gdoc/update-gdoc-customer-notes.py write \
   --customer-name "[CustomerName]"
 ```
 
-Add **`--dry-run`** on `write` only when following the **optional** E2E writer preview in [`tester-e2e-ucn.md`](tester-e2e-ucn.md) for **`_TEST_CUSTOMER`** — not as the default production path.
+Add **`--dry-run`** on `write` only for the **`_TEST_CUSTOMER` E2E harness** (required there before each real write per [`tester-e2e-ucn.md`](tester-e2e-ucn.md)) — **not** as the default production path.
 
 **What the writer does before it emits the final applied change set:**
 

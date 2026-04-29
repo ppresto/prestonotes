@@ -89,7 +89,7 @@ uv run prestonotes_gdoc/update-gdoc-customer-notes.py write \
   --customer-name "[CustomerName]"
 ```
 
-Optional **`write --dry-run`** / MCP **`dry_run=true`** for Doc preview: **`_TEST_CUSTOMER` E2E only**, after preflight — [`docs/ai/playbooks/tester-e2e-ucn.md`](../docs/ai/playbooks/tester-e2e-ucn.md) (**Optional writer dry-run**).
+**Required** **`write --dry-run`** / MCP **`dry_run=true`** before each real write: **`_TEST_CUSTOMER` E2E harness only**, after preflight — [`docs/ai/playbooks/tester-e2e-ucn.md`](../docs/ai/playbooks/tester-e2e-ucn.md) (**Required writer dry-run**). Not production.
 
 Post-write readback:
 

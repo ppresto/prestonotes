@@ -571,8 +571,9 @@ def write_doc(
 
     For **Update Customer Notes**, run planner preflight (``scripts/ucn-planner-preflight.py``) per
     ``docs/ai/playbooks/update-customer-notes.md`` Step 10 before a real write. ``dry_run=true`` previews
-    Doc-engine output only; it does **not** replace preflight. Optional writer preview for ``_TEST_CUSTOMER``
-    E2E: ``docs/ai/playbooks/tester-e2e-ucn.md``.
+    Doc-engine output only; it does **not** replace preflight. For ``_TEST_CUSTOMER`` **E2E** harness runs,
+    ``dry_run=true`` once before each real write is **required** per ``docs/ai/playbooks/tester-e2e-ucn.md``
+    (not production).
 
     When ``customer_name`` is set, runs lifecycle ↔ Challenge Tracker parity checks against
     ``MyNotes/Customers/<name>/AI_Insights/challenge-lifecycle.json`` (see mutation rules).

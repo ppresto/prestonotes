@@ -10,7 +10,7 @@
 # Kept in sync with:
 #   - .cursor/rules/11-e2e-test-customer-trigger.mdc  (triggers; defers here for order)
 #   - .cursor/agents/tester.md                        (e2e_workflow modes, diff)
-#   - docs/ai/playbooks/tester-e2e-ucn.md            (per-step procedure; optional writer dry_run)
+#   - docs/ai/playbooks/tester-e2e-ucn.md            (per-step procedure; required writer dry_run before each real write, E2E only)
 #   - docs/ai/playbooks/update-customer-notes.md      (UCN SSoT; required preflight Step 10)
 #
 # Print:  ./scripts/e2e-test-customer.sh list-catalog
